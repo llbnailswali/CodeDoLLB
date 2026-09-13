@@ -9,6 +9,7 @@ interface LearnStageProps {
   setRevealStep: React.Dispatch<React.SetStateAction<number>>;
   onContinue: () => void;
   renderSnippetLine: (line: string, isDark: boolean) => React.ReactNode;
+  tapToRevealEnabled?: boolean;
 }
 
 // Reveal stages:
@@ -25,12 +26,14 @@ export const Learn: React.FC<LearnStageProps> = ({
   setRevealStep,
   onContinue,
   renderSnippetLine,
+  tapToRevealEnabled = true,
 }) => {
   // Total steps = 2 (subtitle + example) + data.keyIdeas.length + 1 (key takeaway)
   const totalKeyIdeas = data.keyIdeas.length;
   const maxRevealStep = 2 + totalKeyIdeas + 1;
 
   const handleNextReveal = () => {
+    if (!tapToRevealEnabled) return;
     soundFX.playClick();
     if (revealStep < maxRevealStep) {
       setRevealStep((prev) => {
@@ -49,7 +52,7 @@ export const Learn: React.FC<LearnStageProps> = ({
     }
   };
 
-  const isFullyRevealed = revealStep >= maxRevealStep;
+  const isFullyRevealed = !tapToRevealEnabled || revealStep >= maxRevealStep;
 
   return (
     <div
@@ -61,7 +64,7 @@ export const Learn: React.FC<LearnStageProps> = ({
       {/* 0: Concept Title (Always visible initially) */}
       <div className="pt-1 mb-2">
         <h1
-          className={`font-['Outfit'] text-3xl font-bold tracking-tight leading-tight mb-2 ${
+          className={`font-['Outfit'] text-2xl font-semibold tracking-tight mb-1.5 ${
             isDark ? 'text-white' : 'text-slate-900'
           }`}
         >
@@ -69,8 +72,8 @@ export const Learn: React.FC<LearnStageProps> = ({
         </h1>
       </div>
 
-      {/* 1: Concept Subtitle & Brief (Revealed on tap 1) */}
-      {revealStep >= 1 && (
+      {/* 1: Concept Subtitle & Brief (Revealed on tap 1 or if tapToReveal is disabled) */}
+      {(!tapToRevealEnabled || revealStep >= 1) && (
         <p
           className={`mt-1 text-[15px] leading-relaxed mb-5 transition-all duration-300 animate-fadeIn ${
             isDark ? 'text-[#94a3b8]' : 'text-slate-600'
@@ -80,8 +83,8 @@ export const Learn: React.FC<LearnStageProps> = ({
         </p>
       )}
 
-      {/* 2: Simple Concept Example Card (Revealed on tap 2) */}
-      {revealStep >= 2 && (
+      {/* 2: Simple Concept Example Card (Revealed on tap 2 or if tapToReveal is disabled) */}
+      {(!tapToRevealEnabled || revealStep >= 2) && (
         <section
           className={`mt-1 mb-5 rounded-2xl p-4 transition-all duration-300 animate-fadeIn ${
             isDark
@@ -133,8 +136,8 @@ export const Learn: React.FC<LearnStageProps> = ({
         </section>
       )}
 
-      {/* 3: Key Ideas Section (Revealed one by one on subsequent taps) */}
-      {revealStep >= 3 && (
+      {/* 3: Key Ideas Section (Revealed one by one on subsequent taps or immediately if tapToReveal is disabled) */}
+      {(!tapToRevealEnabled || revealStep >= 3) && (
         <section className="mb-5 transition-all duration-300 animate-fadeIn">
           <h2
             className={`font-['Outfit'] text-xs font-bold tracking-wider uppercase mb-3 px-1 ${
@@ -149,7 +152,7 @@ export const Learn: React.FC<LearnStageProps> = ({
               // Idea 1 is shown at revealStep >= 4
               // Idea 2 is shown at revealStep >= 5, etc.
               const ideaStepRequired = 3 + index;
-              if (revealStep < ideaStepRequired) return null;
+              if (tapToRevealEnabled && revealStep < ideaStepRequired) return null;
 
               return (
                 <div
@@ -192,8 +195,8 @@ export const Learn: React.FC<LearnStageProps> = ({
         </section>
       )}
 
-      {/* Final Section: Key Takeaway Card (Revealed after all key ideas) */}
-      {revealStep >= 3 + totalKeyIdeas && (
+      {/* Final Section: Key Takeaway Card (Revealed after all key ideas or immediately if tapToReveal is disabled) */}
+      {(!tapToRevealEnabled || revealStep >= 3 + totalKeyIdeas) && (
         <section
           className={`rounded-xl p-3.5 flex items-center gap-3 mb-6 border transition-all duration-300 animate-fadeIn ${
             isDark

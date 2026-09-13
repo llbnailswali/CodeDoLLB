@@ -45,6 +45,7 @@ export interface PredictQuestion {
   questionNumber: number;
   totalQuestions: number;
   topicMeta: string;
+  title?: string;
   language: string;
   code: string[];
   prompt: string;
@@ -57,7 +58,7 @@ export interface PredictQuestion {
 
 export interface Stage3PredictData {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   questions: PredictQuestion[];
 }
 
@@ -83,7 +84,24 @@ export interface Stage4WriteRunData {
   };
 }
 
-export interface Stage5MasteredData {
+export type DebugBugType = 'syntax' | 'logic' | 'runtime' | 'null-safety' | 'type' | 'collection';
+
+export interface Stage5DebugData {
+  title: string;
+  subtitle: string;
+  challengeNumber: number;
+  totalChallenges: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  bugType: DebugBugType;
+  bugLabel: string;
+  brokenCode: string;
+  fixedCode: string;
+  expectedOutput: string;
+  hints: [string, string, string]; // Hint 1: Conceptual clue, Hint 2: Narrow reasoning, Hint 3: Pinpointed direction
+  explanation: string;
+}
+
+export interface Stage6MasteredData {
   topicTitle: string;
   summary: string;
   passedCount: string;
@@ -96,6 +114,9 @@ export interface Stage5MasteredData {
   accuracy: string;
 }
 
+// Backward compatibility alias for Stage5MasteredData
+export type Stage5MasteredData = Stage6MasteredData;
+
 export interface FiveStageLesson {
   id: string;
   worldId: string;
@@ -106,7 +127,8 @@ export interface FiveStageLesson {
   explore: Stage2ExploreData;
   predict: Stage3PredictData;
   writeRun: Stage4WriteRunData;
-  mastered: Stage5MasteredData;
+  debug: Stage5DebugData;
+  mastered: Stage6MasteredData;
 }
 
 export const FUNCTIONS_LESSON: FiveStageLesson = {
@@ -269,6 +291,7 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
         id: 'pred-func-1',
         questionNumber: 1,
         totalQuestions: 5,
+        title: 'Kotlin Functions',
         topicMeta: 'Kotlin Functions',
         language: 'Kotlin',
         code: [
@@ -294,6 +317,7 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
         id: 'pred-func-2',
         questionNumber: 2,
         totalQuestions: 5,
+        title: 'Parameters & Templates',
         topicMeta: 'Parameters & Templates',
         language: 'Kotlin',
         code: [
@@ -301,7 +325,7 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
           '    println("Welcome, $user")',
           '}',
           '',
-          'welcome("Dev")'
+          'welcome("Dev")',
         ],
         prompt: 'What will be displayed in the terminal?',
         options: [
@@ -313,6 +337,83 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
         explanation: {
           codeRef: 'welcome("Dev")',
           detail: 'The string template "$user" interpolates the argument "Dev" directly into the message.'
+        }
+      },
+      {
+        id: 'pred-func-3',
+        questionNumber: 3,
+        totalQuestions: 5,
+        title: 'Return Values',
+        topicMeta: 'Return Values',
+        language: 'Kotlin',
+        code: [
+          'fun add(a: Int, b: Int): Int {',
+          '    return a + b',
+          '}',
+          '',
+          'val sum = add(4, 6)',
+          'println("Sum is $sum")'
+        ],
+        prompt: 'What will this code print to the console?',
+        options: [
+          { id: 'A', label: 'Sum is 10', isCorrect: true },
+          { id: 'B', label: 'Sum is 46', isCorrect: false },
+          { id: 'C', label: 'Sum is Unit', isCorrect: false },
+          { id: 'D', label: 'Compilation Error', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'add(4, 6)',
+          detail: 'add(4, 6) returns 10, which is stored in sum and interpolated as "Sum is 10".'
+        }
+      },
+      {
+        id: 'pred-func-4',
+        questionNumber: 4,
+        totalQuestions: 5,
+        title: 'Single-Expression Syntax',
+        topicMeta: 'Single-Expression Syntax',
+        language: 'Kotlin',
+        code: [
+          'fun square(n: Int) = n * n',
+          '',
+          'println(square(5))'
+        ],
+        prompt: 'What does this single-expression function output?',
+        options: [
+          { id: 'A', label: '10', isCorrect: false },
+          { id: 'B', label: '25', isCorrect: true },
+          { id: 'C', label: '5', isCorrect: false },
+          { id: 'D', label: 'Nothing', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'n * n',
+          detail: 'Kotlin single-expression functions return the evaluated value directly, so 5 * 5 = 25.'
+        }
+      },
+      {
+        id: 'pred-func-5',
+        questionNumber: 5,
+        totalQuestions: 5,
+        title: 'Default Arguments',
+        topicMeta: 'Default Arguments',
+        language: 'Kotlin',
+        code: [
+          'fun tag(item: String, prefix: String = "#"): String {',
+          '    return "$prefix$item"',
+          '}',
+          '',
+          'println(tag("kotlin"))'
+        ],
+        prompt: 'What is the resulting output?',
+        options: [
+          { id: 'A', label: '#kotlin', isCorrect: true },
+          { id: 'B', label: 'kotlin', isCorrect: false },
+          { id: 'C', label: 'Compilation Error: Missing argument', isCorrect: false },
+          { id: 'D', label: '$prefix$item', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'prefix: String = "#"',
+          detail: 'Since prefix defaults to "#", calling tag("kotlin") evaluates to "#kotlin".'
         }
       }
     ]
@@ -329,7 +430,11 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
       returns: 'Int'
     },
     fileName: 'solution.kt',
-    initialCode: 'fun multiply(a: Int, b: Int): Int {\n    return a * b\n}',
+    initialCode: `// 1. Declare function multiply that receives (a: Int, b: Int) and returns Int:
+fun multiply(a: Int, b: Int): Int {
+    // 2. Write code to return the product of a and b:
+    
+}`,
     solutionCode: 'fun multiply(a: Int, b: Int): Int {\n    return a * b\n}',
     sampleInput: 'multiply(4, 5)',
     expectedOutput: '20',
@@ -338,10 +443,43 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
       expected: '20'
     }
   },
+  debug: {
+    title: 'Diagnose the Function Defect',
+    subtitle: 'Inspect the broken function, find why the return value fails the requirements, and fix it.',
+    challengeNumber: 1,
+    totalChallenges: 1,
+    difficulty: 'easy',
+    bugType: 'logic',
+    bugLabel: 'Logic Flaw: Incorrect Operator in Return',
+    brokenCode: `fun multiply(a: Int, b: Int): Int {
+    // BUG: Returning sum instead of product!
+    return a + b
+}
+
+fun main() {
+    val result = multiply(4, 5)
+    println("Result: $result")
+}`,
+    fixedCode: `fun multiply(a: Int, b: Int): Int {
+    return a * b
+}
+
+fun main() {
+    val result = multiply(4, 5)
+    println("Result: $result")
+}`,
+    expectedOutput: 'Result: 20',
+    hints: [
+      'Look closely at the arithmetic operation performed in the return statement.',
+      'The function says "multiply", but the arithmetic operator inside is adding the two parameters.',
+      'Replace the addition operator (+) with the multiplication operator (*) in "return a * b".'
+    ],
+    explanation: 'The function originally used the addition operator (+) instead of multiplication (*), causing multiply(4, 5) to return 9 instead of 20. Replacing it with `return a * b` resolves the logic defect.'
+  },
   mastered: {
     topicTitle: 'Kotlin Functions',
-    summary: 'You have successfully mastered function syntax, parameters, return values, and invoked structured code flow.',
-    passedCount: '4 / 4 PASSED',
+    summary: 'You have successfully mastered function syntax, parameters, return values, and diagnosed real-world code defects.',
+    passedCount: '5 / 5 PASSED',
     verificationItems: [
       {
         title: 'Concept understood',
@@ -358,9 +496,13 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
       {
         title: 'Code written & executed',
         subtitle: '5 practical runtime tests passed'
+      },
+      {
+        title: 'Bugs diagnosed & repaired',
+        subtitle: 'Resolved arithmetic logic flaw & verified execution'
       }
     ],
-    xpEarned: 50,
+    xpEarned: 60,
     streakDays: 5,
     accuracy: '100%'
   }
@@ -549,7 +691,16 @@ export const LOOPS_LESSON: FiveStageLesson = {
       returns: 'Int'
     },
     fileName: 'loop_solution.kt',
-    initialCode: 'fun sumRange(max: Int): Int {\n    var sum = 0\n    for (i in 1..max) {\n        sum += i\n    }\n    return sum\n}',
+    initialCode: `fun sumRange(max: Int): Int {
+    // 1. Declare a mutable accumulator variable 'sum' starting at 0:
+    
+    // 2. Write a for-loop for numbers from 1 up to max (1..max):
+    
+        // 3. Add each number i to sum (sum += i):
+        
+    // 4. Return the calculated sum:
+    
+}`,
     solutionCode: 'fun sumRange(max: Int): Int {\n    var sum = 0\n    for (i in 1..max) {\n        sum += i\n    }\n    return sum\n}',
     sampleInput: 'sumRange(4)',
     expectedOutput: '10',
@@ -558,10 +709,51 @@ export const LOOPS_LESSON: FiveStageLesson = {
       expected: '10'
     }
   },
+  debug: {
+    title: 'Diagnose the Loop Boundary Bug',
+    subtitle: 'Identify why the accumulator sum misses the final number, and fix the loop range expression.',
+    challengeNumber: 1,
+    totalChallenges: 1,
+    difficulty: 'easy',
+    bugType: 'logic',
+    bugLabel: 'Off-by-One Range Boundary Bug',
+    brokenCode: `fun sumRange(max: Int): Int {
+    var sum = 0
+    // BUG: using 'until' excludes the max boundary number!
+    for (i in 1 until max) {
+        sum += i
+    }
+    return sum
+}
+
+fun main() {
+    val total = sumRange(4)
+    println("Total: $total")
+}`,
+    fixedCode: `fun sumRange(max: Int): Int {
+    var sum = 0
+    for (i in 1..max) {
+        sum += i
+    }
+    return sum
+}
+
+fun main() {
+    val total = sumRange(4)
+    println("Total: $total")
+}`,
+    expectedOutput: 'Total: 10',
+    hints: [
+      'Check the range operator inside the for-loop header.',
+      'Notice that `until` creates an open-ended range that stops before `max` (1 until 4 only iterates 1, 2, 3 = 6).',
+      'Replace `1 until max` with the closed range operator `1..max` so 4 is included.'
+    ],
+    explanation: 'Using `1 until max` excluded the endpoint `4`, yielding 6 instead of 10. Replacing it with `1..max` includes all integers from 1 up to 4, producing the correct total of 10.'
+  },
   mastered: {
     topicTitle: 'Kotlin Loops',
-    summary: 'You have mastered iteration mechanics, range bounds, step modifiers, and break controls.',
-    passedCount: '4 / 4 PASSED',
+    summary: 'You have mastered iteration mechanics, range bounds, step modifiers, and diagnosed off-by-one loop defects.',
+    passedCount: '5 / 5 PASSED',
     verificationItems: [
       {
         title: 'Concept understood',
@@ -578,9 +770,13 @@ export const LOOPS_LESSON: FiveStageLesson = {
       {
         title: 'Code written & executed',
         subtitle: 'Loop algorithm executed flawlessly'
+      },
+      {
+        title: 'Bugs diagnosed & repaired',
+        subtitle: 'Corrected boundary range condition in loop'
       }
     ],
-    xpEarned: 50,
+    xpEarned: 60,
     streakDays: 5,
     accuracy: '100%'
   }
@@ -642,8 +838,8 @@ export const VARIABLES_LESSON: FiveStageLesson = {
       'Prefer val over var. Immutability makes your code thread-safe, robust, and clean.'
   },
   explore: {
-    title: 'Variables: The Spectrum',
-    subtitle: '5 Progressive Examples • Step 2 of 5',
+    title: '5 progressive examples',
+    subtitle: '',
     cards: [
       {
         id: 'card-1',
@@ -735,12 +931,11 @@ export const VARIABLES_LESSON: FiveStageLesson = {
   },
   predict: {
     title: 'Predict Output',
-    subtitle: 'Output Forecasting • Step 3 of 5',
     questions: [
       {
         id: 'q1',
         questionNumber: 1,
-        totalQuestions: 1,
+        totalQuestions: 5,
         topicMeta: 'VAL VS VAR & TEMPLATES',
         language: 'kotlin',
         code: [
@@ -761,6 +956,104 @@ export const VARIABLES_LESSON: FiveStageLesson = {
           detail:
             'score is declared with var, so adding 15 updates the value to 25. player is declared with val and remains "Kora". The string template interpolates both values into "Kora: 25 pts".'
         }
+      },
+      {
+        id: 'q2',
+        questionNumber: 2,
+        totalQuestions: 5,
+        topicMeta: 'IMMUTABILITY ENFORCEMENT',
+        language: 'kotlin',
+        code: [
+          'val maxRetries = 3',
+          'maxRetries = 5',
+          'println(maxRetries)'
+        ],
+        prompt: 'What happens when compiling and executing this code snippet?',
+        options: [
+          { id: 'A', label: '5', isCorrect: false },
+          { id: 'B', label: '3', isCorrect: false },
+          { id: 'C', label: 'Compilation Error: Val cannot be reassigned', isCorrect: true },
+          { id: 'D', label: 'Runtime Exception', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'maxRetries = 5',
+          detail:
+            'Variables declared with val are read-only and immutable. Attempting to reassign maxRetries causes a compile error: "Val cannot be reassigned".'
+        }
+      },
+      {
+        id: 'q3',
+        questionNumber: 3,
+        totalQuestions: 5,
+        topicMeta: 'TYPE SAFETY & STATIC TYPING',
+        language: 'kotlin',
+        code: [
+          'var health = 100',
+          'health = "Full"',
+          'println(health)'
+        ],
+        prompt: 'What is the outcome of attempting to reassign health?',
+        options: [
+          { id: 'A', label: 'Full', isCorrect: false },
+          { id: 'B', label: 'Compilation Error: Type mismatch: inferred type String but Int expected', isCorrect: true },
+          { id: 'C', label: '100', isCorrect: false },
+          { id: 'D', label: 'Runtime Error: ClassCastException', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'health = "Full"',
+          detail:
+            'Kotlin uses static typing. Because health is initialized with 100, its type is inferred as Int. Even though it is a mutable var, you cannot assign a String to an Int.'
+        }
+      },
+      {
+        id: 'q4',
+        questionNumber: 4,
+        totalQuestions: 5,
+        topicMeta: 'STRING TEMPLATE EXPRESSIONS',
+        language: 'kotlin',
+        code: [
+          'val count = 4',
+          'val cost = 5',
+          'println("Total: $${count * cost}")'
+        ],
+        prompt: 'What does this program print to stdout?',
+        options: [
+          { id: 'A', label: 'Total: $20', isCorrect: true },
+          { id: 'B', label: 'Total: ${count * cost}', isCorrect: false },
+          { id: 'C', label: 'Total: $ count * cost', isCorrect: false },
+          { id: 'D', label: 'Compilation Error', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: '${count * cost}',
+          detail:
+            'The first $ is treated as a literal dollar sign, and ${count * cost} evaluates the expression 4 * 5 = 20, resulting in "Total: $20".'
+        }
+      },
+      {
+        id: 'q5',
+        questionNumber: 5,
+        totalQuestions: 5,
+        topicMeta: 'VARIABLE ARITHMETIC',
+        language: 'kotlin',
+        code: [
+          'val base = 5',
+          'var multiplier = 3',
+          'multiplier += 2',
+          'val result = base * multiplier',
+          'println("Result: $result")'
+        ],
+        prompt: 'What is the final console output of this calculation?',
+        options: [
+          { id: 'A', label: 'Result: 15', isCorrect: false },
+          { id: 'B', label: 'Result: 25', isCorrect: true },
+          { id: 'C', label: 'Result: 10', isCorrect: false },
+          { id: 'D', label: 'Result: base * 5', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'multiplier += 2',
+          detail:
+            'multiplier is incremented from 3 to 5. Then base (5) * multiplier (5) yields 25, so println prints "Result: 25".'
+        }
       }
     ]
   },
@@ -778,17 +1071,14 @@ export const VARIABLES_LESSON: FiveStageLesson = {
     },
     fileName: 'Main.kt',
     initialCode: `fun main() {
-    // 1. Declare immutable player name "Alex":
-    val player = "Alex"
+    // 1. Declare immutable player name "Alex" using val:
     
-    // 2. Declare mutable coins starting at 25:
-    var coins = 25
+    // 2. Declare mutable coins starting at 25 using var:
     
-    // 3. Add 15 coins to the inventory:
-    coins += 15
+    // 3. Add 15 coins to the inventory (coins += 15):
     
-    // 4. Print the formatted inventory:
-    println("Player $player holds $coins coins")
+    // 4. Print the formatted inventory: "Player $player holds $coins coins"
+    
 }`,
     solutionCode: `fun main() {
     val player = "Alex"
@@ -803,11 +1093,38 @@ export const VARIABLES_LESSON: FiveStageLesson = {
       expected: 'Player Alex holds 40 coins'
     }
   },
+  debug: {
+    title: 'Diagnose the Mutation Violation',
+    subtitle: 'Identify why the program fails with a compile error when trying to reassign score, and fix it.',
+    challengeNumber: 1,
+    totalChallenges: 1,
+    difficulty: 'easy',
+    bugType: 'syntax',
+    bugLabel: 'Syntax / Mutability Bug: Val Reassignment',
+    brokenCode: `fun main() {
+    // BUG: score is declared with val, but modified below!
+    val score = 50
+    score = score + 25
+    println("Final Score: $score")
+}`,
+    fixedCode: `fun main() {
+    var score = 50
+    score = score + 25
+    println("Final Score: $score")
+}`,
+    expectedOutput: 'Final Score: 75',
+    hints: [
+      'In Kotlin, what is the key difference between `val` and `var`?',
+      '`val` creates a read-only immutable reference that cannot be reassigned after declaration.',
+      'Change `val score = 50` to `var score = 50` so `score` can be updated with `score + 25`.'
+    ],
+    explanation: 'In Kotlin, `val` represents an immutable reference. Reassigning `score = score + 25` generates a compilation error: "Val cannot be reassigned". Changing `val` to `var` allows mutable state updates.'
+  },
   mastered: {
     topicTitle: 'Variables & Immutability',
     summary:
-      'You have mastered Kotlin variable declarations, the core distinction between val and var, type inference, and string template interpolation.',
-    passedCount: '4/4',
+      'You have mastered Kotlin variable declarations, the core distinction between val and var, type inference, and diagnosed mutability compile bugs.',
+    passedCount: '5/5',
     verificationItems: [
       {
         title: 'val vs var Distinction',
@@ -824,9 +1141,13 @@ export const VARIABLES_LESSON: FiveStageLesson = {
       {
         title: 'Static Type Safety',
         subtitle: 'Prevented invalid type reassignment at compile time'
+      },
+      {
+        title: 'Bugs diagnosed & repaired',
+        subtitle: 'Fixed val reassignment compile violation'
       }
     ],
-    xpEarned: 50,
+    xpEarned: 60,
     streakDays: 12,
     accuracy: '100%'
   }
