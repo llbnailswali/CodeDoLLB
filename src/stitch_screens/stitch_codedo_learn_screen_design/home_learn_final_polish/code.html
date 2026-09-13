@@ -1,0 +1,352 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+    @layer base {
+      html, body {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #e8eaf0;
+      }
+      body {
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+      .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+    }
+    ::-webkit-scrollbar { display: none; }
+    .font-outfit { font-family: 'Outfit', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    
+    /* Soft Neumorphic Shadows */
+    .neu-raised {
+      box-shadow: 6px 6px 14px rgba(0, 0, 0, 0.06), -6px -6px 14px rgba(255, 255, 255, 0.75);
+    }
+    .neu-raised-sm {
+      box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.05), -3px -3px 8px rgba(255, 255, 255, 0.7);
+    }
+    .neu-pressed {
+      box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.06), inset -3px -3px 6px rgba(255, 255, 255, 0.65);
+    }
+    .neu-nav {
+      box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.04), 0 -2px 8px rgba(255, 255, 255, 0.85);
+    }
+    .cta-glow {
+      box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.45), 4px 4px 10px rgba(0, 0, 0, 0.06);
+    }
+    .pulsing-dot {
+      box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+      animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.6); }
+      70% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-variant": "#dcdee4",
+            "inverse-on-surface": "#e8eaf0",
+            "on-error": "#ffffff",
+            "surface-dim": "#d4d6dc",
+            "on-surface": "#2e3040",
+            "primary-fixed": "#e0e2ff",
+            "on-secondary-fixed": "#1a1b26",
+            "surface-container": "#e2e4ea",
+            "on-primary-container": "#e0e2ff",
+            "tertiary-container": "#a78bfa",
+            "on-surface-variant": "#585a68",
+            "inverse-surface": "#2e3040",
+            "on-primary-fixed": "#1e1b4b",
+            "surface-container-highest": "#d6d8de",
+            "on-background": "#2e3040",
+            "on-tertiary-container": "#3b1f63",
+            "error-container": "#fee2e2",
+            "on-tertiary-fixed": "#2e1065",
+            "surface-container-lowest": "#f0f2f8",
+            "tertiary": "#7c3aed",
+            "surface-bright": "#edeef4",
+            "tertiary-fixed-dim": "#c4b5fd",
+            "surface-container-low": "#e5e7ed",
+            "on-secondary": "#ffffff",
+            "secondary-container": "#d8dae6",
+            "on-primary-fixed-variant": "#4338ca",
+            "on-tertiary-fixed-variant": "#5b21b6",
+            "primary-container": "#818cf8",
+            "inverse-primary": "#a5b4fc",
+            "surface-tint": "#6366f1",
+            "background": "#e8eaf0",
+            "on-primary": "#ffffff",
+            "surface-container-high": "#dcdee4",
+            "secondary-fixed-dim": "#b8baca",
+            "primary-fixed-dim": "#a5b4fc",
+            "secondary": "#6c6e7e",
+            "on-tertiary": "#ffffff",
+            "primary": "#6366f1",
+            "secondary-fixed": "#d8dae6",
+            "error": "#dc2626",
+            "on-error-container": "#991b1b",
+            "on-secondary-container": "#585a68",
+            "tertiary-fixed": "#ede9fe",
+            "outline": "#8a8c9a",
+            "outline-variant": "#d0d2dc",
+            "surface": "#e8eaf0",
+            "on-secondary-fixed-variant": "#404252"
+          },
+          fontFamily: {
+            headline: ["Plus Jakarta Sans", "sans-serif"],
+            display: ["Outfit", "sans-serif"],
+            body: ["Plus Jakarta Sans", "sans-serif"],
+            label: ["Plus Jakarta Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-surface font-body text-on-surface flex flex-col min-h-screen">
+<!-- CONSOLIDATED TOP BAR (Single Unified Header) -->
+<header class="fixed top-0 inset-x-0 z-50 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-b border-white/40">
+<div class="px-5 pt-3 pb-3 flex flex-col gap-2.5">
+<!-- Top Row: Logo Brand + Profile Avatar -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-xl neu-raised bg-surface flex items-center justify-center p-1.5 overflow-hidden">
+<img alt="CodeDo Logo" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1Vk5VEJeJynVcNkYkiBPlKZlW3aP6lzJC6g-vR0zYjVjKdPffLgtcypPdDh4DHUbOyyM6KM-3RLUky1i4HZ8hloWcUyOEWl6xIgqu30IgY-xXssyw7OpuHUBz9QyjfhmnqGyc3LmhbVUHMChatI3fFXhpK9HRF2YvZWHdGVsW5ICtR9DhtPjEFteWijD13_R2qDUD2dwBdBmGOrBhEm64mWd0mdlYjrq7iKDtrcPluTdYOx7_zF0e8pfkCo">
+</div>
+<div class="flex items-center gap-2">
+<span class="font-outfit text-lg font-bold tracking-tight text-on-surface">CodeDo</span>
+<span class="text-[10px] font-label font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">LEARN</span>
+</div>
+</div>
+<!-- Profile Avatar Button -->
+<button aria-label="User Profile" class="w-9 h-9 rounded-xl neu-raised bg-surface flex items-center justify-center text-on-surface hover:text-primary transition-colors active:neu-pressed">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</button>
+</div>
+<!-- Sub-row: 3 Compact Neumorphic Status Pills (Streak, Progress %, Gems) -->
+<div class="flex items-center justify-between gap-2 pt-0.5">
+<!-- Streak -->
+<div class="flex-1 neu-pressed py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1.5 bg-surface">
+<span class="text-sm leading-none">🔥</span>
+<span class="font-mono text-xs font-semibold text-on-surface">12</span>
+</div>
+<!-- Journey Completion % (Replaced XP) -->
+<div class="flex-1 neu-pressed py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1.5 bg-surface">
+<span class="text-xs leading-none">📈</span>
+<span class="font-mono text-xs font-semibold text-on-surface">68%</span>
+</div>
+<!-- Gems -->
+<div class="flex-1 neu-pressed py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1.5 bg-surface">
+<span class="text-xs leading-none">💎</span>
+<span class="font-mono text-xs font-semibold text-on-surface">120</span>
+</div>
+</div>
+</div>
+</header>
+<!-- MAIN SCROLLABLE LEARNING PATH -->
+<main class="flex-1 flex flex-col relative w-full pt-[116px] pb-24 bg-surface">
+<div class="flex flex-col w-full min-w-0 select-none pb-8">
+<!-- COMPACT WORLD 4 HEADER & DAILY INDICATOR -->
+<div class="px-5 pt-3 pb-2">
+<div class="neu-raised rounded-2xl px-4 py-3 flex items-center justify-between bg-surface"><div class="flex flex-col gap-1"><div class="flex items-center gap-2"><div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high border border-white/60 shadow-sm"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24"><defs><linearGradient id="ktGrad" x1="0%" x2="100%" y1="100%" y2="0%"><stop offset="0%" stop-color="#7F52FF"></stop><stop offset="50%" stop-color="#C711E1"></stop><stop offset="100%" stop-color="#E24462"></stop></linearGradient></defs><polygon fill="url(#ktGrad)" points="24,0 0,0 0,24 24,0"></polygon><polygon fill="#7F52FF" points="0,24 12,12 24,24"></polygon></svg><span class="text-[9px] font-mono font-bold tracking-wider uppercase text-on-surface">KOTLIN TRACK</span></div><span class="text-[10px] font-mono text-on-surface-variant font-medium">WORLD 4 • 72% mastered</span></div><h1 class="text-sm font-outfit font-bold text-on-surface tracking-tight">Functions &amp; Scope</h1></div><div class="neu-pressed px-2.5 py-1.5 rounded-xl flex items-center gap-2 bg-surface"><span class="text-[10px] font-label font-bold text-on-surface-variant uppercase tracking-wider">TODAY</span><div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span><span class="w-1.5 h-1.5 rounded-full bg-primary"></span><span class="w-1.5 h-1.5 rounded-full bg-surface-variant border border-outline-variant"></span></div><span class="font-mono text-[11px] font-bold text-on-surface">2/3</span></div></div>
+</div>
+<!-- SNAKE RIBBON LEARNING PATH -->
+<div class="relative w-full px-5 pt-4 pb-4 flex flex-col items-center overflow-hidden">
+<!-- Smooth Continuous SVG Ribbon Backbone (Left -> Center -> Right -> Center -> Left -> Center -> Right) -->
+<svg class="absolute top-4 inset-x-0 w-full h-[960px] pointer-events-none stroke-current" fill="none" preserveAspectRatio="none" viewBox="0 0 360 960">
+<defs>
+<linearGradient id="activeRibbonGrad" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#6366f1"></stop>
+<stop offset="28%" stop-color="#6366f1"></stop>
+<stop offset="38%" stop-color="#a5b4fc"></stop>
+<stop offset="46%" stop-color="#d0d2dc"></stop>
+<stop offset="100%" stop-color="#d0d2dc"></stop>
+</linearGradient>
+</defs>
+<!-- Neumorphic highlight track (white outer soft glow) -->
+<path d="M 80,36
+                   C 80,75 180,90 180,135
+                   C 180,180 280,195 280,240
+                   C 280,285 180,305 180,350
+                   L 180,510
+                   C 180,550 270,570 270,610
+                   C 270,650 180,670 180,710
+                   C 180,750 90,770 90,810
+                   C 90,850 180,870 180,910
+                   L 180,950" opacity="0.95" stroke="#ffffff" stroke-linecap="round" stroke-width="12"></path>
+<!-- Recessed base track -->
+<path d="M 80,36
+                   C 80,75 180,90 180,135
+                   C 180,180 280,195 280,240
+                   C 280,285 180,305 180,350
+                   L 180,510
+                   C 180,550 270,570 270,610
+                   C 270,650 180,670 180,710
+                   C 180,750 90,770 90,810
+                   C 90,850 180,870 180,910
+                   L 180,950" stroke="#d0d2dc" stroke-linecap="round" stroke-width="7"></path>
+<!-- Active completed gradient ribbon with dashed guide -->
+<path d="M 80,36
+                   C 80,75 180,90 180,135
+                   C 180,180 280,195 280,240
+                   C 280,285 180,305 180,350" stroke="url(#activeRibbonGrad)" stroke-dasharray="4 5" stroke-linecap="round" stroke-width="5"></path>
+</svg>
+<!-- NODE 1: Completed (LEFT) -->
+<div class="relative w-full flex items-center justify-start pl-8 pt-1 z-10">
+<div class="flex items-center gap-3">
+<button aria-label="Completed: What is a Function?" class="w-13 h-13 w-12 h-12 rounded-2xl neu-raised bg-surface flex items-center justify-center transition-transform active:scale-95">
+<span class="material-symbols-outlined text-primary text-[22px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<div class="flex flex-col">
+<span class="text-xs font-outfit font-semibold text-on-surface">What is a Function?</span>
+<span class="text-[10px] font-label text-on-surface-variant">Completed</span>
+</div>
+</div>
+</div>
+<!-- NODE 2: Completed (CENTER) -->
+<div class="relative w-full flex items-center justify-center pt-8 z-10">
+<div class="flex flex-col items-center">
+<button aria-label="Completed: Parameters" class="w-12 h-12 rounded-2xl neu-raised bg-surface flex items-center justify-center transition-transform active:scale-95">
+<span class="material-symbols-outlined text-primary text-[22px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<span class="text-xs font-outfit font-semibold text-on-surface mt-1.5">Parameters</span>
+</div>
+</div>
+<!-- NODE 3: Completed (RIGHT) -->
+<div class="relative w-full flex items-center justify-end pr-8 pt-8 z-10">
+<div class="flex items-center gap-3 flex-row-reverse">
+<button aria-label="Completed: Return Values" class="w-12 h-12 rounded-2xl neu-raised bg-surface flex items-center justify-center transition-transform active:scale-95">
+<span class="material-symbols-outlined text-primary text-[22px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<div class="flex flex-col text-right">
+<span class="text-xs font-outfit font-semibold text-on-surface">Return Values</span>
+<span class="text-[10px] font-label text-on-surface-variant">Completed</span>
+</div>
+</div>
+</div>
+<!-- CURRENT NODE CONNECTOR & INDICATOR (CENTER) -->
+<div class="relative w-full flex flex-col items-center pt-7 z-20">
+<div class="flex items-center gap-2 mb-2"><div class="w-9 h-9 rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] flex items-center justify-center pulsing-dot text-white neu-raised cta-glow"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span></div><span class="text-[11px] font-mono font-bold uppercase tracking-wider text-primary">CURRENT LESSON</span></div>
+<!-- STREAMLINED TODAY'S FOCUS CARD (Reduced size by 20-25%, No code snippet preview) -->
+<div class="w-full max-w-[330px] neu-raised rounded-3xl p-4 bg-surface relative overflow-hidden flex flex-col border border-white/60">
+<!-- Header Row -->
+<div class="flex items-center justify-between mb-2.5">
+<div class="neu-pressed px-2.5 py-1 rounded-full flex items-center gap-1.5 bg-surface">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-[10px] font-label font-bold text-primary tracking-wider uppercase">TODAY'S FOCUS</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px]">timer</span>
+<span class="font-mono text-[11px] font-medium">~12 min</span>
+</div>
+</div>
+<!-- Lesson Meta & Title -->
+<div class="flex flex-col gap-1 mb-3">
+<div class="flex items-center gap-1.5">
+<span class="text-[10px] font-mono font-semibold text-tertiary">Lesson 4.4</span>
+<span class="text-[10px] font-label text-on-surface-variant">• 3 challenges</span>
+</div>
+<h2 class="text-lg font-outfit font-bold text-on-surface tracking-tight">Functions in Action</h2>
+<p class="text-xs font-body text-on-surface-variant leading-relaxed">
+                Construct modular Kotlin functions with return contracts and default values.
+              </p>
+</div>
+<!-- Prominent Gradient CTA Button (48px height, Kotlin Indigo Gradient) -->
+<button class="h-12 w-full rounded-2xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-outfit font-semibold text-sm flex items-center justify-center gap-2 cta-glow transition-all active:scale-[0.98] active:brightness-95" id="startLessonBtn">
+<span>START LESSON</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- LOCKED UPCOMING PATH (Clean titles, no clunky unlock text) -->
+<!-- NODE 5: Locked (RIGHT) -->
+<div class="relative w-full flex items-center justify-end pr-10 pt-9 z-10"><div class="flex items-center gap-2.5 flex-row-reverse"><div class="w-11 h-11 rounded-2xl neu-raised bg-surface flex items-center justify-center border border-white/40"><span class="material-symbols-outlined text-secondary text-[18px]">lock</span></div><span class="text-xs font-outfit font-semibold text-secondary text-right">Default Arguments</span></div></div>
+<!-- NODE 6: Locked (CENTER-RIGHT) -->
+<div class="relative w-full flex items-center justify-end pr-20 pt-7 z-10"><div class="flex items-center gap-2 flex-row-reverse"><div class="w-11 h-11 rounded-2xl neu-raised bg-surface flex items-center justify-center border border-white/40"><span class="material-symbols-outlined text-secondary text-[18px]">lock</span></div><span class="text-xs font-outfit font-semibold text-secondary">Named Arguments</span></div></div>
+<!-- NODE 7: Locked (CENTER) -->
+<div class="relative w-full flex items-center justify-center pt-7 z-10"><div class="flex flex-col items-center"><div class="w-11 h-11 rounded-2xl neu-raised bg-surface flex items-center justify-center border border-white/40"><span class="material-symbols-outlined text-secondary text-[18px]">lock</span></div><span class="text-xs font-outfit font-semibold text-secondary mt-1.5">Expression Functions</span></div></div>
+<!-- NODE 8: Locked (LEFT) -->
+<div class="relative w-full flex items-center justify-start pl-10 pt-7 z-10"><div class="flex items-center gap-2.5"><div class="w-11 h-11 rounded-2xl neu-raised bg-surface flex items-center justify-center border border-white/40"><span class="material-symbols-outlined text-secondary text-[18px]">lock</span></div><span class="text-xs font-outfit font-semibold text-secondary">Lambdas</span></div></div>
+<!-- NODE 9: Locked (CENTER-LEFT) -->
+<div class="relative w-full flex items-center justify-start pl-20 pt-7 z-10"><div class="flex items-center gap-2.5"><div class="w-11 h-11 rounded-2xl neu-raised bg-surface flex items-center justify-center border border-white/40"><span class="material-symbols-outlined text-secondary text-[18px]">lock</span></div><span class="text-xs font-outfit font-semibold text-secondary">Higher-Order Functions</span></div></div>
+<!-- NODE 10: Locked (CENTER) -->
+<div class="relative w-full flex items-center justify-center pt-7 z-10"><div class="flex flex-col items-center"><div class="w-11 h-11 rounded-2xl neu-raised bg-surface flex items-center justify-center border border-white/40"><span class="material-symbols-outlined text-secondary text-[18px]">lock</span></div><span class="text-xs font-outfit font-semibold text-secondary mt-1.5">Function References</span></div></div>
+<!-- BOSS CHALLENGE MILESTONE NODE -->
+<div class="relative w-full max-w-[320px] pt-10 z-20 flex flex-col items-center">
+<div class="neu-raised rounded-3xl p-3.5 bg-surface w-full flex items-center justify-between transition-transform active:scale-[0.99] border border-white/50">
+<div class="flex items-center gap-3">
+<!-- Special Boss Icon -->
+<div class="w-12 h-12 rounded-2xl neu-pressed flex items-center justify-center bg-surface relative">
+<span class="material-symbols-outlined text-tertiary text-[26px]">swords</span>
+<span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="text-[9px] font-mono font-bold tracking-wider uppercase text-tertiary">FINAL TRIAL</span>
+<span class="text-[9px] font-mono text-on-surface-variant">• 100 XP</span>
+</div>
+<h3 class="text-xs font-outfit font-bold text-on-surface">FUNCTION BOSS</h3>
+<span class="text-[10px] font-body text-on-surface-variant">Defeat the Scope Beast</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-xl neu-raised flex items-center justify-center bg-surface">
+<span class="material-symbols-outlined text-outline text-[16px]">lock</span>
+</div>
+</div>
+</div>
+<!-- NEXT WORLD TEASER PILL -->
+<div class="w-full flex items-center justify-center pt-8 pb-3 z-10">
+<div class="neu-pressed px-4 py-2 rounded-full bg-surface flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-[16px]">explore</span>
+<span class="text-[10px] font-label font-bold tracking-wider uppercase">WORLD 5 • COLLECTIONS &amp; LAMBDAS</span>
+<span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BOTTOM NAVIGATION BAR (4 Clean Items with Active Indigo Indicator) -->
+<nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface/95 backdrop-blur-xl neu-nav border-t border-white/50">
+<div class="flex justify-around items-center h-16 px-4">
+<!-- Learn (Active) -->
+<a aria-current="page" class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] py-1 px-3 rounded-xl transition-all text-primary neu-pressed bg-surface" href="#">
+<span class="material-symbols-outlined text-[22px]">school</span>
+<span class="text-[11px] font-label font-semibold tracking-tight">Learn</span>
+</a>
+<!-- Practice -->
+<a class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] py-1 px-3 rounded-xl text-on-surface-variant transition-all hover:text-on-surface active:neu-pressed" href="#">
+<span class="material-symbols-outlined text-[22px]">code</span>
+<span class="text-[11px] font-label font-medium tracking-tight">Practice</span>
+</a>
+<!-- League -->
+<a class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] py-1 px-3 rounded-xl text-on-surface-variant transition-all hover:text-on-surface active:neu-pressed" href="#">
+<span class="material-symbols-outlined text-[22px]">leaderboard</span>
+<span class="text-[11px] font-label font-medium tracking-tight">League</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] py-1 px-3 rounded-xl text-on-surface-variant transition-all hover:text-on-surface active:neu-pressed" href="#">
+<span class="material-symbols-outlined text-[22px]">account_circle</span>
+<span class="text-[11px] font-label font-medium tracking-tight">Profile</span>
+</a>
+</div>
+</nav>
+<script>
+    document.getElementById('startLessonBtn')?.addEventListener('click', function() {
+      this.classList.add('scale-[0.96]');
+      setTimeout(() => {
+        this.classList.remove('scale-[0.96]');
+      }, 120);
+    });
+  </script>
+</body></html>

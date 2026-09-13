@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Loops — 4. Write &amp; Run (Obsidian Night)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&amp;family=Outfit:wght@500;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            obsidian: {
+              base: '#0b0f19',
+              card: '#171b26',
+              border: '#262c3d',
+              highlight: '#1f2433',
+              terminal: '#0a0e18'
+            }
+          },
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            body: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          boxShadow: {
+            'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.2)',
+            'card': '0 10px 25px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)',
+            'editor': '0 12px 32px -4px rgba(0, 0, 0, 0.6)',
+            'btn': '0 8px 24px -4px rgba(79, 70, 229, 0.45)',
+            'glow-cyan': '0 0 20px -4px rgba(6, 182, 212, 0.35)'
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    }
+    .material-symbols-outlined.fill {
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    }
+    body {
+      background-color: #0b0f19;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #dfe2f1;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#0b0f19] text-[#dfe2f1] selection:bg-indigo-500/30 selection:text-indigo-200">
+<main class="w-full max-w-md mx-auto bg-[#0b0f19] min-h-screen flex flex-col pb-10 px-4">
+<!-- 1. Header (Shared identical component - Obsidian Mode) -->
+<header class="flex items-center justify-between py-3 mb-3">
+<button aria-label="Go back" class="w-10 h-10 rounded-full bg-[#171b26] shadow-soft flex items-center justify-center text-slate-300 hover:text-white hover:bg-[#1f2433] active:scale-95 transition-all border border-[#262c3d]">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+</button>
+<div class="text-center">
+<span class="text-[11px] font-bold tracking-widest text-brand-400 uppercase font-heading">CODEDO LESSON</span>
+<h2 class="text-sm font-bold text-slate-100 tracking-tight">Active Lesson</h2>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold text-xs shadow-sm">
+<span class="material-symbols-outlined text-[15px] fill text-amber-400">local_fire_department</span>
+<span>5</span>
+</div>
+<button aria-label="Menu" class="w-10 h-10 rounded-full bg-[#171b26] shadow-soft flex items-center justify-center text-slate-300 hover:text-white hover:bg-[#1f2433] border border-[#262c3d] transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+<button aria-label="User Profile" class="w-10 h-10 rounded-full bg-indigo-600 shadow-soft flex items-center justify-center text-white font-medium text-xs border border-indigo-500">
+<span class="material-symbols-outlined text-[19px] fill">person</span>
+</button>
+</div>
+</header>
+<!-- 2. Stage + Lesson Progress -->
+<div class="bg-[#171b26] rounded-2xl p-3 px-4 shadow-card border border-[#262c3d] flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.7)]"></span>
+<span class="text-[11px] font-bold text-slate-300 tracking-wider uppercase font-heading">STAGE 1 — FOUNDATIONS</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase font-heading">WRITE &amp; RUN • STEP 4 OF 5</span>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+<span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+<span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+<span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+<span class="w-2 h-2 rounded-full bg-slate-700"></span>
+</div>
+</div>
+</div>
+<!-- 3. Step Header & Challenge Progress -->
+<div class="flex items-center justify-between px-1 mb-3">
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-0.5 rounded-md bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 text-[10px] font-extrabold uppercase tracking-wider font-heading">WRITE &amp; RUN</span>
+<span class="text-xs font-semibold text-slate-400">Kotlin Loops</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold tracking-wide text-slate-400 uppercase font-heading">CHALLENGE 3 OF 5</span>
+<div class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 ring-2 ring-indigo-500/40"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
+</div>
+</div>
+</div>
+<!-- 4. Challenge Card (Component 1 - Obsidian) -->
+<section class="bg-[#171b26] rounded-3xl p-5 shadow-card border border-[#262c3d] mb-4">
+<div class="flex items-start justify-between mb-2">
+<span class="text-[10px] font-extrabold text-indigo-400 tracking-wider uppercase font-heading">CHALLENGE 3 OF 5</span>
+<div class="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 text-[10px] font-bold">
+<span class="material-symbols-outlined text-[13px] fill text-indigo-400">bolt</span>
+<span>+10 XP</span>
+</div>
+</div>
+<h1 class="text-xl font-bold font-heading text-slate-100 mb-1.5 tracking-tight">Calculate a Sum</h1>
+<p class="text-slate-300 text-xs leading-relaxed">
+        Use a loop to calculate the sum of numbers from <code class="font-mono bg-[#0a0e18] border border-[#262c3d] text-indigo-300 px-1.5 py-0.5 rounded font-semibold text-[11px]">1</code> to <code class="font-mono bg-[#0a0e18] border border-[#262c3d] text-indigo-300 px-1.5 py-0.5 rounded font-semibold text-[11px]">5</code>.
+      </p>
+</section>
+<!-- 5. Requirements Card (Component 2 - Schema Driven Obsidian) -->
+<section class="bg-[#171b26] rounded-2xl p-4 shadow-card border border-[#262c3d] mb-4">
+<div class="flex items-center gap-1.5 mb-2.5">
+<span class="material-symbols-outlined text-[16px] text-slate-400">checklist</span>
+<h3 class="text-[11px] font-bold text-slate-400 tracking-wider uppercase font-heading">REQUIREMENTS</h3>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<div class="bg-[#0f131d] p-2.5 rounded-xl border border-[#262c3d]">
+<span class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">LOOP TYPE</span>
+<span class="font-mono text-xs font-semibold text-slate-200">for (i in 1..5)</span>
+</div>
+<div class="bg-[#0f131d] p-2.5 rounded-xl border border-[#262c3d]">
+<span class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">ACCUMULATOR</span>
+<span class="font-mono text-xs font-semibold text-slate-200">var total = 0</span>
+</div>
+<div class="bg-[#0f131d] p-2.5 rounded-xl border border-[#262c3d]">
+<span class="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">EXPECTED RESULT</span>
+<span class="font-mono text-xs font-semibold text-slate-200">15</span>
+</div>
+</div>
+</section>
+<!-- 6. Code Editor (Component 3 - Tactical Terminal Surface) -->
+<section class="bg-[#0a0e18] rounded-2xl shadow-editor border border-[#262c3d] overflow-hidden mb-3">
+<!-- Editor Chrome Header -->
+<div class="flex items-center justify-between px-3.5 py-2.5 border-b border-[#262c3d] bg-[#070a12]">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+<span class="ml-2 font-mono text-[11px] text-slate-400 font-medium">solution.kt</span>
+</div>
+<button class="text-slate-400 hover:text-slate-200 p-1 flex items-center transition-colors" title="Reset Code">
+<span class="material-symbols-outlined text-[15px]">restart_alt</span>
+</button>
+</div>
+<!-- Editor Body -->
+<div class="p-3.5 font-mono text-xs leading-relaxed flex gap-3 text-slate-300">
+<!-- Line Numbers -->
+<div class="text-slate-600 select-none text-right font-mono flex flex-col gap-0.5 text-[11px] pt-0.5">
+<span>1</span>
+<span>2</span>
+<span>3</span>
+<span>4</span>
+<span>5</span>
+</div>
+<!-- Code Content -->
+<div class="flex-1 font-mono text-xs leading-relaxed text-slate-200">
+<div><span class="text-purple-400 font-semibold">var</span> <span class="text-slate-200">total</span> = <span class="text-amber-400 font-bold">0</span></div>
+<div><span class="text-purple-400 font-semibold">for</span> (<span class="text-slate-200">i</span> <span class="text-purple-400 font-semibold">in</span> <span class="text-amber-400">1..5</span>) {</div>
+<div class="pl-4">total += i<span class="inline-block w-1.5 h-4 bg-indigo-400 align-middle ml-1 animate-pulse"></span></div>
+<div>}</div>
+<div><span class="text-cyan-400 font-bold">println</span>(total)</div>
+</div>
+</div>
+</section>
+<!-- 7. Run Code Button -->
+<button class="w-full h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 active:scale-[0.99] text-white font-bold font-heading text-sm shadow-btn flex items-center justify-center gap-2 mb-4 transition-all">
+<span class="material-symbols-outlined text-[18px] fill">play_arrow</span>
+<span>RUN CODE</span>
+</button>
+<!-- 8. Actual Output Card -->
+<section class="bg-[#171b26] rounded-2xl p-4 shadow-card border border-[#262c3d] mb-3">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">ACTUAL OUTPUT</span>
+<span class="text-[10px] font-mono text-emerald-400 font-semibold bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-md">Standard output</span>
+</div>
+<div class="bg-[#0a0e18] text-slate-100 p-3 rounded-xl font-mono text-sm font-semibold tracking-wide border border-[#262c3d]">
+        15
+      </div>
+</section>
+<!-- 9. Test Results Card -->
+<section class="bg-[#171b26] rounded-2xl p-4 shadow-card border border-[#262c3d] mb-3">
+<div class="flex items-center justify-between mb-2.5">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">TEST RESULTS</span>
+<span class="text-[10px] font-bold text-emerald-300 bg-emerald-950/70 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">1/1 PASSED</span>
+</div>
+<div class="space-y-1.5">
+<div class="flex items-center justify-between p-2.5 rounded-xl bg-[#0f131d] border border-[#262c3d] text-xs">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-[16px] font-bold">check_circle</span>
+<span class="font-mono text-slate-300 text-[11px]">sum(1..5)</span>
+</div>
+<div class="text-[11px] text-slate-400 font-mono">
+            Expected: <span class="font-bold text-slate-100">15</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 10. Success Feedback Banner -->
+<section class="bg-[#062a22] border border-emerald-500/40 rounded-2xl p-3.5 flex items-center justify-between mb-4">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[18px] font-bold">verified</span>
+</div>
+<div>
+<h4 class="text-xs font-bold text-emerald-100">All test conditions satisfied!</h4>
+<p class="text-[11px] text-emerald-300/80 font-medium">Clean execution • 0ms overhead</p>
+</div>
+</div>
+<div class="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[13px] fill text-emerald-400">bolt</span>
+<span>+10 XP</span>
+</div>
+</section>
+<!-- 11. Next Challenge Button -->
+<button class="w-full h-14 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 active:scale-[0.99] text-white font-bold font-heading text-sm shadow-btn flex items-center justify-center gap-2 transition-all mt-auto">
+<span>Next Coding Challenge</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</main>
+</body></html>

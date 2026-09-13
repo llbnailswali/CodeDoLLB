@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Loops — 2. Explore | CodeDo</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Outfit:wght@600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            surface: {
+              bg: '#f1f4f9',
+              card: '#ffffff',
+            }
+          },
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          boxShadow: {
+            'soft-card': '0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03)',
+            'btn-glow': '0 8px 24px -4px rgba(79, 70, 229, 0.4)',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-enhancements">
+    body {
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      background-color: #f1f4f9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    
+    .font-heading {
+      font-family: 'Outfit', sans-serif;
+    }
+    
+    .font-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body class="bg-[#f1f4f9] text-slate-800 min-h-screen antialiased flex flex-col justify-between">
+<!-- BEGIN: MainContentContainer -->
+<main class="w-full max-w-md mx-auto px-4 pt-4 pb-8 flex flex-col gap-5">
+<!-- BEGIN: TopHeader -->
+<header class="flex items-center justify-between gap-2" data-purpose="screen-header">
+<!-- Back Navigation Button -->
+<button aria-label="Go back" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-700 shadow-sm border border-slate-200/60 active:scale-95 transition-transform" type="button">
+<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Lesson Title -->
+<span class="font-heading font-bold text-sm tracking-wider text-slate-900 uppercase">
+        CODEDO LESSON
+      </span>
+<!-- Status & Menu Cluster -->
+<div class="flex items-center gap-1.5">
+<!-- Streak / Flame Pill -->
+<div class="flex items-center gap-1 bg-white border border-slate-200/70 rounded-full px-2.5 py-1 shadow-sm">
+<span class="text-sm">🔥</span>
+<span class="text-xs font-bold text-slate-800">5</span>
+</div>
+<!-- Options Button -->
+<button aria-label="More options" class="w-9 h-9 rounded-full bg-white flex items-center justify-center text-slate-600 shadow-sm border border-slate-200/60 active:scale-95 transition-transform" type="button">
+<svg class="h-4 w-4" fill="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path>
+</svg>
+</button>
+<!-- Profile Button -->
+<button aria-label="User Profile" class="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center text-white shadow-sm shadow-indigo-200 active:scale-95 transition-transform" type="button">
+<svg class="h-5 w-5" fill="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" fill-rule="evenodd"></path>
+</svg>
+</button>
+</div>
+</header>
+<!-- END: TopHeader -->
+<!-- BEGIN: StageProgressCard -->
+<div class="bg-white rounded-full py-2.5 px-4 flex items-center justify-between shadow-sm border border-slate-200/70" data-purpose="stage-tracker">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-brand-600"></span>
+<span class="text-[11px] font-bold text-slate-800 tracking-wider uppercase">STAGE 1 — FOUNDATIONS</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[11px] font-bold text-slate-500 tracking-wider uppercase">EXPLORE • STEP 2 OF 5</span>
+<!-- Progress Dots: 2 filled, 3 unfilled -->
+<div class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-brand-600"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-brand-600"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+</div>
+</div>
+</div>
+<!-- END: StageProgressCard -->
+<!-- BEGIN: SectionHeader -->
+<section class="mt-1" data-purpose="page-intro">
+<h1 class="font-heading text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
+        Explore the Concept
+      </h1>
+<p class="text-slate-600 text-[14.5px] mt-2 leading-relaxed">
+        Build your understanding step by step, from simple repetition to ranges, collections, and conditions.
+      </p>
+</section>
+<!-- END: SectionHeader -->
+<!-- BEGIN: ExamplesStepTracker -->
+<div class="flex items-center justify-between pt-1 pb-0.5" data-purpose="step-indicator-bar">
+<span class="text-[11px] font-bold tracking-widest text-slate-500 uppercase">5 EXAMPLES</span>
+<div class="flex items-center gap-1.5">
+<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-600 text-white shadow-xs">01</span>
+<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600">02</span>
+<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600">03</span>
+<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600">04</span>
+<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600">05</span>
+</div>
+</div>
+<!-- END: ExamplesStepTracker -->
+<!-- BEGIN: ProgressiveCardsList -->
+<div class="flex flex-col gap-5" data-purpose="progressive-examples">
+<!-- Card 1 -->
+<article class="rounded-2xl bg-white p-5 shadow-soft-card border border-slate-200/80 transition-all">
+<!-- Top header row -->
+<div class="flex items-start justify-between gap-3 mb-2">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-xs text-brand-600">01</span>
+<h2 class="font-heading font-bold text-slate-900 text-lg leading-tight">Simple repetition</h2>
+</div>
+<span class="px-2.5 py-1 rounded-md text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60">Kotlin</span>
+</div>
+<p class="text-xs text-slate-600 mb-3.5">Repeat a block of code.</p>
+<!-- Code Block -->
+<div class="rounded-xl bg-slate-50 border border-slate-200/70 p-4 font-code text-sm leading-relaxed text-slate-800 mb-4">
+<p><span class="text-indigo-600 font-semibold">repeat</span>(<span class="text-amber-600 font-medium">3</span>) {</p>
+<p class="pl-4"><span class="text-slate-700 font-medium">println</span>(<span class="text-emerald-600">"Hello!"</span>)</p>
+<p>}</p>
+</div>
+<!-- What it means -->
+<div class="mb-3.5">
+<h3 class="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">WHAT IT MEANS</h3>
+<ul class="text-xs text-slate-700 space-y-1 pl-1">
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">repeat</code> → repeats a block of code</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">3</code> → number of repetitions</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">{ }</code> → code block repeated</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">println("Hello!")</code> → code executed each time</span></li>
+</ul>
+</div>
+<!-- What changed -->
+<div class="bg-indigo-50/50 rounded-xl p-3 border border-indigo-100/70">
+<h3 class="text-[10.5px] font-bold uppercase tracking-wider text-brand-600 mb-0.5">WHAT CHANGED</h3>
+<p class="text-xs text-slate-700 leading-snug">We can now run the same code multiple times without copying it.</p>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="rounded-2xl bg-white p-5 shadow-soft-card border border-slate-200/80 transition-all">
+<!-- Top header row -->
+<div class="flex items-start justify-between gap-3 mb-2">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-xs text-brand-600">02</span>
+<h2 class="font-heading font-bold text-slate-900 text-lg leading-tight">Basic for loop</h2>
+</div>
+<span class="px-2.5 py-1 rounded-md text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60">Kotlin</span>
+</div>
+<p class="text-xs text-slate-600 mb-3.5">Repeat code while moving through a range.</p>
+<!-- Code Block -->
+<div class="rounded-xl bg-slate-50 border border-slate-200/70 p-4 font-code text-sm leading-relaxed text-slate-800 mb-4">
+<p><span class="text-indigo-600 font-semibold">for</span> (<span class="text-slate-900 font-medium">i</span> <span class="text-indigo-600 font-semibold">in</span> <span class="text-amber-600 font-medium">1..3</span>) {</p>
+<p class="pl-4"><span class="text-slate-700 font-medium">println</span>(<span class="text-slate-900">i</span>)</p>
+<p>}</p>
+</div>
+<!-- What it means -->
+<div class="mb-3.5">
+<h3 class="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">WHAT IT MEANS</h3>
+<ul class="text-xs text-slate-700 space-y-1 pl-1">
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">for</code> → starts a loop</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">i</code> → loop variable</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">in</code> → takes values from a sequence</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">1..3</code> → range from 1 through 3</span></li>
+</ul>
+</div>
+<!-- What changed -->
+<div class="bg-indigo-50/50 rounded-xl p-3 border border-indigo-100/70">
+<h3 class="text-[10.5px] font-bold uppercase tracking-wider text-brand-600 mb-0.5">WHAT CHANGED</h3>
+<p class="text-xs text-slate-700 leading-snug">The loop now gives us a different value on each iteration.</p>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="rounded-2xl bg-white p-5 shadow-soft-card border border-slate-200/80 transition-all">
+<!-- Top header row -->
+<div class="flex items-start justify-between gap-3 mb-2">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-xs text-brand-600">03</span>
+<h2 class="font-heading font-bold text-slate-900 text-lg leading-tight">Changing the range</h2>
+</div>
+<span class="px-2.5 py-1 rounded-md text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60">Kotlin</span>
+</div>
+<p class="text-xs text-slate-600 mb-3.5">Control how many values the loop processes.</p>
+<!-- Code Block -->
+<div class="rounded-xl bg-slate-50 border border-slate-200/70 p-4 font-code text-sm leading-relaxed text-slate-800 mb-4">
+<p><span class="text-indigo-600 font-semibold">for</span> (<span class="text-slate-900 font-medium">i</span> <span class="text-indigo-600 font-semibold">in</span> <span class="text-amber-600 font-medium">1..5</span>) {</p>
+<p class="pl-4"><span class="text-slate-700 font-medium">println</span>(<span class="text-slate-900">i</span>)</p>
+<p>}</p>
+</div>
+<!-- What it means -->
+<div class="mb-3.5">
+<h3 class="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">WHAT IT MEANS</h3>
+<ul class="text-xs text-slate-700 space-y-1 pl-1">
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">1..5</code> → range containing five values</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">i</code> → current value</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">println(i)</code> → prints the current value</span></li>
+</ul>
+</div>
+<!-- What changed -->
+<div class="bg-indigo-50/50 rounded-xl p-3 border border-indigo-100/70">
+<h3 class="text-[10.5px] font-bold uppercase tracking-wider text-brand-600 mb-0.5">WHAT CHANGED</h3>
+<p class="text-xs text-slate-700 leading-snug">Changing the range changes the number of loop iterations.</p>
+</div>
+</article>
+<!-- Card 4 -->
+<article class="rounded-2xl bg-white p-5 shadow-soft-card border border-slate-200/80 transition-all">
+<!-- Top header row -->
+<div class="flex items-start justify-between gap-3 mb-2">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-xs text-brand-600">04</span>
+<h2 class="font-heading font-bold text-slate-900 text-lg leading-tight">Loop through a collection</h2>
+</div>
+<span class="px-2.5 py-1 rounded-md text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60">Kotlin</span>
+</div>
+<p class="text-xs text-slate-600 mb-3.5">Process each item in a collection.</p>
+<!-- Code Block -->
+<div class="rounded-xl bg-slate-50 border border-slate-200/70 p-4 font-code text-sm leading-relaxed text-slate-800 mb-4">
+<p><span class="text-indigo-600 font-semibold">val</span> names = <span class="text-indigo-600 font-medium">listOf</span>(<span class="text-emerald-600">"Sam"</span>, <span class="text-emerald-600">"Alex"</span>, <span class="text-emerald-600">"John"</span>)</p>
+<p><span class="text-indigo-600 font-semibold">for</span> (<span class="text-slate-900 font-medium">name</span> <span class="text-indigo-600 font-semibold">in</span> names) {</p>
+<p class="pl-4"><span class="text-slate-700 font-medium">println</span>(<span class="text-slate-900">name</span>)</p>
+<p>}</p>
+</div>
+<!-- What it means -->
+<div class="mb-3.5">
+<h3 class="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">WHAT IT MEANS</h3>
+<ul class="text-xs text-slate-700 space-y-1 pl-1">
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">names</code> → collection</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">name</code> → current item</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">in names</code> → moves through the collection</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">println(name)</code> → processes each item</span></li>
+</ul>
+</div>
+<!-- What changed -->
+<div class="bg-indigo-50/50 rounded-xl p-3 border border-indigo-100/70">
+<h3 class="text-[10.5px] font-bold uppercase tracking-wider text-brand-600 mb-0.5">WHAT CHANGED</h3>
+<p class="text-xs text-slate-700 leading-snug">The loop can now process real data stored in a collection.</p>
+</div>
+</article>
+<!-- Card 5 -->
+<article class="rounded-2xl bg-white p-5 shadow-soft-card border border-slate-200/80 transition-all">
+<!-- Top header row -->
+<div class="flex items-start justify-between gap-3 mb-2">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-xs text-brand-600">05</span>
+<h2 class="font-heading font-bold text-slate-900 text-lg leading-tight">Loop with a condition</h2>
+</div>
+<span class="px-2.5 py-1 rounded-md text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200/60">Kotlin</span>
+</div>
+<p class="text-xs text-slate-600 mb-3.5">Repeat code while applying a condition.</p>
+<!-- Code Block -->
+<div class="rounded-xl bg-slate-50 border border-slate-200/70 p-4 font-code text-sm leading-relaxed text-slate-800 mb-4">
+<p><span class="text-indigo-600 font-semibold">for</span> (<span class="text-slate-900 font-medium">i</span> <span class="text-indigo-600 font-semibold">in</span> <span class="text-amber-600 font-medium">1..10</span>) {</p>
+<p class="pl-4"><span class="text-indigo-600 font-semibold">if</span> (<span class="text-slate-900">i %</span> <span class="text-amber-600 font-medium">2</span> == <span class="text-amber-600 font-medium">0</span>) {</p>
+<p class="pl-8"><span class="text-slate-700 font-medium">println</span>(<span class="text-slate-900">i</span>)</p>
+<p class="pl-4">}</p>
+<p>}</p>
+</div>
+<!-- What it means -->
+<div class="mb-3.5">
+<h3 class="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">WHAT IT MEANS</h3>
+<ul class="text-xs text-slate-700 space-y-1 pl-1">
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">for</code> → repetition</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">i</code> → current value</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">if</code> → condition</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">i % 2 == 0</code> → checks whether the number is even</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold">•</span><span><code class="font-code font-semibold text-slate-900 text-[11.5px]">println(i)</code> → prints only matching values</span></li>
+</ul>
+</div>
+<!-- What changed -->
+<div class="bg-indigo-50/50 rounded-xl p-3 border border-indigo-100/70">
+<h3 class="text-[10.5px] font-bold uppercase tracking-wider text-brand-600 mb-0.5">WHAT CHANGED</h3>
+<p class="text-xs text-slate-700 leading-snug">The loop can now decide which values should be processed.</p>
+</div>
+</article>
+</div>
+<!-- END: ProgressiveCardsList -->
+<!-- BEGIN: FooterActionCTA -->
+<div class="pt-3 pb-2" data-purpose="bottom-navigation-cta">
+<button class="w-full h-14 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-500 text-white font-heading font-bold text-base flex items-center justify-center gap-2 shadow-btn-glow hover:brightness-105 active:scale-[0.98] transition-all" type="button">
+<span>Continue to Predict</span>
+<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- END: FooterActionCTA -->
+</main>
+<!-- END: MainContentContainer -->
+</body></html>

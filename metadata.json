@@ -1,0 +1,8 @@
+{
+  "name": "CodeDo - Kotlin Learning App",
+  "description": "Tactile gamified Android learning platform for Kotlin programming with interactive code challenges, lesson paths, and curriculum explorer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

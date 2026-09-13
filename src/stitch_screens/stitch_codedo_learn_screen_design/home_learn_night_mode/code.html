@@ -1,0 +1,436 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+    @layer base {
+      html, body {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #0B0F19;
+      }
+      body {
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+      .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+    }
+    ::-webkit-scrollbar { display: none; }
+    .font-outfit { font-family: 'Outfit', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    
+    /* Obsidian Dark Neumorphic Shadows & Highlights */
+    .neu-raised {
+      box-shadow: 6px 6px 16px rgba(0, 0, 0, 0.65), -2px -2px 10px rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .neu-raised-sm {
+      box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.6), -1px -1px 6px rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .neu-pressed {
+      box-shadow: inset 3px 3px 7px rgba(0, 0, 0, 0.7), inset -2px -2px 6px rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .neu-nav {
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.7);
+    }
+    .focus-card-glow {
+      box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.75), 0 0 28px -4px rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .cta-glow {
+      box-shadow: 0 8px 24px -2px rgba(99, 102, 241, 0.45), 0 2px 6px rgba(0, 0, 0, 0.6);
+    }
+    .pulsing-dot {
+      box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.75);
+      animation: pulse-ring-dark 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse-ring-dark {
+      0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.75); }
+      70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-variant": "#1c2233",
+            "inverse-on-surface": "#0B0F19",
+            "on-error": "#ffffff",
+            "surface-dim": "#0B0F19",
+            "on-surface": "#F1F3F8",
+            "primary-fixed": "#e1e0ff",
+            "on-secondary-fixed": "#23005c",
+            "surface-container": "#151B28",
+            "on-primary-container": "#e0e2ff",
+            "tertiary-container": "#a78bfa",
+            "on-surface-variant": "#A9AFBD",
+            "inverse-surface": "#dfe2f1",
+            "on-primary-fixed": "#1e1b4b",
+            "surface-container-highest": "#1f2638",
+            "on-background": "#F1F3F8",
+            "on-tertiary-container": "#3b1f63",
+            "error-container": "#93000a",
+            "on-tertiary-fixed": "#2e1065",
+            "surface-container-lowest": "#070a12",
+            "tertiary": "#8b5cf6",
+            "surface-bright": "#1d2436",
+            "tertiary-fixed-dim": "#c4b5fd",
+            "surface-container-low": "#0e131e",
+            "on-secondary": "#ffffff",
+            "secondary-container": "#571bc1",
+            "on-primary-fixed-variant": "#4338ca",
+            "on-tertiary-fixed-variant": "#5b21b6",
+            "primary-container": "#818cf8",
+            "inverse-primary": "#494bd6",
+            "surface-tint": "#818cf8",
+            "background": "#0B0F19",
+            "on-primary": "#ffffff",
+            "surface-container-high": "#182030",
+            "secondary-fixed-dim": "#d0bcff",
+            "primary-fixed-dim": "#c0c1ff",
+            "secondary": "#626A7A",
+            "on-tertiary": "#ffffff",
+            "primary": "#818cf8",
+            "secondary-fixed": "#e9ddff",
+            "error": "#ffb4ab",
+            "on-error-container": "#ffdad6",
+            "on-secondary-container": "#c4abff",
+            "tertiary-fixed": "#ede9fe",
+            "outline": "#747C8E",
+            "outline-variant": "#222a3d",
+            "surface": "#111621",
+            "on-secondary-fixed-variant": "#5516be"
+          },
+          fontFamily: {
+            headline: ["Plus Jakarta Sans", "sans-serif"],
+            display: ["Outfit", "sans-serif"],
+            body: ["Plus Jakarta Sans", "sans-serif"],
+            label: ["Plus Jakarta Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-[#0B0F19] font-body text-[#F1F3F8] flex flex-col min-h-screen">
+<!-- CONSOLIDATED TOP BAR (Single Unified Header in Obsidian) -->
+<header class="fixed top-0 inset-x-0 z-50 bg-[#111621]/90 backdrop-blur-xl pt-safe shadow-[0_4px_24px_rgba(0,0,0,0.6)] border-b border-white/[0.06]">
+<div class="px-5 pt-3 pb-3 flex flex-col gap-2.5">
+<!-- Top Row: Logo Brand + Profile Avatar -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-xl neu-raised bg-[#151B28] flex items-center justify-center p-1.5 overflow-hidden">
+<img alt="CodeDo Logo" class="w-full h-full object-contain brightness-110" src="https://lh3.googleusercontent.com/aida/AEtjO1Vk5VEJeJynVcNkYkiBPlKZlW3aP6lzJC6g-vR0zYjVjKdPffLgtcypPdDh4DHUbOyyM6KM-3RLUky1i4HZ8hloWcUyOEWl6xIgqu30IgY-xXssyw7OpuHUBz9QyjfhmnqGyc3LmhbVUHMChatI3fFXhpK9HRF2YvZWHdGVsW5ICtR9DhtPjEFteWijD13_R2qDUD2dwBdBmGOrBhEm64mWd0mdlYjrq7iKDtrcPluTdYOx7_zF0e8pfkCo">
+</div>
+<div class="flex items-center gap-2">
+<span class="font-outfit text-lg font-bold tracking-tight text-[#F1F3F8]">CodeDo</span>
+<span class="text-[10px] font-label font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-[#6366f1]/15 text-[#818cf8] border border-[#6366f1]/30">LEARN</span>
+</div>
+</div>
+<!-- Profile Avatar Button -->
+<button aria-label="User Profile" class="w-9 h-9 rounded-xl neu-raised bg-[#151B28] flex items-center justify-center text-[#A9AFBD] hover:text-[#818cf8] transition-colors active:neu-pressed">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</button>
+</div>
+<!-- Sub-row: 3 Compact Neumorphic Status Pills (Streak, Progress %, Gems) -->
+<div class="flex items-center justify-between gap-2 pt-0.5">
+<!-- Streak -->
+<div class="flex-1 neu-pressed py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1.5 bg-[#0e131e]">
+<span class="text-sm leading-none">🔥</span>
+<span class="font-mono text-xs font-semibold text-[#F1F3F8]">12</span>
+</div>
+<!-- Journey Completion % -->
+<div class="flex-1 neu-pressed py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1.5 bg-[#0e131e]">
+<span class="text-xs leading-none">📈</span>
+<span class="font-mono text-xs font-semibold text-[#F1F3F8]">68%</span>
+</div>
+<!-- Gems -->
+<div class="flex-1 neu-pressed py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1.5 bg-[#0e131e]">
+<span class="text-xs leading-none">💎</span>
+<span class="font-mono text-xs font-semibold text-[#F1F3F8]">120</span>
+</div>
+</div>
+</div>
+</header>
+<!-- MAIN SCROLLABLE LEARNING PATH -->
+<main class="flex-1 flex flex-col relative w-full pt-[116px] pb-24 bg-[#0B0F19]">
+<div class="flex flex-col w-full min-w-0 select-none pb-8">
+<!-- COMPACT WORLD 4 HEADER & DAILY INDICATOR -->
+<div class="px-5 pt-3 pb-2">
+<div class="neu-raised rounded-2xl px-4 py-3 flex items-center justify-between bg-[#151B28]">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#1e2638] border border-white/10 shadow-sm">
+<svg class="w-3 h-3" fill="none" viewBox="0 0 24 24">
+<defs>
+<linearGradient id="ktGrad" x1="0%" x2="100%" y1="100%" y2="0%">
+<stop offset="0%" stop-color="#7F52FF"></stop>
+<stop offset="50%" stop-color="#C711E1"></stop>
+<stop offset="100%" stop-color="#E24462"></stop>
+</linearGradient>
+</defs>
+<polygon fill="url(#ktGrad)" points="24,0 0,0 0,24 24,0"></polygon>
+<polygon fill="#7F52FF" points="0,24 12,12 24,24"></polygon>
+</svg>
+<span class="text-[9px] font-mono font-bold tracking-wider uppercase text-[#F1F3F8]">KOTLIN TRACK</span>
+</div>
+<span class="text-[10px] font-mono text-[#747C8E] font-medium">WORLD 4 • 72% mastered</span>
+</div>
+<h1 class="text-sm font-outfit font-bold text-[#F1F3F8] tracking-tight">Functions &amp; Scope</h1>
+</div>
+<div class="neu-pressed px-2.5 py-1.5 rounded-xl flex items-center gap-2 bg-[#0e131e]">
+<span class="text-[10px] font-label font-bold text-[#747C8E] uppercase tracking-wider">TODAY</span>
+<div class="flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-[#818cf8]"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#818cf8]"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#1f2638] border border-white/10"></span>
+</div>
+<span class="font-mono text-[11px] font-bold text-[#F1F3F8]">2/3</span>
+</div>
+</div>
+</div>
+<!-- SNAKE RIBBON LEARNING PATH -->
+<div class="relative w-full px-5 pt-4 pb-4 flex flex-col items-center overflow-hidden">
+<!-- Smooth Continuous SVG Ribbon Backbone (Dark Mode Conversion) -->
+<svg class="absolute top-4 inset-x-0 w-full h-[960px] pointer-events-none stroke-current" fill="none" preserveAspectRatio="none" viewBox="0 0 360 960">
+<defs>
+<linearGradient id="activeRibbonGradDark" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#6366f1"></stop>
+<stop offset="30%" stop-color="#818cf8"></stop>
+<stop offset="42%" stop-color="#a5b4fc"></stop>
+<stop offset="48%" stop-color="#1e2638"></stop>
+<stop offset="100%" stop-color="#1e2638"></stop>
+</linearGradient>
+</defs>
+<!-- Dark outer subtle glow guide -->
+<path d="M 80,36
+                   C 80,75 180,90 180,135
+                   C 180,180 280,195 280,240
+                   C 280,285 180,305 180,350
+                   L 180,510
+                   C 180,550 270,570 270,610
+                   C 270,650 180,670 180,710
+                   C 180,750 90,770 90,810
+                   C 90,850 180,870 180,910
+                   L 180,950" opacity="0.4" stroke="#101522" stroke-linecap="round" stroke-width="14"></path>
+<!-- Dark slate base track with subtle border highlight -->
+<path d="M 80,36
+                   C 80,75 180,90 180,135
+                   C 180,180 280,195 280,240
+                   C 280,285 180,305 180,350
+                   L 180,510
+                   C 180,550 270,570 270,610
+                   C 270,650 180,670 180,710
+                   C 180,750 90,770 90,810
+                   C 90,850 180,870 180,910
+                   L 180,950" stroke="#1e2638" stroke-linecap="round" stroke-width="7"></path>
+<!-- Active completed gradient ribbon with dashed guide -->
+<path d="M 80,36
+                   C 80,75 180,90 180,135
+                   C 180,180 280,195 280,240
+                   C 280,285 180,305 180,350" stroke="url(#activeRibbonGradDark)" stroke-dasharray="4 5" stroke-linecap="round" stroke-width="5"></path>
+</svg>
+<!-- NODE 1: Completed (LEFT) -->
+<div class="relative w-full flex items-center justify-start pl-8 pt-1 z-10">
+<div class="flex items-center gap-3">
+<button aria-label="Completed: What is a Function?" class="w-12 h-12 rounded-2xl neu-raised bg-[#151B28] flex items-center justify-center transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[#818cf8] text-[22px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<div class="flex flex-col">
+<span class="text-xs font-outfit font-semibold text-[#F1F3F8]">What is a Function?</span>
+<span class="text-[10px] font-label text-[#747C8E]">Completed</span>
+</div>
+</div>
+</div>
+<!-- NODE 2: Completed (CENTER) -->
+<div class="relative w-full flex items-center justify-center pt-8 z-10">
+<div class="flex flex-col items-center">
+<button aria-label="Completed: Parameters" class="w-12 h-12 rounded-2xl neu-raised bg-[#151B28] flex items-center justify-center transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[#818cf8] text-[22px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<span class="text-xs font-outfit font-semibold text-[#F1F3F8] mt-1.5">Parameters</span>
+</div>
+</div>
+<!-- NODE 3: Completed (RIGHT) -->
+<div class="relative w-full flex items-center justify-end pr-8 pt-8 z-10">
+<div class="flex items-center gap-3 flex-row-reverse">
+<button aria-label="Completed: Return Values" class="w-12 h-12 rounded-2xl neu-raised bg-[#151B28] flex items-center justify-center transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[#818cf8] text-[22px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<div class="flex flex-col text-right">
+<span class="text-xs font-outfit font-semibold text-[#F1F3F8]">Return Values</span>
+<span class="text-[10px] font-label text-[#747C8E]">Completed</span>
+</div>
+</div>
+</div>
+<!-- CURRENT NODE CONNECTOR & INDICATOR (CENTER) -->
+<div class="relative w-full flex flex-col items-center pt-7 z-20">
+<div class="flex items-center gap-2 mb-2">
+<div class="w-9 h-9 rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] flex items-center justify-center pulsing-dot text-white neu-raised cta-glow">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+<span class="text-[11px] font-mono font-bold uppercase tracking-wider text-[#818cf8]">CURRENT LESSON</span>
+</div>
+<!-- STREAMLINED TODAY'S FOCUS CARD (Obsidian Level 2 Surface with subtle aura) -->
+<div class="w-full max-w-[330px] focus-card-glow rounded-3xl p-4 bg-[#151B28] relative overflow-hidden flex flex-col">
+<!-- Header Row -->
+<div class="flex items-center justify-between mb-2.5">
+<div class="neu-pressed px-2.5 py-1 rounded-full flex items-center gap-1.5 bg-[#0e131e]">
+<span class="w-2 h-2 rounded-full bg-[#818cf8] animate-pulse"></span>
+<span class="text-[10px] font-label font-bold text-[#818cf8] tracking-wider uppercase">TODAY'S FOCUS</span>
+</div>
+<div class="flex items-center gap-1 text-[#747C8E]">
+<span class="material-symbols-outlined text-[15px]">timer</span>
+<span class="font-mono text-[11px] font-medium text-[#A9AFBD]">~12 min</span>
+</div>
+</div>
+<!-- Lesson Meta & Title -->
+<div class="flex flex-col gap-1 mb-3">
+<div class="flex items-center gap-1.5">
+<span class="text-[10px] font-mono font-semibold text-[#8b5cf6]">Lesson 4.4</span>
+<span class="text-[10px] font-label text-[#747C8E]">• 3 challenges</span>
+</div>
+<h2 class="text-lg font-outfit font-bold text-[#F1F3F8] tracking-tight">Functions in Action</h2>
+<p class="text-xs font-body text-[#A9AFBD] leading-relaxed">
+                Construct modular Kotlin functions with return contracts and default values.
+              </p>
+</div>
+<!-- Prominent Gradient CTA Button (Obsidian Vibrant Luminous Gradient) -->
+<button class="h-12 w-full rounded-2xl bg-gradient-to-r from-[#6366f1] to-[#7c3aed] text-white font-outfit font-semibold text-sm flex items-center justify-center gap-2 cta-glow transition-all active:scale-[0.98] active:brightness-95" id="startLessonBtn">
+<span>START LESSON</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- LOCKED UPCOMING PATH (Obsidian Slate Nodes with Legible Labels) -->
+<!-- NODE 5: Locked (RIGHT) -->
+<div class="relative w-full flex items-center justify-end pr-10 pt-9 z-10">
+<div class="flex items-center gap-2.5 flex-row-reverse">
+<div class="w-11 h-11 rounded-2xl neu-raised bg-[#151B28] flex items-center justify-center">
+<span class="material-symbols-outlined text-[#626A7A] text-[18px]">lock</span>
+</div>
+<span class="text-xs font-outfit font-semibold text-[#626A7A] text-right">Default Arguments</span>
+</div>
+</div>
+<!-- NODE 6: Locked (CENTER-RIGHT) -->
+<div class="relative w-full flex items-center justify-end pr-20 pt-7 z-10">
+<div class="flex items-center gap-2 flex-row-reverse">
+<div class="w-11 h-11 rounded-2xl neu-raised bg-[#151B28] flex items-center justify-center">
+<span class="material-symbols-outlined text-[#626A7A] text-[18px]">lock</span>
+</div>
+<span class="text-xs font-outfit font-semibold text-[#626A7A]">Named Arguments</span>
+</div>
+</div>
+<!-- NODE 7: Locked (CENTER) -->
+<div class="relative w-full flex items-center justify-center pt-7 z-10">
+<div class="flex flex-col items-center">
+<div class="w-11 h-11 rounded-2xl neu-raised bg-[#151B28] flex items-center justify-center">
+<span class="material-symbols-outlined text-[#626A7A] text-[18px]">lock</span>
+</div>
+<span class="text-xs font-outfit font-semibold text-[#626A7A] mt-1.5">Expression Functions</span>
+</div>
+</div>
+<!-- NODE 8: Locked (LEFT) -->
+<div class="relative w-full flex items-center justify-start pl-10 pt-7 z-10">
+<div class="flex items-center gap-2.5">
+<div class="w-11 h-11 rounded-2xl neu-raised bg-[#151B28] flex items-center justify-center">
+<span class="material-symbols-outlined text-[#626A7A] text-[18px]">lock</span>
+</div>
+<span class="text-xs font-outfit font-semibold text-[#626A7A]">Lambdas</span>
+</div>
+</div>
+<!-- NODE 9: Locked (CENTER-LEFT) -->
+<div class="relative w-full flex items-center justify-start pl-20 pt-7 z-10">
+<div class="flex items-center gap-2.5">
+<div class="w-11 h-11 rounded-2xl neu-raised bg-[#151B28] flex items-center justify-center">
+<span class="material-symbols-outlined text-[#626A7A] text-[18px]">lock</span>
+</div>
+<span class="text-xs font-outfit font-semibold text-[#626A7A]">Higher-Order Functions</span>
+</div>
+</div>
+<!-- NODE 10: Locked (CENTER) -->
+<div class="relative w-full flex items-center justify-center pt-7 z-10">
+<div class="flex flex-col items-center">
+<div class="w-11 h-11 rounded-2xl neu-raised bg-[#151B28] flex items-center justify-center">
+<span class="material-symbols-outlined text-[#626A7A] text-[18px]">lock</span>
+</div>
+<span class="text-xs font-outfit font-semibold text-[#626A7A] mt-1.5">Function References</span>
+</div>
+</div>
+<!-- BOSS CHALLENGE MILESTONE NODE (Prestige Dark Gaming Card) -->
+<div class="relative w-full max-w-[320px] pt-10 z-20 flex flex-col items-center">
+<div class="neu-raised rounded-3xl p-3.5 bg-[#151B28] w-full flex items-center justify-between transition-transform active:scale-[0.99]">
+<div class="flex items-center gap-3">
+<!-- Special Boss Icon -->
+<div class="w-12 h-12 rounded-2xl neu-pressed flex items-center justify-center bg-[#0e131e] relative">
+<span class="material-symbols-outlined text-[#8b5cf6] text-[26px]">swords</span>
+<span class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#8b5cf6] shadow-[0_0_8px_#8b5cf6]"></span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="text-[9px] font-mono font-bold tracking-wider uppercase text-[#8b5cf6]">FINAL TRIAL</span>
+<span class="text-[9px] font-mono text-[#747C8E]">• 100 XP</span>
+</div>
+<h3 class="text-xs font-outfit font-bold text-[#F1F3F8]">FUNCTION BOSS</h3>
+<span class="text-[10px] font-body text-[#A9AFBD]">Defeat the Scope Beast</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-xl neu-raised flex items-center justify-center bg-[#151B28]">
+<span class="material-symbols-outlined text-[#747C8E] text-[16px]">lock</span>
+</div>
+</div>
+</div>
+<!-- NEXT WORLD TEASER PILL -->
+<div class="w-full flex items-center justify-center pt-8 pb-3 z-10">
+<div class="neu-pressed px-4 py-2 rounded-full bg-[#111621] flex items-center gap-2 text-[#A9AFBD]">
+<span class="material-symbols-outlined text-[#818cf8] text-[16px]">explore</span>
+<span class="text-[10px] font-label font-bold tracking-wider uppercase text-[#A9AFBD]">WORLD 5 • COLLECTIONS &amp; LAMBDAS</span>
+<span class="material-symbols-outlined text-[15px] text-[#747C8E]">arrow_forward</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BOTTOM NAVIGATION BAR (Obsidian Level 1 with Active Indigo Tab) -->
+<nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-[#111621]/95 backdrop-blur-xl neu-nav border-t border-white/[0.05]">
+<div class="flex justify-around items-center h-16 px-4">
+<!-- Learn (Active) -->
+<a aria-current="page" class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] py-1 px-3 rounded-xl transition-all text-[#818cf8] neu-pressed bg-[#0e131e]" href="#">
+<span class="material-symbols-outlined text-[22px]">school</span>
+<span class="text-[11px] font-label font-semibold tracking-tight">Learn</span>
+</a>
+<!-- Practice -->
+<a class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] py-1 px-3 rounded-xl text-[#747C8E] transition-all hover:text-[#F1F3F8] active:neu-pressed" href="#">
+<span class="material-symbols-outlined text-[22px]">code</span>
+<span class="text-[11px] font-label font-medium tracking-tight">Practice</span>
+</a>
+<!-- League -->
+<a class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] py-1 px-3 rounded-xl text-[#747C8E] transition-all hover:text-[#F1F3F8] active:neu-pressed" href="#">
+<span class="material-symbols-outlined text-[22px]">leaderboard</span>
+<span class="text-[11px] font-label font-medium tracking-tight">League</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] py-1 px-3 rounded-xl text-[#747C8E] transition-all hover:text-[#F1F3F8] active:neu-pressed" href="#">
+<span class="material-symbols-outlined text-[22px]">account_circle</span>
+<span class="text-[11px] font-label font-medium tracking-tight">Profile</span>
+</a>
+</div>
+</nav>
+<script>
+    document.getElementById('startLessonBtn')?.addEventListener('click', function() {
+      this.classList.add('scale-[0.96]');
+      setTimeout(() => {
+        this.classList.remove('scale-[0.96]');
+      }, 120);
+    });
+  </script>
+</body></html>

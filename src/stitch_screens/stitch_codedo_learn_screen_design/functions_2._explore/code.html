@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Functions — 2. Explore | CodeDo</title>
+<!-- Google Fonts: Outfit, Plus Jakarta Sans, JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Outfit:wght@600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            app: {
+              bg: '#f1f4f9',
+            }
+          },
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          boxShadow: {
+            'soft': '0 4px 20px -2px rgba(15, 23, 42, 0.05)',
+            'cta': '0 10px 25px -3px rgba(79, 70, 229, 0.35)',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-utilities">
+    body {
+      background-color: #f1f4f9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-heading {
+      font-family: 'Outfit', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-app-bg text-slate-800 antialiased pb-10">
+<!-- BEGIN: MainContainer -->
+<main class="w-full max-w-md mx-auto px-4 pt-4 pb-8 flex flex-col">
+<!-- BEGIN: TopNavigationHeader -->
+<!-- Top status/navigation bar with back button, title, streak, menu, and user avatar -->
+<header class="flex items-center justify-between gap-2 py-2 mb-4" data-purpose="app-top-bar">
+<!-- Back button -->
+<button aria-label="Go back" class="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-200/80 flex items-center justify-center text-slate-700 active:scale-95 transition-transform">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- App & Lesson Title -->
+<h1 class="font-heading font-extrabold text-sm tracking-wider text-slate-800 uppercase px-1">
+        CODEDO LESSON
+      </h1>
+<!-- Action items group -->
+<div class="flex items-center gap-2">
+<!-- Streak pill -->
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200/80 shadow-sm text-xs font-bold text-slate-700">
+<span class="text-amber-500">🔥</span>
+<span>5</span>
+</div>
+<!-- Options menu button -->
+<button aria-label="More options" class="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-200/80 flex items-center justify-center text-slate-600 active:scale-95 transition-transform">
+<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 7a2 2 0 100-4 2 2 0 000 4zm0 7a2 2 0 100-4 2 2 0 000 4zm0 7a2 2 0 100-4 2 2 0 000 4z"></path>
+</svg>
+</button>
+<!-- User profile button -->
+<button aria-label="User profile" class="w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center shadow-sm active:scale-95 transition-transform">
+<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"></path>
+</svg>
+</button>
+</div>
+</header>
+<!-- END: TopNavigationHeader -->
+<!-- BEGIN: StageAndProgressBanner -->
+<!-- Pill indicating current stage and progress dots -->
+<div class="w-full bg-white rounded-full px-4 py-2.5 shadow-sm border border-slate-200/80 flex items-center justify-between mb-5" data-purpose="stage-progress">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-brand-600"></span>
+<span class="font-heading font-bold text-[11px] tracking-wider text-brand-700 uppercase">STAGE 1 — FOUNDATIONS</span>
+</div>
+<div class="flex items-center gap-2.5">
+<span class="font-heading font-bold text-[11px] tracking-wider text-slate-500 uppercase">EXPLORE • STEP 2 OF 5</span>
+<div aria-label="Progress dots" class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-brand-600"></span>
+<span class="w-2 h-2 rounded-full bg-brand-600"></span>
+<span class="w-2 h-2 rounded-full bg-slate-300"></span>
+<span class="w-2 h-2 rounded-full bg-slate-300"></span>
+<span class="w-2 h-2 rounded-full bg-slate-300"></span>
+</div>
+</div>
+</div>
+<!-- END: StageAndProgressBanner -->
+<!-- BEGIN: TitleAndIntro -->
+<!-- Screen Header Information -->
+<section class="mb-5" data-purpose="screen-title-section">
+<h2 class="font-heading font-extrabold text-[28px] leading-tight text-slate-900 tracking-tight mb-2">
+        Explore the Concept
+      </h2>
+<p class="text-[15px] leading-snug text-slate-600 font-normal">
+        Build your understanding step by step, from a simple function to parameters and return values.
+      </p>
+</section>
+<!-- END: TitleAndIntro -->
+<!-- BEGIN: ExampleNavigationIndicator -->
+<!-- Subtle pill-based progressive counter indicator -->
+<section class="flex items-center justify-between mb-5 px-0.5" data-purpose="example-progress-indicator">
+<span class="text-[11px] font-heading font-bold uppercase tracking-wider text-slate-400">5 EXAMPLES</span>
+<div class="flex items-center gap-1.5">
+<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-brand-600 text-white shadow-xs">01</span>
+<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white text-slate-500 border border-slate-200">02</span>
+<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white text-slate-500 border border-slate-200">03</span>
+<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white text-slate-500 border border-slate-200">04</span>
+<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white text-slate-500 border border-slate-200">05</span>
+</div>
+</section>
+<!-- END: ExampleNavigationIndicator -->
+<!-- BEGIN: ProgressiveExampleCards -->
+<!-- Card 1 -->
+<article class="w-full rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 mb-5" data-purpose="example-card">
+<header class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2.5">
+<span class="text-xs font-bold font-mono px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-100">01</span>
+<h3 class="font-heading font-bold text-lg text-slate-900">Simple function</h3>
+</div>
+<span class="text-[11px] font-semibold font-sans px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">Kotlin</span>
+</header>
+<p class="text-sm text-slate-600 mb-3">Give a block of code a name.</p>
+<!-- Code snippet container -->
+<div class="rounded-xl bg-slate-50 border border-slate-200/70 p-4 font-mono text-sm leading-relaxed mb-4 text-slate-800">
+<span class="text-brand-600 font-semibold">fun</span> <span class="text-slate-900 font-medium">greet</span>() {<br/>
+          <span class="text-slate-900">println</span>(<span class="text-emerald-600">"Hello!"</span>)<br/>
+        }
+      </div>
+<!-- What it means breakdown -->
+<div class="mb-4">
+<h4 class="text-[11px] font-heading font-bold uppercase tracking-wider text-slate-500 mb-2">WHAT IT MEANS</h4>
+<ul class="text-xs text-slate-600 space-y-1.5 leading-normal">
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">fun</code> → declares a function</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">greet</code> → function name</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">()</code> → no parameters</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">{ }</code> → function body</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">println("Hello!")</code> → code executed by the function</span></li>
+</ul>
+</div>
+<!-- What changed callout -->
+<div class="rounded-xl bg-indigo-50/60 border border-indigo-100 p-3.5">
+<h4 class="text-[10px] font-heading font-bold uppercase tracking-wider text-indigo-700 mb-1">WHAT CHANGED</h4>
+<p class="text-xs font-medium text-slate-800">We gave a block of code a reusable name.</p>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="w-full rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 mb-5" data-purpose="example-card">
+<header class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2.5">
+<span class="text-xs font-bold font-mono px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-100">02</span>
+<h3 class="font-heading font-bold text-lg text-slate-900">Calling a function</h3>
+</div>
+<span class="text-[11px] font-semibold font-sans px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">Kotlin</span>
+</header>
+<p class="text-sm text-slate-600 mb-3">Run the code inside the function.</p>
+<!-- Code snippet container -->
+<div class="rounded-xl bg-slate-50 border border-slate-200/70 p-4 font-mono text-sm leading-relaxed mb-4 text-slate-800">
+<span class="text-brand-600 font-semibold">fun</span> <span class="text-slate-900 font-medium">greet</span>() {<br/>
+          <span class="text-slate-900">println</span>(<span class="text-emerald-600">"Hello!"</span>)<br/>
+        }<br/><br/>
+<span class="text-slate-900 font-medium">greet</span>()
+      </div>
+<!-- What it means breakdown -->
+<div class="mb-4">
+<h4 class="text-[11px] font-heading font-bold uppercase tracking-wider text-slate-500 mb-2">WHAT IT MEANS</h4>
+<ul class="text-xs text-slate-600 space-y-1.5 leading-normal">
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">fun greet()</code> → defines the function</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">greet()</code> → calls the function</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span>The call causes the code inside the function to execute.</span></li>
+</ul>
+</div>
+<!-- What changed callout -->
+<div class="rounded-xl bg-indigo-50/60 border border-indigo-100 p-3.5">
+<h4 class="text-[10px] font-heading font-bold uppercase tracking-wider text-indigo-700 mb-1">WHAT CHANGED</h4>
+<p class="text-xs font-medium text-slate-800">We now use the function after defining it.</p>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="w-full rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 mb-5" data-purpose="example-card">
+<header class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2.5">
+<span class="text-xs font-bold font-mono px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-100">03</span>
+<h3 class="font-heading font-bold text-lg text-slate-900">Function with a parameter</h3>
+</div>
+<span class="text-[11px] font-semibold font-sans px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">Kotlin</span>
+</header>
+<p class="text-sm text-slate-600 mb-3">Allow the function to receive a value.</p>
+<!-- Code snippet container -->
+<div class="rounded-xl bg-slate-50 border border-slate-200/70 p-4 font-mono text-sm leading-relaxed mb-4 text-slate-800">
+<span class="text-brand-600 font-semibold">fun</span> <span class="text-slate-900 font-medium">greet</span>(name: <span class="text-purple-600">String</span>) {<br/>
+          <span class="text-slate-900">println</span>(<span class="text-emerald-600">"Hello, $name!"</span>)<br/>
+        }<br/><br/>
+<span class="text-slate-900 font-medium">greet</span>(<span class="text-emerald-600">"Alex"</span>)
+      </div>
+<!-- What it means breakdown -->
+<div class="mb-4">
+<h4 class="text-[11px] font-heading font-bold uppercase tracking-wider text-slate-500 mb-2">WHAT IT MEANS</h4>
+<ul class="text-xs text-slate-600 space-y-1.5 leading-normal">
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">name</code> → parameter name</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">String</code> → parameter type</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">name: String</code> → declares a parameter that accepts text</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">greet("Alex")</code> → passes "Alex" into the function</span></li>
+</ul>
+</div>
+<!-- What changed callout -->
+<div class="rounded-xl bg-indigo-50/60 border border-indigo-100 p-3.5">
+<h4 class="text-[10px] font-heading font-bold uppercase tracking-wider text-indigo-700 mb-1">WHAT CHANGED</h4>
+<p class="text-xs font-medium text-slate-800">The function can now receive input.</p>
+</div>
+</article>
+<!-- Card 4 -->
+<article class="w-full rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 mb-5" data-purpose="example-card">
+<header class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2.5">
+<span class="text-xs font-bold font-mono px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-100">04</span>
+<h3 class="font-heading font-bold text-lg text-slate-900">Multiple parameters</h3>
+</div>
+<span class="text-[11px] font-semibold font-sans px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">Kotlin</span>
+</header>
+<p class="text-sm text-slate-600 mb-3">Allow the function to receive more than one value.</p>
+<!-- Code snippet container -->
+<div class="rounded-xl bg-slate-50 border border-slate-200/70 p-4 font-mono text-sm leading-relaxed mb-4 text-slate-800">
+<span class="text-brand-600 font-semibold">fun</span> <span class="text-slate-900 font-medium">sum</span>(param1: <span class="text-purple-600">Int</span>, param2: <span class="text-purple-600">Int</span>) {<br/>
+          <span class="text-slate-900">println</span>(param1 + param2)<br/>
+        }<br/><br/>
+<span class="text-slate-900 font-medium">sum</span>(<span class="text-amber-600">4</span>, <span class="text-amber-600">6</span>)
+      </div>
+<!-- What it means breakdown -->
+<div class="mb-4">
+<h4 class="text-[11px] font-heading font-bold uppercase tracking-wider text-slate-500 mb-2">WHAT IT MEANS</h4>
+<ul class="text-xs text-slate-600 space-y-1.5 leading-normal">
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">param1: Int</code> → first parameter and its type</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">param2: Int</code> → second parameter and its type</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">sum(4, 6)</code> → passes two Int values</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">param1 + param2</code> → uses the received values</span></li>
+</ul>
+</div>
+<!-- What changed callout -->
+<div class="rounded-xl bg-indigo-50/60 border border-indigo-100 p-3.5">
+<h4 class="text-[10px] font-heading font-bold uppercase tracking-wider text-indigo-700 mb-1">WHAT CHANGED</h4>
+<p class="text-xs font-medium text-slate-800">The function can now work with multiple inputs.</p>
+</div>
+</article>
+<!-- Card 5 -->
+<article class="w-full rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 mb-6" data-purpose="example-card">
+<header class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2.5">
+<span class="text-xs font-bold font-mono px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 border border-brand-100">05</span>
+<h3 class="font-heading font-bold text-lg text-slate-900">Returning a value</h3>
+</div>
+<span class="text-[11px] font-semibold font-sans px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">Kotlin</span>
+</header>
+<p class="text-sm text-slate-600 mb-3">Send a calculated result back to the caller.</p>
+<!-- Code snippet container -->
+<div class="rounded-xl bg-slate-50 border border-slate-200/70 p-4 font-mono text-sm leading-relaxed mb-4 text-slate-800">
+<span class="text-brand-600 font-semibold">fun</span> <span class="text-slate-900 font-medium">sum</span>(param1: <span class="text-purple-600">Int</span>, param2: <span class="text-purple-600">Int</span>): <span class="text-purple-600">Int</span> {<br/>
+          <span class="text-brand-600 font-semibold">return</span> param1 + param2<br/>
+        }<br/><br/>
+<span class="text-brand-600 font-semibold">val</span> result = <span class="text-slate-900 font-medium">sum</span>(<span class="text-amber-600">4</span>, <span class="text-amber-600">6</span>)
+      </div>
+<!-- What it means breakdown -->
+<div class="mb-4">
+<h4 class="text-[11px] font-heading font-bold uppercase tracking-wider text-slate-500 mb-2">WHAT IT MEANS</h4>
+<ul class="text-xs text-slate-600 space-y-1.5 leading-normal">
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">: Int</code> → return type</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">return</code> → sends a value back</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">param1 + param2</code> → calculated result</span></li>
+<li class="flex items-start gap-1.5"><span class="text-brand-600 font-bold">•</span><span><code class="font-mono text-slate-800 bg-slate-100 px-1 py-0.5 rounded">result</code> → stores the returned value</span></li>
+</ul>
+</div>
+<!-- What changed callout -->
+<div class="rounded-xl bg-indigo-50/60 border border-indigo-100 p-3.5">
+<h4 class="text-[10px] font-heading font-bold uppercase tracking-wider text-indigo-700 mb-1">WHAT CHANGED</h4>
+<p class="text-xs font-medium text-slate-800">The function can now produce a value that other code can use.</p>
+</div>
+</article>
+<!-- END: ProgressiveExampleCards -->
+<!-- BEGIN: PrimaryCTA -->
+<!-- Sticky-styled prominent bottom CTA button -->
+<div class="pt-2" data-purpose="cta-container">
+<button class="w-full h-14 bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-heading font-bold text-base rounded-2xl shadow-cta flex items-center justify-center gap-2 transition-all">
+<span>Continue to Predict</span>
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- END: PrimaryCTA -->
+</main>
+<!-- END: MainContainer -->
+</body></html>
