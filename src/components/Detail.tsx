@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { forwardRef, useState, useImperativeHandle } from 'react';
 import { AppTheme, UserStats } from '../types';
 import { FiveStageLesson, AVAILABLE_FIVE_STAGE_LESSONS } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
@@ -20,6 +20,13 @@ interface DetailProps {
   onToggleTheme?: () => void;
   tapToRevealEnabled?: boolean;
   onToggleTapToReveal?: () => void;
+}
+
+// Lets the parent (App.tsx) drive stage-by-stage back navigation from the
+// Android hardware back button, without Detail needing its own browser-
+// history hack.
+export interface DetailHandle {
+  goBack: () => void;
 }
 
 const renderSnippetLine = (line: string, isDark: boolean) => {
@@ -113,32 +120,52 @@ const renderSnippetLine = (line: string, isDark: boolean) => {
   return <div className={`${indentClass} ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{line}</div>;
 };
 
-const STAGE_TITLES: Record<number, string> = {
-  1: 'Stage 1 - LEARN',
-  2: 'Stage 2 - EXPLORE',
-  3: 'Stage 3 - PREDICT',
-  4: 'Stage 4 - WRITE & RUN',
-  5: 'Stage 5 - DEBUG',
-  6: 'Stage 6 - MASTERED',
+// The six possible stage keys, in their fixed relative order. Which ones are
+// actually present for a given lesson depends on its data (see activeStages
+// below) -- Learn and Mastered always run; the rest only run when the lesson
+// provides that stage's data, per CODEDO_MASTER_PLAN.md's "topic-aware
+// activity selection" (e.g. a purely conceptual topic may only need
+// Learn -> Predict-as-MCQ -> Mastered).
+type StageKey = 'learn' | 'explore' | 'predict' | 'writeRun' | 'debug' | 'mastered';
+
+const STAGE_LABELS: Record<StageKey, string> = {
+  learn: 'LEARN',
+  explore: 'EXPLORE',
+  predict: 'PREDICT',
+  writeRun: 'WRITE & RUN',
+  debug: 'DEBUG',
+  mastered: 'MASTERED',
 };
 
-export const Detail: React.FC<DetailProps> = ({
+// Title-case versions for "Continue to X" buttons, since stages can be
+// skipped per-lesson (see activeStages) -- these must never be hardcoded
+// in the child stage components.
+const STAGE_CONTINUE_LABELS: Record<StageKey, string> = {
+  learn: 'Learn',
+  explore: 'Explore',
+  predict: 'Predict',
+  writeRun: 'Write & Run',
+  debug: 'Debug',
+  mastered: 'Mastered',
+};
+
+export const Detail = forwardRef<DetailHandle, DetailProps>(({
   theme,
   initialLessonKey = 'functions',
   userStats,
   onExit,
   onCompleteLesson,
   onToggleTheme,
-}) => {
+}, ref) => {
   const [currentLessonKey] = useState<string>(initialLessonKey);
-  const [currentStage, setCurrentStage] = useState<number>(1); // 1: Learn, 2: Explore, 3: Predict, 4: WriteRun, 5: Mastered
   const [exploreCardIndex, setExploreCardIndex] = useState<number>(0);
 
   // Preserve reveal steps across stage navigation (when user clicks back/forward)
   const [learnRevealStep, setLearnRevealStep] = useState<number>(0);
   const [exploreRevealStep, setExploreRevealStep] = useState<number>(0);
   const [predictRevealStep, setPredictRevealStep] = useState<number>(0);
-  const [writeRunRevealStep, setWriteRunRevealStep] = useState<number>(3);
+  const [writeRunRevealStep, setWriteRunRevealStep] = useState<number>(0);
+  const [debugRevealStep, setDebugRevealStep] = useState<number>(0);
 
   // Predict state: support all questions, no default selected answer
   const [predictAnswers, setPredictAnswers] = useState<Record<number, string>>({});
@@ -152,9 +179,25 @@ export const Detail: React.FC<DetailProps> = ({
     AVAILABLE_FIVE_STAGE_LESSONS[currentLessonKey] ||
     AVAILABLE_FIVE_STAGE_LESSONS.functions ||
     AVAILABLE_FIVE_STAGE_LESSONS.variables;
-  const [userCode, setUserCode] = useState<string>(lessonData.writeRun.initialCode);
+  const [userCode, setUserCode] = useState<string>(lessonData.writeRun?.initialCode ?? '');
   const [hasRunCode, setHasRunCode] = useState<boolean>(false);
-  const [actualOutput, setActualOutput] = useState<string>(lessonData.writeRun.expectedOutput);
+  const [actualOutput, setActualOutput] = useState<string>(lessonData.writeRun?.expectedOutput ?? '');
+
+  // Which stages this specific lesson actually uses, in order. Learn and
+  // Mastered always run; explore/predict/writeRun/debug only run when the
+  // lesson provides that stage's data (see the FiveStageLesson comment).
+  const activeStages: StageKey[] = [
+    'learn',
+    ...(lessonData.explore ? (['explore'] as const) : []),
+    ...(lessonData.predict ? (['predict'] as const) : []),
+    ...(lessonData.writeRun ? (['writeRun'] as const) : []),
+    ...(lessonData.debug ? (['debug'] as const) : []),
+    'mastered',
+  ];
+  const [currentStageKey, setCurrentStageKey] = useState<StageKey>(activeStages[0]);
+  const currentStageIndex = activeStages.indexOf(currentStageKey);
+  const nextStageKey = activeStages[currentStageIndex + 1];
+  const nextStageLabel = nextStageKey ? STAGE_CONTINUE_LABELS[nextStageKey] : undefined;
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -180,35 +223,14 @@ export const Detail: React.FC<DetailProps> = ({
     }
   };
 
-  // Sync browser/device back button with screen back button
-  useEffect(() => {
-    window.history.replaceState({ codedoStage: 1 }, '');
-
-    const handlePopState = (e: PopStateEvent) => {
-      if (e.state && typeof e.state.codedoStage === 'number') {
-        setCurrentStage(e.state.codedoStage);
-        scrollToTop();
-      } else {
-        onExit();
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [onExit]);
-
   // Note: Stage 2 (Explore) and Stage 3 (Predict) indicator highlighting and scroll sync
   // are managed directly inside their respective components to avoid fluctuation during
   // tap-to-continue programmatic scrolls and only sync when user manually scrolls.
 
   const handleNextStage = () => {
     soundFX.playClick();
-    if (currentStage < 6) {
-      const nextStage = currentStage + 1;
-      window.history.pushState({ codedoStage: nextStage }, '');
-      setCurrentStage(nextStage);
+    if (currentStageIndex < activeStages.length - 1) {
+      setCurrentStageKey(activeStages[currentStageIndex + 1]);
       scrollToTop();
     } else {
       soundFX.playSuccess();
@@ -218,17 +240,23 @@ export const Detail: React.FC<DetailProps> = ({
 
   const handlePreviousStage = () => {
     soundFX.playClick();
-    if (currentStage > 1) {
-      window.history.back();
+    if (currentStageIndex > 0) {
+      setCurrentStageKey(activeStages[currentStageIndex - 1]);
+      scrollToTop();
     } else {
       onExit();
     }
   };
 
-  const handleJumpToStage = (step: number) => {
+  // Exposed so the app-wide hardware back-button handler (App.tsx) can step
+  // back through lesson stages the same way the in-screen back arrow does.
+  useImperativeHandle(ref, () => ({
+    goBack: handlePreviousStage,
+  }));
+
+  const handleJumpToStage = (key: StageKey) => {
     soundFX.playClick();
-    window.history.pushState({ codedoStage: step }, '');
-    setCurrentStage(step);
+    setCurrentStageKey(key);
     scrollToTop();
   };
 
@@ -239,7 +267,7 @@ export const Detail: React.FC<DetailProps> = ({
   const handleSelectPredictOption = (qIdx: number, optId: string) => {
     soundFX.playClick();
     setPredictAnswers((prev) => ({ ...prev, [qIdx]: optId }));
-    const question = lessonData.predict.questions[qIdx];
+    const question = lessonData.predict?.questions[qIdx];
     const opt = question?.options.find((o) => o.id === optId);
     if (opt?.isCorrect) {
       soundFX.playSuccess();
@@ -248,6 +276,7 @@ export const Detail: React.FC<DetailProps> = ({
 
   // Temp auto fill correct answers for Predict stage
   const handleAutoFillPredictAnswers = () => {
+    if (!lessonData.predict) return;
     soundFX.playSuccess();
     const correctMap: Record<number, string> = {};
     lessonData.predict.questions.forEach((q, idx) => {
@@ -278,18 +307,16 @@ export const Detail: React.FC<DetailProps> = ({
         }`}
       >
         <div className="w-full max-w-md mx-auto px-4 h-14 flex items-center justify-between">
-          {/* Back button */}
+          {/* Back button -- matches the shared Header's back button used on Listing */}
           <button
             aria-label="Go back"
             type="button"
             onClick={handlePreviousStage}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 cursor-pointer ${
-              isDark
-                ? 'text-slate-200 hover:text-white hover:bg-white/10'
-                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
+            className={`w-9 h-9 rounded-xl neu-raised flex items-center justify-center active:neu-pressed transition-all ${
+              isDark ? 'bg-[#151b28] text-slate-200' : 'bg-[#e8eaf0] text-[#1e2433]'
             }`}
           >
-            <span className="material-symbols-outlined text-[22px]">arrow_back</span>
+            <span className="material-symbols-outlined text-[20px]">arrow_back</span>
           </button>
 
           {/* Current Step Name in Toolbar (Learn, Explore, Predict, Write & Run, Mastered) */}
@@ -299,14 +326,14 @@ export const Detail: React.FC<DetailProps> = ({
                 isDark ? 'text-white' : 'text-slate-900'
               }`}
             >
-              {STAGE_TITLES[currentStage] || 'Learn'}
+              {`Stage ${currentStageIndex + 1} - ${STAGE_LABELS[currentStageKey]}`}
             </h1>
           </div>
 
           {/* Action / Tools Area in Toolbar */}
           <div className="flex items-center gap-1.5">
-            {/* Temp: Skip Tap Flow Button on Step 1 */}
-            {currentStage === 1 && (
+            {/* Temp: Skip Tap Flow Button on the first active stage */}
+            {currentStageIndex === 0 && (
               <div className="relative">
                 <button
                   type="button"
@@ -332,35 +359,28 @@ export const Detail: React.FC<DetailProps> = ({
                     <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                       Jump to Screen:
                     </div>
-                    {[
-                      { stage: 1, label: 'Stage 1: Learn (Full)' },
-                      { stage: 2, label: 'Stage 2: Explore' },
-                      { stage: 3, label: 'Stage 3: Predict' },
-                      { stage: 4, label: 'Stage 4: Write & Run' },
-                      { stage: 5, label: 'Stage 5: Debug' },
-                      { stage: 6, label: 'Stage 6: Mastered' },
-                    ].map((item) => (
+                    {activeStages.map((key, idx) => (
                       <button
-                        key={item.stage}
+                        key={key}
                         type="button"
                         onClick={() => {
                           setShowSkipMenu(false);
-                          if (item.stage === 1) {
+                          if (key === 'learn') {
                             // Max out reveal step so it's fully revealed
                             setLearnRevealStep(10);
                           }
-                          handleJumpToStage(item.stage);
+                          handleJumpToStage(key);
                         }}
                         className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
-                          currentStage === item.stage
+                          currentStageKey === key
                             ? 'bg-indigo-600 text-white'
                             : isDark
                             ? 'hover:bg-white/5 text-slate-300'
                             : 'hover:bg-slate-100 text-slate-700'
                         }`}
                       >
-                        <span>{item.label}</span>
-                        {currentStage === item.stage && (
+                        <span>{`Stage ${idx + 1}: ${STAGE_LABELS[key]}`}</span>
+                        {currentStageKey === key && (
                           <span className="material-symbols-outlined text-[14px]">check</span>
                         )}
                       </button>
@@ -370,8 +390,8 @@ export const Detail: React.FC<DetailProps> = ({
               </div>
             )}
 
-            {/* Temp: Auto Fill Answer Button on Predict Screen (Step 3) */}
-            {currentStage === 3 && (
+            {/* Temp: Auto Fill Answer Button on the Predict stage */}
+            {currentStageKey === 'predict' && (
               <button
                 type="button"
                 onClick={handleAutoFillPredictAnswers}
@@ -430,14 +450,14 @@ export const Detail: React.FC<DetailProps> = ({
             </span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            {[1, 2, 3, 4, 5, 6].map((step) => {
-              const isActive = step === currentStage;
-              const isPassed = step < currentStage;
+            {activeStages.map((key, idx) => {
+              const isActive = idx === currentStageIndex;
+              const isPassed = idx < currentStageIndex;
               return (
                 <button
-                  key={step}
+                  key={key}
                   type="button"
-                  onClick={() => handleJumpToStage(step)}
+                  onClick={() => handleJumpToStage(key)}
                   className={`rounded-full transition-all cursor-pointer ${
                     isActive
                       ? 'w-2.5 h-2.5 bg-indigo-600 ring-2 ring-indigo-300 dark:ring-indigo-500/40'
@@ -447,15 +467,15 @@ export const Detail: React.FC<DetailProps> = ({
                       ? 'w-1.5 h-1.5 bg-slate-700'
                       : 'w-1.5 h-1.5 bg-slate-300'
                   }`}
-                  title={STAGE_TITLES[step]}
+                  title={`Stage ${idx + 1} - ${STAGE_LABELS[key]}`}
                 />
               );
             })}
           </div>
         </section>
 
-        {/* ================= STEP 1: LEARN ================= */}
-        {currentStage === 1 && (
+        {/* ================= LEARN ================= */}
+        {currentStageKey === 'learn' && (
           <Learn
             data={lessonData.learn}
             isDark={isDark}
@@ -463,11 +483,12 @@ export const Detail: React.FC<DetailProps> = ({
             setRevealStep={setLearnRevealStep}
             onContinue={handleNextStage}
             renderSnippetLine={renderSnippetLine}
+            nextStageLabel={nextStageLabel}
           />
         )}
 
-        {/* ================= STEP 2: EXPLORE ================= */}
-        {currentStage === 2 && (
+        {/* ================= EXPLORE (only when this lesson uses it) ================= */}
+        {currentStageKey === 'explore' && lessonData.explore && (
           <Explore
             data={lessonData.explore}
             isDark={isDark}
@@ -477,11 +498,12 @@ export const Detail: React.FC<DetailProps> = ({
             setExploreCardIndex={setExploreCardIndex}
             scrollToElement={scrollToElement}
             onContinue={handleNextStage}
+            nextStageLabel={nextStageLabel}
           />
         )}
 
-        {/* ================= STEP 3: PREDICT ================= */}
-        {currentStage === 3 && (
+        {/* ================= PREDICT / MCQ (only when this lesson uses it) ================= */}
+        {currentStageKey === 'predict' && lessonData.predict && (
           <Predict
             data={lessonData.predict}
             isDark={isDark}
@@ -493,11 +515,12 @@ export const Detail: React.FC<DetailProps> = ({
             onSelectOption={handleSelectPredictOption}
             scrollToElement={scrollToElement}
             onContinue={handleNextStage}
+            nextStageLabel={nextStageLabel}
           />
         )}
 
-        {/* ================= STEP 4: WRITE & RUN ================= */}
-        {currentStage === 4 && (
+        {/* ================= WRITE & RUN (only when this lesson uses it) ================= */}
+        {currentStageKey === 'writeRun' && lessonData.writeRun && (
           <WriteRun
             data={lessonData.writeRun}
             topicTitle={lessonData.topicTitle}
@@ -512,21 +535,24 @@ export const Detail: React.FC<DetailProps> = ({
             setActualOutput={setActualOutput}
             onRunCode={handleRunCode}
             onContinue={handleNextStage}
+            nextStageLabel={nextStageLabel}
           />
         )}
 
-        {/* ================= STEP 5: DEBUG ================= */}
-        {currentStage === 5 && (
+        {/* ================= DEBUG (only when this lesson uses it) ================= */}
+        {currentStageKey === 'debug' && lessonData.debug && (
           <Debug
             data={lessonData.debug}
             topicTitle={lessonData.topicTitle}
             isDark={isDark}
+            revealStep={debugRevealStep}
+            setRevealStep={setDebugRevealStep}
             onContinue={handleNextStage}
           />
         )}
 
-        {/* ================= STEP 6: MASTERED ================= */}
-        {currentStage === 6 && (
+        {/* ================= MASTERED ================= */}
+        {currentStageKey === 'mastered' && (
           <Mastered
             data={lessonData.mastered}
             stageName={lessonData.stageName}
@@ -537,4 +563,6 @@ export const Detail: React.FC<DetailProps> = ({
       </div>
     </div>
   );
-};
+});
+
+Detail.displayName = 'Detail';

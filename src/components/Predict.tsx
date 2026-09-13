@@ -14,6 +14,9 @@ interface PredictStageProps {
   scrollToElement: (id: string, offset?: number) => void;
   onContinue: () => void;
   tapToRevealEnabled?: boolean;
+  /** Label of whichever stage actually comes next for this lesson -- stages
+   * can be skipped per-lesson, so this must not be hardcoded. */
+  nextStageLabel?: string;
 }
 
 export const Predict: React.FC<PredictStageProps> = ({
@@ -28,6 +31,7 @@ export const Predict: React.FC<PredictStageProps> = ({
   scrollToElement,
   onContinue,
   tapToRevealEnabled = true,
+  nextStageLabel = 'Write & Run',
 }) => {
   const totalQuestions = data.questions.length;
   const maxRevealStep = totalQuestions;
@@ -450,18 +454,22 @@ export const Predict: React.FC<PredictStageProps> = ({
                       {question.title || question.topicMeta}
                     </h3>
                   </div>
-                  <span
-                    className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full shrink-0 ${
-                      isDark
-                        ? 'bg-[#0f131d] text-slate-300 border border-[#262c3d]'
-                        : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    {question.language}
-                  </span>
+                  {question.code && question.code.length > 0 && (
+                    <span
+                      className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full shrink-0 ${
+                        isDark
+                          ? 'bg-[#0f131d] text-slate-300 border border-[#262c3d]'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {question.language}
+                    </span>
+                  )}
                 </header>
 
-                {/* Inset Carved Neomorphic Code Block */}
+                {/* Inset Carved Neomorphic Code Block -- omitted for pure comprehension
+                    MCQs (e.g. "What is Kotlin?") that have no code to show. */}
+                {question.code && question.code.length > 0 && (
                 <div
                   className={`w-full rounded-xl p-4 overflow-x-auto ${
                     isDark
@@ -502,6 +510,7 @@ export const Predict: React.FC<PredictStageProps> = ({
                     ))}
                   </pre>
                 </div>
+                )}
 
                 {/* Question Title */}
                 <div>
@@ -621,21 +630,36 @@ export const Predict: React.FC<PredictStageProps> = ({
         </div>
       )}
 
-      {/* Spacer to push content up so hint sits cleanly at bottom with breathing space */}
-      <div className="flex-1 min-h-[16px]" />
+      {/* Spacer reserving room below the in-flow content for the fixed bottom bar */}
+      <div className="h-24" />
 
-      {/* Bottom CTA / Tap Hint */}
+      {/* Bottom CTA / Tap Hint -- fixed (not sticky) so it stays flush with the screen
+          bottom from the very first tap, instead of drifting down as content grows. */}
       <div
         id="predict-bottom-cta"
-        className={`sticky bottom-0 left-0 right-0 w-full pt-1.5 pb-2 transition-all ${
+        className={`fixed bottom-0 inset-x-0 z-40 pb-safe pt-1.5 pb-4 transition-all ${
           isDark
             ? 'bg-gradient-to-t from-[#0f131d] via-[#0f131d]/95 to-transparent'
             : 'bg-gradient-to-t from-[#f1f4f9] via-[#f1f4f9]/95 to-transparent'
         }`}
       >
+      <div className="max-w-md mx-auto px-4">
         {!isFullyRevealed ? (
-          /* Minimalist Tap Hint positioned nicely above bottom edge */
-          <div className="flex justify-center w-full">
+          /* Minimalist Tap Hint positioned nicely above bottom edge. The wrapper (not just the
+              pill) also carries the click handler and extra vertical padding so taps slightly
+              above/below/left/right of the visible pill still register -- a disabled <button>
+              wouldn't otherwise dispatch a click at all for the "not answered yet" state. */
+          <div
+            className="flex justify-center w-full py-3 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (canContinue) {
+                handleNextReveal();
+              } else {
+                scrollToUnsolved();
+              }
+            }}
+          >
             <button
               type="button"
               disabled={!canContinue}
@@ -695,7 +719,7 @@ export const Predict: React.FC<PredictStageProps> = ({
           >
             <span>
               {!tapToRevealEnabled || allQuestionsCorrect
-                ? 'Continue to Write & Run'
+                ? `Continue to ${nextStageLabel}`
                 : 'Select the correct answer to continue'}
             </span>
             <span className="material-symbols-outlined text-[20px]">
@@ -703,6 +727,7 @@ export const Predict: React.FC<PredictStageProps> = ({
             </span>
           </button>
         )}
+      </div>
       </div>
 
       {/* Non-sticky anchor at absolute end of view to reliably scroll screen to bottom */}

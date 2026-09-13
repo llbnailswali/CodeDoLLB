@@ -1,4 +1,5 @@
 import React from 'react';
+import { Code } from 'lucide-react';
 import { AppTheme, TabType } from '../types';
 import { soundFX } from '../utils/audio';
 
@@ -49,8 +50,12 @@ export const Navigation: React.FC<NavigationProps> = ({
                   : 'text-slate-600 hover:text-[#2e3040] active:neu-pressed'
               }`}
             >
-              <span className="material-symbols-outlined text-[22px]">{tab.icon}</span>
-              <span className="text-[11px] font-['Plus_Jakarta_Sans'] font-medium tracking-tight">
+              {tab.id === 'practice' ? (
+                <Code size={22} strokeWidth={2} />
+              ) : (
+                <span className="material-symbols-outlined text-[22px]">{tab.icon}</span>
+              )}
+              <span className="text-[11px] font-['Plus_Jakarta_Sans'] font-bold tracking-tight">
                 {tab.label}
               </span>
             </button>

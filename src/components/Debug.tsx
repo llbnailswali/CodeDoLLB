@@ -7,17 +7,31 @@ interface DebugStageProps {
   data: Stage5DebugData;
   topicTitle?: string;
   isDark: boolean;
+  revealStep: number;
+  setRevealStep: React.Dispatch<React.SetStateAction<number>>;
+  tapToRevealEnabled?: boolean;
   onContinue: () => void;
 }
+
+// Reveal steps:
+// 0: Title only (initial state)
+// 1: Bug diagnosis banner
+// 2: Target expected output card
+// 3: Code editor & run/hint tools (interactive stage)
+const MAX_REVEAL_STEP = 3;
 
 export const Debug: React.FC<DebugStageProps> = ({
   data,
   topicTitle: _topicTitle,
   isDark,
+  revealStep,
+  setRevealStep,
+  tapToRevealEnabled = true,
   onContinue,
 }) => {
   const [code, setCode] = useState<string>(data.brokenCode);
   const [activeHintLevel, setActiveHintLevel] = useState<number>(0); // 0: no hints, 1: hint 1, 2: hint 2, 3: hint 3
+  const [showHintPanel, setShowHintPanel] = useState<boolean>(false);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [executionResult, setExecutionResult] = useState<KotlinExecutionResult | null>(null);
   const [isResolved, setIsResolved] = useState<boolean>(false);
@@ -30,7 +44,29 @@ export const Debug: React.FC<DebugStageProps> = ({
     setActiveHintLevel(0);
     setExecutionResult(null);
     setIsResolved(false);
+    setShowHintPanel(false);
+    setRevealStep(0);
   }, [data]);
+
+  const handleNextReveal = () => {
+    soundFX.playClick();
+    if (revealStep < MAX_REVEAL_STEP) {
+      setRevealStep((prev) => {
+        const next = prev + 1;
+        setTimeout(() => {
+          const rootEl = document.getElementById('root');
+          if (rootEl) {
+            rootEl.scrollTo({ top: rootEl.scrollHeight, behavior: 'smooth' });
+          } else {
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          }
+        }, 60);
+        return next;
+      });
+    }
+  };
+
+  const isFullyRevealed = !tapToRevealEnabled || revealStep >= MAX_REVEAL_STEP;
 
   const autoResizeTextarea = () => {
     const textarea = textareaRef.current;
@@ -126,49 +162,15 @@ export const Debug: React.FC<DebugStageProps> = ({
     setShowSolutionModal(false);
   };
 
-  const getDifficultyBadge = () => {
-    switch (data.difficulty) {
-      case 'easy':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            Easy
-          </span>
-        );
-      case 'medium':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            Medium
-          </span>
-        );
-      case 'hard':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-            Hard
-          </span>
-        );
-    }
-  };
-
   return (
-    <div className="flex flex-col animate-fadeIn pb-12">
+    <div
+      onClick={!isFullyRevealed ? handleNextReveal : undefined}
+      className={`flex flex-col min-h-[78vh] animate-fadeIn pb-12 select-none ${
+        !isFullyRevealed ? 'cursor-pointer' : ''
+      }`}
+    >
       {/* Stage Header Info */}
       <section className="mb-4">
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold uppercase bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-              <span className="material-symbols-outlined text-[14px]">pest_control</span>
-              STEP 5: DEBUG
-            </span>
-            {getDifficultyBadge()}
-          </div>
-          <span className="text-[11px] font-mono font-bold text-slate-400">
-            Challenge {data.challengeNumber}/{data.totalChallenges}
-          </span>
-        </div>
-
         <h1 className="text-2xl font-extrabold font-['Outfit'] tracking-tight mb-1">
           {data.title}
         </h1>
@@ -177,9 +179,10 @@ export const Debug: React.FC<DebugStageProps> = ({
         </p>
       </section>
 
-      {/* Bug Classification Badge & Diagnosis Banner */}
+      {/* Bug Classification Badge & Diagnosis Banner (Revealed on tap 1) */}
+      {revealStep >= 1 && (
       <section
-        className={`p-3.5 rounded-2xl border mb-4 flex items-start gap-3 transition-colors ${
+        className={`p-3.5 rounded-2xl border mb-4 flex items-start gap-3 transition-colors animate-fadeIn ${
           isDark
             ? 'bg-rose-950/20 border-rose-500/20 text-slate-200'
             : 'bg-rose-50 border-rose-200 text-slate-800'
@@ -201,10 +204,12 @@ export const Debug: React.FC<DebugStageProps> = ({
           </p>
         </div>
       </section>
+      )}
 
-      {/* Target Expected Output Card */}
+      {/* Target Expected Output Card (Revealed on tap 2) */}
+      {revealStep >= 2 && (
       <section
-        className={`p-3.5 rounded-2xl border mb-4 transition-colors ${
+        className={`p-3.5 rounded-2xl border mb-4 transition-colors animate-fadeIn ${
           isDark ? 'bg-[#151b28] border-white/5' : 'bg-white border-slate-200 shadow-sm'
         }`}
       >
@@ -224,83 +229,95 @@ export const Debug: React.FC<DebugStageProps> = ({
           {data.expectedOutput}
         </div>
       </section>
+      )}
 
-      {/* Code Editor Section */}
+      {/* Code Editor Section (Revealed on tap 3) -- matches Stage 4 (WriteRun)'s always-dark terminal window */}
+      {revealStep >= 3 && (
+      <>
       <section
-        className={`rounded-2xl border overflow-hidden mb-4 transition-colors ${
-          isDark
-            ? 'bg-[#0f1420] border-white/10 shadow-xl'
-            : 'bg-white border-slate-200 shadow-md'
-        }`}
+        onClick={(e) => e.stopPropagation()}
+        className="rounded-2xl border bg-slate-950 border-slate-800 shadow-xl mb-4 overflow-hidden"
       >
-        {/* Editor Top Bar */}
-        <div
-          className={`h-11 px-4 border-b flex items-center justify-between ${
-            isDark ? 'bg-[#151b28] border-white/5' : 'bg-slate-50 border-slate-200'
-          }`}
-        >
+        {/* Window chrome / tabs */}
+        <div className="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block" />
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block" />
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block" />
-            <span className="ml-2 font-mono text-xs font-semibold text-slate-400">
-              solution.kt (Interactive)
-            </span>
+            <div className="flex gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+            </div>
+            <div className="h-6 w-[1px] bg-slate-800 mx-1" />
+            <div className="flex flex-col items-start leading-tight">
+              <span className="font-mono text-xs text-slate-300 font-medium">
+                solution.kt
+              </span>
+              <span className="text-[9px] font-mono text-slate-500 mt-0.5">
+                {code.split('\n').length} lines
+              </span>
+            </div>
           </div>
-
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleResetToBrokenCode}
-              title="Reset code to initial broken state"
-              className={`text-[11px] font-semibold px-2 py-1 rounded-lg flex items-center gap-1 transition-colors ${
-                isDark
-                  ? 'text-slate-400 hover:text-white hover:bg-white/5'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[14px]">restart_alt</span>
-              Reset
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowSolutionModal(true)}
-              title="Peek at solution"
-              className={`text-[11px] font-semibold px-2 py-1 rounded-lg flex items-center gap-1 transition-colors ${
-                isDark
-                  ? 'text-indigo-400 hover:bg-indigo-500/10'
-                  : 'text-indigo-600 hover:bg-indigo-50'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[14px]">visibility</span>
-              Solution
-            </button>
+            {code !== data.brokenCode && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleResetToBrokenCode();
+                }}
+                className="text-[11px] font-mono text-slate-400 hover:text-indigo-300 flex items-center gap-1 transition-colors px-2 py-0.5 rounded hover:bg-slate-800 cursor-pointer"
+                title="Reset to initial broken code"
+              >
+                <span className="material-symbols-outlined text-[13px]">restart_alt</span>
+                <span>Reset</span>
+              </button>
+            )}
+            {code === data.brokenCode && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  soundFX.playClick();
+                  setShowSolutionModal(true);
+                }}
+                className="text-[11px] font-mono text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors px-2 py-0.5 rounded hover:bg-slate-800 cursor-pointer"
+                title="View reference solution code"
+              >
+                <span className="material-symbols-outlined text-[13px]">visibility</span>
+                <span>Solution</span>
+              </button>
+            )}
+            <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-wider font-semibold">
+              Kotlin 1.9
+            </span>
           </div>
         </div>
 
         {/* Editor Area with Line Numbers */}
-        <div className="relative flex p-3 font-mono text-xs">
-          <div
-            className={`select-none pr-3 text-right text-slate-500 font-mono text-xs leading-[1.625rem] border-r ${
-              isDark ? 'border-white/5' : 'border-slate-200'
-            }`}
-          >
-            {code.split('\n').map((_, i) => (
-              <div key={i}>{i + 1}</div>
-            ))}
+        <div
+          className="p-4 overflow-x-auto cursor-text bg-slate-950"
+          onClick={() => textareaRef.current?.focus()}
+        >
+          <div className="flex gap-3 min-w-full w-max">
+            <div
+              className="font-mono text-xs text-slate-600 select-none text-right flex flex-col leading-[1.625rem] shrink-0 min-w-[1.5rem]"
+              aria-hidden="true"
+            >
+              {code.split('\n').map((_, i) => (
+                <span key={i}>{i + 1}</span>
+              ))}
+            </div>
+            <textarea
+              ref={textareaRef}
+              wrap="off"
+              value={code}
+              onChange={(e) => {
+                setCode(e.target.value);
+                setIsResolved(false);
+              }}
+              spellCheck={false}
+              className="flex-1 bg-transparent border-0 outline-none text-indigo-300 font-mono text-xs leading-[1.625rem] resize-none p-0 focus:ring-0 overflow-y-hidden overflow-x-hidden block whitespace-pre min-w-0"
+            />
           </div>
-          <textarea
-            ref={textareaRef}
-            value={code}
-            onChange={(e) => {
-              setCode(e.target.value);
-              setIsResolved(false);
-            }}
-            spellCheck={false}
-            className={`w-full pl-3 bg-transparent font-mono text-xs leading-[1.625rem] resize-none outline-none focus:outline-none ${
-              isDark ? 'text-slate-200' : 'text-slate-900'
-            }`}
-          />
         </div>
       </section>
 
@@ -335,7 +352,30 @@ export const Debug: React.FC<DebugStageProps> = ({
         </button>
       </div>
 
-      {/* Progressive Hint System (Conceptual -> Targeted -> Pinpointed) */}
+      {/* Progressive Hint System (Conceptual -> Targeted -> Pinpointed) -- collapsed
+          behind a hint icon by default so it doesn't clutter the debug view up front. */}
+      {!showHintPanel ? (
+        <button
+          type="button"
+          onClick={() => {
+            soundFX.playClick();
+            setShowHintPanel(true);
+          }}
+          className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl border mb-5 font-bold text-xs transition-colors ${
+            isDark
+              ? 'bg-[#151b28] border-amber-500/30 text-amber-400 hover:bg-amber-500/10'
+              : 'bg-white border-amber-200 text-amber-700 shadow-sm hover:bg-amber-50'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[18px]">lightbulb</span>
+          Need a hint?
+          {activeHintLevel > 0 && (
+            <span className="text-[11px] font-mono text-slate-400">
+              ({activeHintLevel}/3 revealed)
+            </span>
+          )}
+        </button>
+      ) : (
       <section
         className={`p-4 rounded-2xl border mb-5 transition-colors ${
           isDark ? 'bg-[#151b28] border-white/5' : 'bg-white border-slate-200 shadow-sm'
@@ -348,9 +388,22 @@ export const Debug: React.FC<DebugStageProps> = ({
             </span>
             <h2 className="text-sm font-bold font-['Outfit']">Progressive Hints</h2>
           </div>
-          <span className="text-[11px] font-mono text-slate-400">
-            {activeHintLevel}/3 Revealed
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono text-slate-400">
+              {activeHintLevel}/3 Revealed
+            </span>
+            <button
+              type="button"
+              aria-label="Hide hints"
+              onClick={() => {
+                soundFX.playClick();
+                setShowHintPanel(false);
+              }}
+              className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[16px]">close</span>
+            </button>
+          </div>
         </div>
 
         {activeHintLevel === 0 ? (
@@ -424,6 +477,7 @@ export const Debug: React.FC<DebugStageProps> = ({
           </button>
         )}
       </section>
+      )}
 
       {/* Execution Result Banner */}
       {executionResult && (
@@ -480,36 +534,75 @@ export const Debug: React.FC<DebugStageProps> = ({
           </div>
         </section>
       )}
+      </>
+      )}
 
-      {/* Bottom Sticky Completion Bar */}
-      <div className="pt-3 border-t border-slate-500/20 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span
-            className={`w-2.5 h-2.5 rounded-full ${
-              isResolved ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+      {/* Spacer reserving room below the in-flow content for the fixed bottom bar */}
+      <div className="h-24" />
+
+      {/* Bottom CTA / Tap Hint -- fixed (not sticky) so it stays flush with the screen
+          bottom from the very first tap, consistent with all other stages. */}
+      <div
+        className={`fixed bottom-0 inset-x-0 z-40 pb-safe pt-1.5 pb-4 transition-all ${
+          isDark
+            ? 'bg-gradient-to-t from-[#0f131d] via-[#0f131d]/95 to-transparent'
+            : 'bg-gradient-to-t from-[#f1f4f9] via-[#f1f4f9]/95 to-transparent'
+        }`}
+      >
+      <div className="max-w-md mx-auto px-4">
+        {!isFullyRevealed ? (
+          /* Subtle Minimalist Tap Hint (Finger icon + short text) positioned nicely above bottom edge.
+              The wrapper (not just the pill) carries the click handler and extra vertical padding so
+              taps slightly above/below/left/right of the visible pill still register. */
+          <div
+            className="flex justify-center w-full py-3 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNextReveal();
+            }}
+          >
+            <button
+              type="button"
+              className={`inline-flex items-center gap-2 px-5 py-2 rounded-full border shadow-md transition-all duration-200 active:scale-95 cursor-pointer select-none ${
+                isDark
+                  ? 'bg-[#171b26] border-indigo-500/40 text-indigo-300 hover:text-white hover:border-indigo-400'
+                  : 'bg-white border-indigo-200 text-indigo-700 hover:border-indigo-300 shadow-slate-200'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px] text-indigo-500 animate-bounce">
+                touch_app
+              </span>
+              <span className="text-xs font-semibold font-['Outfit'] tracking-wide">
+                Tap to continue
+              </span>
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            disabled={!isResolved}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isResolved) {
+                soundFX.playClick();
+                onContinue();
+              }
+            }}
+            className={`w-full h-14 rounded-2xl font-['Outfit'] font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+              isResolved
+                ? 'bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white shadow-lg shadow-emerald-600/35 cursor-pointer animate-fadeIn'
+                : isDark
+                ? 'bg-[#171b26] border border-[#262c3d] text-slate-500 cursor-not-allowed opacity-60'
+                : 'bg-slate-200 border border-slate-300 text-slate-400 cursor-not-allowed opacity-75'
             }`}
-          />
-          <span className="text-xs font-semibold text-slate-400">
-            {isResolved ? 'Ready to Advance' : 'Fix bug to continue'}
-          </span>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            soundFX.playClick();
-            onContinue();
-          }}
-          disabled={!isResolved}
-          className={`py-3 px-6 rounded-xl font-bold font-['Outfit'] text-sm flex items-center gap-2 transition-all ${
-            isResolved
-              ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg active:scale-95'
-              : 'bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed'
-          }`}
-        >
-          <span>Claim Mastery</span>
-          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-        </button>
+          >
+            <span>{isResolved ? 'Claim Mastery' : 'Fix the bug to continue'}</span>
+            <span className="material-symbols-outlined text-[18px]">
+              {isResolved ? 'arrow_forward' : 'lock'}
+            </span>
+          </button>
+        )}
+      </div>
       </div>
 
       {/* Solution Modal */}

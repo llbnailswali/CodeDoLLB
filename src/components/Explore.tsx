@@ -12,6 +12,9 @@ interface ExploreStageProps {
   scrollToElement: (id: string, offset?: number) => void;
   onContinue: () => void;
   tapToRevealEnabled?: boolean;
+  /** Label of whichever stage actually comes next for this lesson -- stages
+   * can be skipped per-lesson, so this must not be hardcoded. */
+  nextStageLabel?: string;
 }
 
 // Reveal steps:
@@ -28,6 +31,7 @@ export const Explore: React.FC<ExploreStageProps> = ({
   scrollToElement,
   onContinue,
   tapToRevealEnabled = true,
+  nextStageLabel = 'Predict',
 }) => {
   const totalCards = data.cards.length;
   // Step 0: title only
@@ -373,13 +377,13 @@ export const Explore: React.FC<ExploreStageProps> = ({
                     {line.startsWith('fun ') ? (
                       <>
                         <span className="text-indigo-500 font-semibold">fun </span>
-                        <span className="text-slate-900 dark:text-white font-medium">
+                        <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
                           {line.substring(4)}
                         </span>
                       </>
                     ) : line.includes('println') ? (
                       <span className="pl-4">
-                        <span className="text-slate-900 dark:text-white">println</span>
+                        <span className={isDark ? 'text-white' : 'text-slate-900'}>println</span>
                         (
                         <span className="text-emerald-500">
                           {line.substring(line.indexOf('(') + 1, line.lastIndexOf(')'))}
@@ -450,26 +454,32 @@ export const Explore: React.FC<ExploreStageProps> = ({
       </div>
       )}
 
-      {/* Spacer to push content up so hint sits cleanly at bottom with breathing space */}
-      <div className="flex-1 min-h-[16px]" />
+      {/* Spacer reserving room below the in-flow content for the fixed bottom bar */}
+      <div className="h-24" />
 
-      {/* Primary CTA / Tap Hint */}
+      {/* Primary CTA / Tap Hint -- fixed (not sticky) so it stays flush with the screen
+          bottom from the very first tap, instead of drifting down as content grows. */}
       <div
-        className={`sticky bottom-0 left-0 right-0 w-full pt-1.5 pb-2 transition-all ${
+        className={`fixed bottom-0 inset-x-0 z-40 pb-safe pt-1.5 pb-4 transition-all ${
           isDark
             ? 'bg-gradient-to-t from-[#0f131d] via-[#0f131d]/95 to-transparent'
             : 'bg-gradient-to-t from-[#f1f4f9] via-[#f1f4f9]/95 to-transparent'
         }`}
       >
+      <div className="max-w-md mx-auto px-4">
         {!isFullyRevealed ? (
-          /* Subtle Minimalist Tap Hint (Finger icon + short text) positioned nicely above bottom edge */
-          <div className="flex justify-center w-full">
+          /* Subtle Minimalist Tap Hint (Finger icon + short text) positioned nicely above bottom edge.
+              The wrapper (not just the pill) carries the click handler and extra vertical padding so
+              taps slightly above/below/left/right of the visible pill still register. */
+          <div
+            className="flex justify-center w-full py-3 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNextReveal();
+            }}
+          >
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNextReveal();
-              }}
               className={`inline-flex items-center gap-2 px-5 py-2 rounded-full border shadow-md transition-all duration-200 active:scale-95 cursor-pointer select-none ${
                 isDark
                   ? 'bg-[#171b26] border-indigo-500/40 text-indigo-300 hover:text-white hover:border-indigo-400'
@@ -493,10 +503,11 @@ export const Explore: React.FC<ExploreStageProps> = ({
             }}
             className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-['Outfit'] font-bold text-base rounded-2xl shadow-lg shadow-indigo-600/35 flex items-center justify-center gap-2 transition-all cursor-pointer animate-fadeIn"
           >
-            <span>Continue to Predict</span>
+            <span>Continue to {nextStageLabel}</span>
             <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
           </button>
         )}
+      </div>
       </div>
     </div>
   );

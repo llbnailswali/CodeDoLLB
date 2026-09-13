@@ -1,5 +1,7 @@
 export type AppTheme = 'light' | 'dark';
 
+export type FontSize = 'small' | 'medium' | 'large';
+
 export type TabType = 'learn' | 'practice' | 'leaderboard' | 'profile' | 'curriculum';
 
 export type ChallengeType =
@@ -46,6 +48,8 @@ export interface LessonQuestion {
   isBoss?: boolean;
 }
 
+export type CurriculumLevel = 'beginner' | 'intermediate' | 'experienced';
+
 export interface LessonMeta {
   id: string;
   title: string;
@@ -56,6 +60,10 @@ export interface LessonMeta {
   description: string;
   questionsCount: number;
   isBoss?: boolean;
+  /** Key into AVAILABLE_FIVE_STAGE_LESSONS, once this lesson's real 6-stage
+   * content has been authored. Undefined means only the placeholder title
+   * exists so far -- see lessonStagesData.ts. */
+  fiveStageLessonKey?: string;
 }
 
 export interface WorldMeta {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppTheme, UserStats } from '../types';
+import { AppTheme, FontSize, UserStats } from '../types';
 import { soundFX } from '../utils/audio';
 
 interface ProfileViewProps {
@@ -10,6 +10,8 @@ interface ProfileViewProps {
   onToggleTheme: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
+  fontSize: FontSize;
+  onChangeFontSize: (size: FontSize) => void;
   onResetProgress: () => void;
 }
 
@@ -21,6 +23,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onToggleTheme,
   soundEnabled,
   onToggleSound,
+  fontSize,
+  onChangeFontSize,
   onResetProgress,
 }) => {
   const isDark = theme === 'dark';
@@ -255,6 +259,58 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             {soundEnabled ? 'ON' : 'MUTED'}
           </div>
         </button>
+
+        {/* Font Size Selector */}
+        <div
+          className={`w-full p-3 rounded-xl flex items-center justify-between transition-all border ${
+            isDark
+              ? 'bg-[#0f1422] border-white/5'
+              : 'bg-slate-50/80 border-slate-200/80'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                isDark ? 'bg-cyan-400/20 text-cyan-400' : 'bg-cyan-100 text-cyan-600'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">format_size</span>
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="font-['Outfit'] text-xs font-bold leading-tight">Text Size</span>
+              <span className="font-mono text-[10px] text-slate-400">
+                Applies across the whole app
+              </span>
+            </div>
+          </div>
+          <div
+            className={`flex items-center gap-1 p-0.5 rounded-lg border ${
+              isDark ? 'bg-[#151b28] border-white/5' : 'bg-white border-slate-200'
+            }`}
+          >
+            {(['small', 'medium', 'large'] as FontSize[]).map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => {
+                  soundFX.playClick();
+                  onChangeFontSize(size);
+                }}
+                className={`w-8 h-7 flex items-center justify-center rounded-md font-bold transition-all ${
+                  size === 'small' ? 'text-[11px]' : size === 'medium' ? 'text-[14px]' : 'text-[17px]'
+                } ${
+                  fontSize === size
+                    ? 'bg-indigo-500 text-white'
+                    : isDark
+                    ? 'text-slate-400 hover:text-slate-200'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                A
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Streak Calendar / Weekly Heatmap */}

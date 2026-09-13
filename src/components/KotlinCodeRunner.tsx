@@ -69,7 +69,14 @@ export const KotlinCodeRunner: React.FC<KotlinCodeRunnerProps> = ({
       setResult(execResult);
       setHasExecuted(true);
 
-      if (execResult.success) {
+      // Match Debug stage's rule: only a real pass -- compiled cleanly AND
+      // (when there's an expected output to check) actually matching it --
+      // earns the success tone. Anything else, including a clean compile
+      // with the wrong output, plays the error tone.
+      const outputMatches = expectedOutput
+        ? (execResult.output || '').trim() === expectedOutput.trim()
+        : true;
+      if (execResult.success && outputMatches) {
         soundFX.playSuccess();
       } else {
         soundFX.playError();
@@ -163,7 +170,11 @@ export const KotlinCodeRunner: React.FC<KotlinCodeRunnerProps> = ({
           {/* Header Row */}
           <div className="flex items-center justify-between mb-2.5">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-['Outfit']">
+              <span
+                className={`text-[10px] font-bold uppercase tracking-wider font-['Outfit'] ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}
+              >
                 {result.success ? 'PROGRAM OUTPUT' : 'COMPILER DIAGNOSTICS'}
               </span>
               {result.error?.line && (
@@ -183,7 +194,11 @@ export const KotlinCodeRunner: React.FC<KotlinCodeRunnerProps> = ({
                     Matches Expected
                   </span>
                 ) : (
-                  <span className="text-[10px] font-mono text-emerald-500 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                  <span
+                    className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md border border-emerald-500/20 ${
+                      isDark ? 'text-emerald-400 bg-emerald-950/40' : 'text-emerald-700 bg-emerald-50'
+                    }`}
+                  >
                     Exit Code 0
                   </span>
                 )

@@ -1,5 +1,9 @@
 # CODEDO — DATA GATHERING & CURRICULUM PLAN
 
+> ⚠️ **DEPRECATED — DO NOT USE AS THE CURRENT PLAN.**
+> This document describes an earlier 10-world, topic-named curriculum (Kotlin Foundations, Logic & Branches, etc.) that is no longer the target structure. The data-gathering process going forward is planned according to **`CODEDO_MASTER_PLAN.md`** (the 22-world curriculum matching the app's actual world names).
+> The content already authored under this old plan (294+ validated questions, explanations, boss fights) is still valuable and will be reused/remapped into the new world structure during the actual data-gathering process — it is not being thrown away, just no longer the plan of record.
+
 **Version:** 4.1  
 **Status:** Active Source of Truth  
 **Purpose:** Define how CodeDo gathers, structures, validates, personalizes, and maintains programming-learning content.

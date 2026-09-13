@@ -18,6 +18,9 @@ interface WriteRunStageProps {
   setActualOutput?: (output: string) => void;
   onRunCode?: () => void;
   onContinue: () => void;
+  /** Label of whichever stage actually comes next for this lesson -- stages
+   * can be skipped per-lesson, so this must not be hardcoded. */
+  nextStageLabel?: string;
 }
 
 // Reveal steps:
@@ -41,10 +44,21 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
   setActualOutput,
   onRunCode,
   onContinue,
+  nextStageLabel = 'Debug',
 }) => {
   const [executionResult, setExecutionResult] = useState<KotlinExecutionResult | null>(null);
   const [showSolutionModal, setShowSolutionModal] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Ran without errors AND actually produced the expected output -- required
+  // before the user can advance, so a compiling-but-wrong-answer submission
+  // doesn't let them skip past the challenge.
+  const isOutputCorrect = Boolean(
+    executionResult &&
+      executionResult.success &&
+      data.expectedOutput &&
+      (executionResult.output || '').trim() === data.expectedOutput.trim()
+  );
 
   const autoResizeTextarea = () => {
     const textarea = textareaRef.current;
@@ -251,6 +265,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                       e.stopPropagation();
                       soundFX.playClick();
                       setUserCode(data.initialCode);
+                      setExecutionResult(null);
                     }}
                     className="text-[11px] font-mono text-slate-400 hover:text-indigo-300 flex items-center gap-1 transition-colors px-2 py-0.5 rounded hover:bg-slate-800 cursor-pointer"
                     title="Reset to initial program code"
@@ -259,7 +274,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                     <span>Reset</span>
                   </button>
                 )}
-                {data.solutionCode && (
+                {data.solutionCode && userCode === data.initialCode && (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -307,6 +322,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                         value={userCode}
                         onChange={(e) => {
                           setUserCode(e.target.value);
+                          setExecutionResult(null);
                           autoResizeTextarea();
                         }}
                         onInput={autoResizeTextarea}
@@ -345,26 +361,33 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
         </div>
       )}
 
-      {/* Spacer to push content up so hint sits cleanly at bottom with breathing space */}
-      <div className="flex-1 min-h-[16px]" />
+      {/* Spacer reserving room below the in-flow content for the fixed bottom bar */}
+      <div className="h-24" />
 
-      {/* Next Challenge / Stage CTA or Minimalist Tap Hint */}
+      {/* Next Challenge / Stage CTA or Minimalist Tap Hint -- fixed (not sticky) so it stays
+          flush with the screen bottom from the very first tap, instead of drifting down as
+          content grows. */}
       <div
-        className={`sticky bottom-0 left-0 right-0 w-full pt-1.5 pb-2 transition-all ${
+        className={`fixed bottom-0 inset-x-0 z-40 pb-safe pt-1.5 pb-4 transition-all ${
           isDark
             ? 'bg-gradient-to-t from-[#0f131d] via-[#0f131d]/95 to-transparent'
             : 'bg-gradient-to-t from-[#f1f4f9] via-[#f1f4f9]/95 to-transparent'
         }`}
       >
+      <div className="max-w-md mx-auto px-4">
         {!isFullyRevealed ? (
-          /* Subtle Minimalist Tap Hint (Finger icon + short text) positioned nicely above bottom edge */
-          <div className="flex justify-center w-full">
+          /* Subtle Minimalist Tap Hint (Finger icon + short text) positioned nicely above bottom edge.
+              The wrapper (not just the pill) carries the click handler and extra vertical padding so
+              taps slightly above/below/left/right of the visible pill still register. */
+          <div
+            className="flex justify-center w-full py-3 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNextReveal();
+            }}
+          >
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNextReveal();
-              }}
               className={`inline-flex items-center gap-2 px-5 py-2 rounded-full border shadow-md transition-all duration-200 active:scale-95 cursor-pointer select-none ${
                 isDark
                   ? 'bg-[#171b26] border-indigo-500/40 text-indigo-300 hover:text-white hover:border-indigo-400'
@@ -379,11 +402,23 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
               </span>
             </button>
           </div>
-        ) : executionResult && !executionResult.success ? (
+        ) : !executionResult ? (
+          /* User hasn't run the code yet -- must run it before advancing */
+          <div className="w-full h-14 rounded-2xl bg-slate-800/60 border border-slate-700 text-slate-300 font-bold font-['Outfit'] text-sm flex items-center justify-center gap-2 transition-all">
+            <span className="material-symbols-outlined text-[18px]">play_circle</span>
+            <span>Run your code to continue</span>
+          </div>
+        ) : !executionResult.success ? (
           /* When there is an active compilation/runtime error, instruct user to fix */
           <div className="w-full h-14 rounded-2xl bg-rose-950/40 border border-rose-800/50 text-rose-300 font-bold font-['Outfit'] text-sm flex items-center justify-center gap-2 transition-all">
             <span className="material-symbols-outlined text-[18px]">error</span>
             <span>Fix error above to continue</span>
+          </div>
+        ) : !isOutputCorrect ? (
+          /* Ran successfully but output doesn't match what's expected yet */
+          <div className="w-full h-14 rounded-2xl bg-amber-950/40 border border-amber-800/50 text-amber-300 font-bold font-['Outfit'] text-sm flex items-center justify-center gap-2 transition-all">
+            <span className="material-symbols-outlined text-[18px]">rule</span>
+            <span>Output doesn't match yet -- keep debugging</span>
           </div>
         ) : (
           <button
@@ -394,10 +429,11 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             }}
             className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold font-['Outfit'] text-sm shadow-lg shadow-indigo-600/35 flex items-center justify-center gap-2 transition-all cursor-pointer animate-fadeIn"
           >
-            <span>Continue to Debug</span>
+            <span>Continue to {nextStageLabel}</span>
             <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
           </button>
         )}
+      </div>
       </div>
 
       {/* Reference Solution Modal */}
@@ -451,6 +487,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                 onClick={() => {
                   soundFX.playSuccess();
                   setUserCode(data.solutionCode);
+                  setExecutionResult(null);
                   setShowSolutionModal(false);
                 }}
                 className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold cursor-pointer transition-colors"

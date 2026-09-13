@@ -1,5 +1,9 @@
 # CodeDo Curriculum Data Gathering & Question Authoring Progress
 
+> ⚠️ **DEPRECATED — DO NOT USE AS THE CURRENT PLAN.**
+> This tracks progress against the old 10-world, topic-named curriculum, which is no longer the target structure. The data-gathering process going forward is planned according to **`CODEDO_MASTER_PLAN.md`** (the 22-world curriculum matching the app's actual world names).
+> The content already authored here (294+ validated questions, explanations, boss fights) is still valuable and will be reused/remapped into the new world structure during the actual data-gathering process — it is not being thrown away, just no longer the plan of record.
+
 > **Target Goal**: Complete 90-Day Kotlin Mastery Curriculum (Worlds 1–10) with multi-format interactive challenges (predict-output, bug-hunter, arrange-blocks, multiple-choice, boss fights).
 
 ---

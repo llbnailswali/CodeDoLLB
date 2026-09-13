@@ -10,6 +10,10 @@ interface LearnStageProps {
   onContinue: () => void;
   renderSnippetLine: (line: string, isDark: boolean) => React.ReactNode;
   tapToRevealEnabled?: boolean;
+  /** Label of whichever stage actually comes next for this lesson (Explore,
+   * Predict, etc.) -- stages can be skipped per-lesson, so this must not be
+   * hardcoded. Defaults to 'Explore' only as a last-resort fallback. */
+  nextStageLabel?: string;
 }
 
 // Reveal stages:
@@ -27,6 +31,7 @@ export const Learn: React.FC<LearnStageProps> = ({
   onContinue,
   renderSnippetLine,
   tapToRevealEnabled = true,
+  nextStageLabel = 'Explore',
 }) => {
   // Total steps = 2 (subtitle + example) + data.keyIdeas.length + 1 (key takeaway)
   const totalKeyIdeas = data.keyIdeas.length;
@@ -232,26 +237,33 @@ export const Learn: React.FC<LearnStageProps> = ({
         </section>
       )}
 
-      {/* Spacer to push content up so hint sits cleanly at bottom with breathing space */}
-      <div className="flex-1 min-h-[16px]" />
+      {/* Spacer reserving room below the in-flow content for the fixed bottom bar */}
+      <div className="h-24" />
 
-      {/* Bottom Sticky Control: Hint bar during reveal, or Next Stage Button on last step */}
+      {/* Bottom Fixed Control: Hint bar during reveal, or Next Stage Button on last step --
+          fixed (not sticky) so it stays flush with the screen bottom from the very first tap,
+          instead of only reaching the bottom once revealed content grows tall enough. */}
       <div
-        className={`sticky bottom-0 left-0 right-0 w-full pt-1.5 pb-2 transition-all ${
+        className={`fixed bottom-0 inset-x-0 z-40 pb-safe pt-1.5 pb-4 transition-all ${
           isDark
             ? 'bg-gradient-to-t from-[#0f131d] via-[#0f131d]/95 to-transparent'
             : 'bg-gradient-to-t from-[#f1f4f9] via-[#f1f4f9]/95 to-transparent'
         }`}
       >
+      <div className="max-w-md mx-auto px-4">
         {!isFullyRevealed ? (
-          /* Subtle Minimalist Tap Hint (Finger icon + short text) positioned nicely above the bottom edge */
-          <div className="flex justify-center w-full">
+          /* Subtle Minimalist Tap Hint (Finger icon + short text) positioned nicely above the bottom edge.
+              The wrapper (not just the pill) carries the click handler and extra vertical padding so
+              taps slightly above/below/left/right of the visible pill still register. */
+          <div
+            className="flex justify-center w-full py-3 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNextReveal();
+            }}
+          >
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNextReveal();
-              }}
               className={`inline-flex items-center gap-2 px-5 py-2 rounded-full border shadow-md transition-all duration-200 active:scale-95 cursor-pointer select-none ${
                 isDark
                   ? 'bg-[#171b26] border-indigo-500/40 text-indigo-300 hover:text-white hover:border-indigo-400'
@@ -276,10 +288,11 @@ export const Learn: React.FC<LearnStageProps> = ({
             }}
             className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-['Outfit'] font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer animate-fadeIn"
           >
-            <span>Continue to Explore</span>
+            <span>Continue to {nextStageLabel}</span>
             <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
           </button>
         )}
+      </div>
       </div>
     </div>
   );

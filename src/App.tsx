@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { AppTheme, LessonQuestion, TabType, UserStats } from './types';
+import React, { useState, useEffect, useRef } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
+import { AppTheme, FontSize, LessonQuestion, TabType, UserStats } from './types';
 import {
   ALL_CURRICULUM_QUESTIONS,
   DAILY_BATTLE_POOL,
@@ -24,7 +25,7 @@ import { ActiveLessonView } from './components/ActiveLessonView';
 import { PracticeView, DrillType } from './components/PracticeView';
 import { LeaderboardView } from './components/LeaderboardView';
 import { ProfileView } from './components/ProfileView';
-import { Detail } from './components/Detail';
+import { Detail, DetailHandle } from './components/Detail';
 
 export default function App() {
   const [theme, setTheme] = useState<AppTheme>(() => StorageManager.getTheme());
@@ -34,10 +35,12 @@ export default function App() {
   const [activeQuestionPool, setActiveQuestionPool] = useState<LessonQuestion[]>(LESSON_QUESTIONS);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(1); // Question 2 (Step 2 of 5: val x = 10, val y = 20)
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => StorageManager.getSoundEnabled());
+  const [fontSize, setFontSize] = useState<FontSize>(() => StorageManager.getFontSize());
 
   // User Stats loaded from storage with daily reset check
   const [userStats, setUserStats] = useState<UserStats>(() => StorageManager.getUserStats());
   const [curriculumWorldId, setCurriculumWorldId] = useState<string>('world-1');
+  const detailRef = useRef<DetailHandle>(null);
 
   // Open Curriculum Map with optional target world
   const handleOpenCurriculum = (worldId?: string) => {
@@ -63,12 +66,23 @@ export default function App() {
     StorageManager.setTheme(theme);
   }, [theme]);
 
+  // Persist font-size preference; applied via className on <main> only, so
+  // the Header toolbar and bottom Navigation tabs are never affected.
+  useEffect(() => {
+    StorageManager.setFontSize(fontSize);
+  }, [fontSize]);
+
   const toggleTheme = () => {
     setTheme((prev) => {
       const next = prev === 'dark' ? 'light' : 'dark';
       StorageManager.setTheme(next);
       return next;
     });
+  };
+
+  const changeFontSize = (next: FontSize) => {
+    setFontSize(next);
+    StorageManager.setFontSize(next);
   };
 
   const toggleSound = () => {
@@ -138,6 +152,32 @@ export default function App() {
     setIsLessonActive(false);
   };
 
+  // Make every screen respect the Android hardware back button instead of the
+  // default (exit the app from wherever it's pressed): step back through the
+  // lesson stages, close an active drill, or return to the Learn tab -- only
+  // exiting the app once we're already at that true root.
+  useEffect(() => {
+    const listenerPromise = CapacitorApp.addListener('backButton', () => {
+      if (fiveStageLessonKey) {
+        detailRef.current?.goBack();
+      } else if (isLessonActive) {
+        handleExitLesson();
+      } else if (activeTab === 'curriculum') {
+        soundFX.playClick();
+        setActiveTab('learn');
+      } else if (activeTab !== 'learn') {
+        soundFX.playClick();
+        setActiveTab('learn');
+      } else {
+        CapacitorApp.exitApp();
+      }
+    });
+
+    return () => {
+      listenerPromise.then((handle) => handle.remove());
+    };
+  }, [fiveStageLessonKey, isLessonActive, activeTab]);
+
   const handleLessonComplete = (earnedXP: number) => {
     setUserStats((prev) => {
       const updated: UserStats = {
@@ -194,10 +234,11 @@ export default function App() {
         )}
 
         {/* Screen Switcher */}
-        <main className="flex-1 w-full flex flex-col">
+        <main className={`flex-1 w-full flex flex-col font-size-${fontSize}`}>
           {fiveStageLessonKey ? (
             /* 5-Stage Interactive Lesson Flow (Learn -> Explore -> Predict -> Write & Run -> Mastered) */
             <Detail
+              ref={detailRef}
               theme={theme}
               initialLessonKey={fiveStageLessonKey}
               userStats={userStats}
@@ -256,6 +297,8 @@ export default function App() {
               onToggleTheme={toggleTheme}
               soundEnabled={soundEnabled}
               onToggleSound={toggleSound}
+              fontSize={fontSize}
+              onChangeFontSize={changeFontSize}
               onResetProgress={handleResetProgress}
             />
           )}

@@ -231,94 +231,146 @@
   -ms-overflow-style: none;
 }
 
+
 /* ==========================================================================
-   APP-WIDE FONT SIZE SCALING (Small, Medium, Large)
+   SCREEN-CONTENT-ONLY FONT SIZE SCALING (Small, Medium, Large)
+   Scoped to the `.font-size-*` class placed on <main> only, so the bottom
+   tab bar (Navigation) and top toolbar (Header), which sit outside <main>,
+   are never affected. Absolute sizes: small = 18px, medium = 20px, large =
+   22px, scaled off the unscaled 16px baseline (1.125x / 1.25x / 1.375x).
    ========================================================================== */
-html {
-  font-size: 16px;
-  transition: font-size 0.2s ease;
-}
 
-html.font-size-small {
-  font-size: 14px;
-}
+/* Small: standard Tailwind rem-based text utilities (1.125x) */
+main.font-size-small .text-xs { font-size: 13.5px !important; }
+main.font-size-small .text-sm { font-size: 15.75px !important; }
+main.font-size-small .text-base { font-size: 18px !important; }
+main.font-size-small .text-lg { font-size: 20.25px !important; }
+main.font-size-small .text-xl { font-size: 22.5px !important; }
+main.font-size-small .text-2xl { font-size: 27px !important; }
+main.font-size-small .text-3xl { font-size: 33.75px !important; }
 
-html.font-size-medium {
-  font-size: 16px;
-}
+/* Medium: standard Tailwind rem-based text utilities (1.25x) */
+main.font-size-medium .text-xs { font-size: 15px !important; }
+main.font-size-medium .text-sm { font-size: 17.5px !important; }
+main.font-size-medium .text-base { font-size: 20px !important; }
+main.font-size-medium .text-lg { font-size: 22.5px !important; }
+main.font-size-medium .text-xl { font-size: 25px !important; }
+main.font-size-medium .text-2xl { font-size: 30px !important; }
+main.font-size-medium .text-3xl { font-size: 37.5px !important; }
 
-html.font-size-large {
-  font-size: 18px;
-}
+/* Large: standard Tailwind rem-based text utilities (1.375x) */
+main.font-size-large .text-xs { font-size: 16.5px !important; }
+main.font-size-large .text-sm { font-size: 19.25px !important; }
+main.font-size-large .text-base { font-size: 22px !important; }
+main.font-size-large .text-lg { font-size: 24.75px !important; }
+main.font-size-large .text-xl { font-size: 27.5px !important; }
+main.font-size-large .text-2xl { font-size: 33px !important; }
+main.font-size-large .text-3xl { font-size: 41.25px !important; }
 
-/* Small Font Scale Overrides for Arbitrary Text Classes */
-html.font-size-small [class*="text-\[8px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[8px\]:not(.material-symbols-outlined) { font-size: 7.5px !important; }
-html.font-size-small [class*="text-\[9px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[9px\]:not(.material-symbols-outlined) { font-size: 8px !important; }
-html.font-size-small [class*="text-\[10px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[10px\]:not(.material-symbols-outlined) { font-size: 9px !important; }
-html.font-size-small [class*="text-\[11px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[11px\]:not(.material-symbols-outlined) { font-size: 9.75px !important; }
-html.font-size-small [class*="text-\[12px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[12px\]:not(.material-symbols-outlined) { font-size: 10.5px !important; }
-html.font-size-small [class*="text-\[13px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[13px\]:not(.material-symbols-outlined) { font-size: 11.5px !important; }
-html.font-size-small [class*="text-\[14px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[14px\]:not(.material-symbols-outlined) { font-size: 12.5px !important; }
-html.font-size-small [class*="text-\[15px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[15px\]:not(.material-symbols-outlined) { font-size: 13px !important; }
-html.font-size-small [class*="text-\[16px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[16px\]:not(.material-symbols-outlined) { font-size: 14px !important; }
-html.font-size-small [class*="text-\[17px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[17px\]:not(.material-symbols-outlined) { font-size: 15px !important; }
-html.font-size-small [class*="text-\[18px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[18px\]:not(.material-symbols-outlined) { font-size: 16px !important; }
-html.font-size-small [class*="text-\[20px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[20px\]:not(.material-symbols-outlined) { font-size: 17.5px !important; }
-html.font-size-small [class*="text-\[22px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[22px\]:not(.material-symbols-outlined) { font-size: 19px !important; }
-html.font-size-small [class*="text-\[24px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[24px\]:not(.material-symbols-outlined) { font-size: 21px !important; }
-html.font-size-small [class*="text-\[26px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[26px\]:not(.material-symbols-outlined) { font-size: 23px !important; }
-html.font-size-small [class*="text-\[28px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[28px\]:not(.material-symbols-outlined) { font-size: 24.5px !important; }
-html.font-size-small [class*="text-\[32px\]"]:not(.material-symbols-outlined),
-html.font-size-small .text-\[32px\]:not(.material-symbols-outlined) { font-size: 28px !important; }
+/* Small Font Scale Overrides for Arbitrary Text Classes (1.125x) */
+main.font-size-small [class*="text-\[8px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[8px\]:not(.material-symbols-outlined) { font-size: 9px !important; }
+main.font-size-small [class*="text-\[9px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[9px\]:not(.material-symbols-outlined) { font-size: 10.12px !important; }
+main.font-size-small [class*="text-\[10px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[10px\]:not(.material-symbols-outlined) { font-size: 11.25px !important; }
+main.font-size-small [class*="text-\[11px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[11px\]:not(.material-symbols-outlined) { font-size: 12.38px !important; }
+main.font-size-small [class*="text-\[12px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[12px\]:not(.material-symbols-outlined) { font-size: 13.5px !important; }
+main.font-size-small [class*="text-\[13px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[13px\]:not(.material-symbols-outlined) { font-size: 14.62px !important; }
+main.font-size-small [class*="text-\[14px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[14px\]:not(.material-symbols-outlined) { font-size: 15.75px !important; }
+main.font-size-small [class*="text-\[15px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[15px\]:not(.material-symbols-outlined) { font-size: 16.88px !important; }
+main.font-size-small [class*="text-\[16px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[16px\]:not(.material-symbols-outlined) { font-size: 18px !important; }
+main.font-size-small [class*="text-\[17px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[17px\]:not(.material-symbols-outlined) { font-size: 19.12px !important; }
+main.font-size-small [class*="text-\[18px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[18px\]:not(.material-symbols-outlined) { font-size: 20.25px !important; }
+main.font-size-small [class*="text-\[20px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[20px\]:not(.material-symbols-outlined) { font-size: 22.5px !important; }
+main.font-size-small [class*="text-\[22px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[22px\]:not(.material-symbols-outlined) { font-size: 24.75px !important; }
+main.font-size-small [class*="text-\[24px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[24px\]:not(.material-symbols-outlined) { font-size: 27px !important; }
+main.font-size-small [class*="text-\[26px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[26px\]:not(.material-symbols-outlined) { font-size: 29.25px !important; }
+main.font-size-small [class*="text-\[28px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[28px\]:not(.material-symbols-outlined) { font-size: 31.5px !important; }
+main.font-size-small [class*="text-\[32px\]"]:not(.material-symbols-outlined),
+main.font-size-small .text-\[32px\]:not(.material-symbols-outlined) { font-size: 36px !important; }
 
-/* Large Font Scale Overrides for Arbitrary Text Classes */
-html.font-size-large [class*="text-\[8px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[8px\]:not(.material-symbols-outlined) { font-size: 9.5px !important; }
-html.font-size-large [class*="text-\[9px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[9px\]:not(.material-symbols-outlined) { font-size: 10.5px !important; }
-html.font-size-large [class*="text-\[10px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[10px\]:not(.material-symbols-outlined) { font-size: 11.5px !important; }
-html.font-size-large [class*="text-\[11px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[11px\]:not(.material-symbols-outlined) { font-size: 12.5px !important; }
-html.font-size-large [class*="text-\[12px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[12px\]:not(.material-symbols-outlined) { font-size: 13.5px !important; }
-html.font-size-large [class*="text-\[13px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[13px\]:not(.material-symbols-outlined) { font-size: 14.75px !important; }
-html.font-size-large [class*="text-\[14px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[14px\]:not(.material-symbols-outlined) { font-size: 15.75px !important; }
-html.font-size-large [class*="text-\[15px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[15px\]:not(.material-symbols-outlined) { font-size: 17px !important; }
-html.font-size-large [class*="text-\[16px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[16px\]:not(.material-symbols-outlined) { font-size: 18px !important; }
-html.font-size-large [class*="text-\[17px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[17px\]:not(.material-symbols-outlined) { font-size: 19px !important; }
-html.font-size-large [class*="text-\[18px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[18px\]:not(.material-symbols-outlined) { font-size: 20px !important; }
-html.font-size-large [class*="text-\[20px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[20px\]:not(.material-symbols-outlined) { font-size: 22.5px !important; }
-html.font-size-large [class*="text-\[22px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[22px\]:not(.material-symbols-outlined) { font-size: 24.5px !important; }
-html.font-size-large [class*="text-\[24px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[24px\]:not(.material-symbols-outlined) { font-size: 27px !important; }
-html.font-size-large [class*="text-\[26px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[26px\]:not(.material-symbols-outlined) { font-size: 29px !important; }
-html.font-size-large [class*="text-\[28px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[28px\]:not(.material-symbols-outlined) { font-size: 31px !important; }
-html.font-size-large [class*="text-\[32px\]"]:not(.material-symbols-outlined),
-html.font-size-large .text-\[32px\]:not(.material-symbols-outlined) { font-size: 36px !important; }
+/* Medium Font Scale Overrides for Arbitrary Text Classes (1.25x) */
+main.font-size-medium [class*="text-\[8px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[8px\]:not(.material-symbols-outlined) { font-size: 10px !important; }
+main.font-size-medium [class*="text-\[9px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[9px\]:not(.material-symbols-outlined) { font-size: 11.25px !important; }
+main.font-size-medium [class*="text-\[10px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[10px\]:not(.material-symbols-outlined) { font-size: 12.5px !important; }
+main.font-size-medium [class*="text-\[11px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[11px\]:not(.material-symbols-outlined) { font-size: 13.75px !important; }
+main.font-size-medium [class*="text-\[12px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[12px\]:not(.material-symbols-outlined) { font-size: 15px !important; }
+main.font-size-medium [class*="text-\[13px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[13px\]:not(.material-symbols-outlined) { font-size: 16.25px !important; }
+main.font-size-medium [class*="text-\[14px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[14px\]:not(.material-symbols-outlined) { font-size: 17.5px !important; }
+main.font-size-medium [class*="text-\[15px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[15px\]:not(.material-symbols-outlined) { font-size: 18.75px !important; }
+main.font-size-medium [class*="text-\[16px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[16px\]:not(.material-symbols-outlined) { font-size: 20px !important; }
+main.font-size-medium [class*="text-\[17px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[17px\]:not(.material-symbols-outlined) { font-size: 21.25px !important; }
+main.font-size-medium [class*="text-\[18px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[18px\]:not(.material-symbols-outlined) { font-size: 22.5px !important; }
+main.font-size-medium [class*="text-\[20px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[20px\]:not(.material-symbols-outlined) { font-size: 25px !important; }
+main.font-size-medium [class*="text-\[22px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[22px\]:not(.material-symbols-outlined) { font-size: 27.5px !important; }
+main.font-size-medium [class*="text-\[24px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[24px\]:not(.material-symbols-outlined) { font-size: 30px !important; }
+main.font-size-medium [class*="text-\[26px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[26px\]:not(.material-symbols-outlined) { font-size: 32.5px !important; }
+main.font-size-medium [class*="text-\[28px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[28px\]:not(.material-symbols-outlined) { font-size: 35px !important; }
+main.font-size-medium [class*="text-\[32px\]"]:not(.material-symbols-outlined),
+main.font-size-medium .text-\[32px\]:not(.material-symbols-outlined) { font-size: 40px !important; }
+
+/* Large Font Scale Overrides for Arbitrary Text Classes (1.375x) */
+main.font-size-large [class*="text-\[8px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[8px\]:not(.material-symbols-outlined) { font-size: 11px !important; }
+main.font-size-large [class*="text-\[9px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[9px\]:not(.material-symbols-outlined) { font-size: 12.38px !important; }
+main.font-size-large [class*="text-\[10px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[10px\]:not(.material-symbols-outlined) { font-size: 13.75px !important; }
+main.font-size-large [class*="text-\[11px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[11px\]:not(.material-symbols-outlined) { font-size: 15.12px !important; }
+main.font-size-large [class*="text-\[12px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[12px\]:not(.material-symbols-outlined) { font-size: 16.5px !important; }
+main.font-size-large [class*="text-\[13px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[13px\]:not(.material-symbols-outlined) { font-size: 17.88px !important; }
+main.font-size-large [class*="text-\[14px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[14px\]:not(.material-symbols-outlined) { font-size: 19.25px !important; }
+main.font-size-large [class*="text-\[15px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[15px\]:not(.material-symbols-outlined) { font-size: 20.62px !important; }
+main.font-size-large [class*="text-\[16px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[16px\]:not(.material-symbols-outlined) { font-size: 22px !important; }
+main.font-size-large [class*="text-\[17px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[17px\]:not(.material-symbols-outlined) { font-size: 23.38px !important; }
+main.font-size-large [class*="text-\[18px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[18px\]:not(.material-symbols-outlined) { font-size: 24.75px !important; }
+main.font-size-large [class*="text-\[20px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[20px\]:not(.material-symbols-outlined) { font-size: 27.5px !important; }
+main.font-size-large [class*="text-\[22px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[22px\]:not(.material-symbols-outlined) { font-size: 30.25px !important; }
+main.font-size-large [class*="text-\[24px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[24px\]:not(.material-symbols-outlined) { font-size: 33px !important; }
+main.font-size-large [class*="text-\[26px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[26px\]:not(.material-symbols-outlined) { font-size: 35.75px !important; }
+main.font-size-large [class*="text-\[28px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[28px\]:not(.material-symbols-outlined) { font-size: 38.5px !important; }
+main.font-size-large [class*="text-\[32px\]"]:not(.material-symbols-outlined),
+main.font-size-large .text-\[32px\]:not(.material-symbols-outlined) { font-size: 44px !important; }

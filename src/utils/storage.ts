@@ -1,8 +1,9 @@
-import { AppTheme, UserStats, UserMistake } from '../types';
+import { AppTheme, FontSize, UserStats, UserMistake } from '../types';
 
 const STATS_KEY = 'codedo_user_stats';
 const THEME_KEY = 'codedo_app_theme';
 const SOUND_KEY = 'codedo_sound_enabled';
+const FONT_SIZE_KEY = 'codedo_font_size';
 const MISTAKES_KEY = 'codedo_user_mistakes';
 const LAST_ACTIVE_DATE_KEY = 'codedo_last_active_date';
 
@@ -60,6 +61,24 @@ export const StorageManager = {
   setSoundEnabled(enabled: boolean): void {
     try {
       localStorage.setItem(SOUND_KEY, String(enabled));
+    } catch {
+      // ignore
+    }
+  },
+
+  getFontSize(): FontSize {
+    try {
+      const saved = localStorage.getItem(FONT_SIZE_KEY);
+      if (saved === 'small' || saved === 'medium' || saved === 'large') return saved;
+    } catch {
+      // ignore
+    }
+    return 'medium';
+  },
+
+  setFontSize(fontSize: FontSize): void {
+    try {
+      localStorage.setItem(FONT_SIZE_KEY, fontSize);
     } catch {
       // ignore
     }

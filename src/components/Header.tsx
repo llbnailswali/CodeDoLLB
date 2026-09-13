@@ -12,9 +12,6 @@ interface HeaderProps {
   onBack?: () => void;
 }
 
-const CODEDO_LOGO_URL =
-  'https://lh3.googleusercontent.com/aida/AEtjO1Vk5VEJeJynVcNkYkiBPlKZlW3aP6lzJC6g-vR0zYjVjKdPffLgtcypPdDh4DHUbOyyM6KM-3RLUky1i4HZ8hloWcUyOEWl6xIgqu30IgY-xXssyw7OpuHUBz9QyjfhmnqGyc3LmhbVUHMChatI3fFXhpK9HRF2YvZWHdGVsW5ICtR9DhtPjEFteWijD13_R2qDUD2dwBdBmGOrBhEm64mWd0mdlYjrq7iKDtrcPluTdYOx7_zF0e8pfkCo';
-
 export const Header: React.FC<HeaderProps> = ({
   theme,
   activeTab,
@@ -44,36 +41,34 @@ export const Header: React.FC<HeaderProps> = ({
                 soundFX.playClick();
                 onBack?.();
               }}
-              className={`w-9 h-9 rounded-xl neu-raised flex items-center justify-center active:neu-pressed transition-all ${
+              className={`w-10 h-10 rounded-xl neu-raised flex items-center justify-center active:neu-pressed transition-all ${
                 isDark ? 'bg-[#151b28] text-slate-200' : 'bg-[#e8eaf0] text-[#1e2433]'
               }`}
             >
-              <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+              <span className="material-symbols-outlined text-[22px]">arrow_back</span>
             </button>
           ) : (
             <div
-              className={`w-9 h-9 rounded-xl neu-raised flex items-center justify-center p-1 overflow-hidden ${
+              className={`w-10 h-10 rounded-xl neu-raised flex items-center justify-center ${
                 isDark ? 'bg-[#151b28]' : 'bg-[#e8eaf0]'
               }`}
             >
-              <img
-                src={CODEDO_LOGO_URL}
-                alt="CodeDo Logo"
-                className="w-full h-full object-contain"
-              />
+              <span className="font-['Outfit'] font-extrabold text-base bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] bg-clip-text text-transparent">
+                CD
+              </span>
             </div>
           )}
 
           {title ? (
-            <h1 className="font-['Outfit'] text-base font-bold text-inherit truncate">
+            <h1 className="font-['Outfit'] text-lg font-bold text-inherit truncate">
               {title}
             </h1>
           ) : (
             <div className="flex items-center gap-1.5">
-              <span className="font-['Outfit'] text-base font-bold tracking-tight text-inherit">
+              <span className="font-['Outfit'] text-lg font-bold tracking-tight text-inherit">
                 CodeDo
               </span>
-              <span className="text-[9px] font-['Plus_Jakarta_Sans'] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+              <span className="text-[10px] font-['Plus_Jakarta_Sans'] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
                 {activeTab === 'learn'
                   ? 'LEARN'
                   : activeTab === 'practice'

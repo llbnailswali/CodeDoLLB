@@ -1,6 +1,42 @@
 import React from 'react';
 import { AppTheme, UserStats } from '../types';
 import { soundFX } from '../utils/audio';
+import { CODEDO_MASTER_WORLDS } from '../data/curriculum/masterCurriculumCatalog';
+
+// Single source of truth for world identity (name, order, lesson count) --
+// shared with Listing, so the two screens can never drift out of sync.
+const getWorld = (order: number) => {
+  const world = CODEDO_MASTER_WORLDS.find((w) => w.order === order);
+  if (!world) {
+    throw new Error(`No world found for order ${order} in CODEDO_MASTER_WORLDS`);
+  }
+  return world;
+};
+
+// Shared styling for the "world name + lesson count" pair repeated across every
+// node on the snake path, so completed/locked worlds stay visually consistent.
+// Colors reuse the app's own neu-surface badge recipe (see the Chapter badges
+// above) instead of generic Tailwind pastels, and the locked/disabled variant
+// is deliberately desaturated + dimmed to read as greyed-out.
+const getWorldTitleClass = (isDark: boolean, completed: boolean) =>
+  `text-sm font-['Outfit'] font-bold ${
+    completed ? 'text-inherit' : isDark ? 'text-slate-500' : 'text-slate-400'
+  }`;
+
+const getLessonTagClass = (isDark: boolean, completed: boolean) => {
+  if (completed) {
+    return `inline-flex w-fit mt-0.5 text-[10px] font-mono font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${
+      isDark
+        ? 'bg-[#121824] border-emerald-500/30 text-emerald-400'
+        : 'bg-[#e8eaf0] border-emerald-500/20 text-emerald-600'
+    }`;
+  }
+  return `inline-flex w-fit mt-0.5 text-[10px] font-mono font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border opacity-60 ${
+    isDark
+      ? 'bg-[#121824] border-white/5 text-slate-500'
+      : 'bg-[#e8eaf0] border-black/5 text-slate-400'
+  }`;
+};
 
 interface HomeProps {
   theme: AppTheme;
@@ -83,7 +119,7 @@ export const Home: React.FC<HomeProps> = ({
                 </span>
               </div>
               <h1 className="text-base font-['Outfit'] font-bold tracking-tight">
-                World 5 of 22 • Function Forge
+                World {getWorld(5).order} of 22 • {getWorld(5).title}
               </h1>
             </div>
 
@@ -190,11 +226,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
                   01
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-inherit">
-                  Kotlin Awakening
+                <span className={getWorldTitleClass(isDark, true)}>
+                  {getWorld(1).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  12 lessons
+                <span className={getLessonTagClass(isDark, true)}>
+                  {getWorld(1).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -222,11 +258,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
                   02
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-inherit">
-                  Operator Forge
+                <span className={getWorldTitleClass(isDark, true)}>
+                  {getWorld(2).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  10 lessons
+                <span className={getLessonTagClass(isDark, true)}>
+                  {getWorld(2).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -254,11 +290,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
                   03
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-inherit">
-                  Decision Maker
+                <span className={getWorldTitleClass(isDark, true)}>
+                  {getWorld(3).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  14 lessons
+                <span className={getLessonTagClass(isDark, true)}>
+                  {getWorld(3).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -286,11 +322,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 font-bold">
                   04
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-inherit">
-                  Loop Master
+                <span className={getWorldTitleClass(isDark, true)}>
+                  {getWorld(4).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  16 lessons
+                <span className={getLessonTagClass(isDark, true)}>
+                  {getWorld(4).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -311,20 +347,20 @@ export const Home: React.FC<HomeProps> = ({
                   CURRENT WORLD
                 </span>
                 <span className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400">
-                  World 05 / 22
+                  World {String(getWorld(5).order).padStart(2, '0')} / 22
                 </span>
               </div>
               <div className="flex flex-col">
                 <div className="flex items-baseline justify-between">
                   <h3 className="text-base font-['Outfit'] font-bold text-inherit tracking-tight">
-                    05 · Function Forge
+                    {String(getWorld(5).order).padStart(2, '0')} · {getWorld(5).title}
                   </h3>
                   <span
                     className={`text-[11px] font-semibold font-mono ${
                       isDark ? 'text-indigo-400' : 'text-indigo-600'
                     }`}
                   >
-                    7 / 12 lessons
+                    7 / {getWorld(5).lessons.length} lessons
                   </span>
                 </div>
                 <p
@@ -366,11 +402,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   06
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  Collection Valley
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(6).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  15 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(6).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -395,11 +431,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   07
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  Null Safety Shield
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(7).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  11 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(7).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -424,11 +460,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   08
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  Object Kingdom
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(8).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  18 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(8).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -501,11 +537,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   09
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  Lambda Lab
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(9).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  12 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(9).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -530,11 +566,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   10
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  Collection Wizardry
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(10).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  10 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(10).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -559,11 +595,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   11
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  OOP Evolution
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(11).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  14 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(11).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -588,11 +624,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   12
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  Generic Realm
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(12).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  16 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(12).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -617,11 +653,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   13
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  Scope Masters
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(13).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  10 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(13).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -646,11 +682,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   14
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  Sequence Dimension
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(14).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  15 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(14).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -677,11 +713,11 @@ export const Home: React.FC<HomeProps> = ({
               <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium mt-1">
                 15
               </span>
-              <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                Error Fortress
+              <span className={getWorldTitleClass(isDark, false)}>
+                {getWorld(15).title}
               </span>
-              <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                15 lessons
+              <span className={getLessonTagClass(isDark, false)}>
+                {getWorld(15).lessons.length} lessons
               </span>
             </div>
           </div>
@@ -753,11 +789,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   16
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  Coroutine Academy
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(16).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  12 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(16).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -782,11 +818,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   17
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  Flow Universe
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(17).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  10 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(17).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -811,11 +847,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   18
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  Concurrency Arena
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(18).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  14 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(18).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -840,11 +876,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   19
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  Kotlin Blacksmith
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(19).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  16 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(19).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -869,11 +905,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   20
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  JVM Bridge
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(20).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  10 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(20).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -898,11 +934,11 @@ export const Home: React.FC<HomeProps> = ({
                 <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                   21
                 </span>
-                <span className="text-xs font-['Outfit'] font-semibold text-slate-500 dark:text-slate-400">
-                  Performance Lab
+                <span className={getWorldTitleClass(isDark, false)}>
+                  {getWorld(21).title}
                 </span>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
-                  15 lessons
+                <span className={getLessonTagClass(isDark, false)}>
+                  {getWorld(21).lessons.length} lessons
                 </span>
               </div>
             </div>
@@ -938,7 +974,7 @@ export const Home: React.FC<HomeProps> = ({
                     </span>
                   </div>
                   <h3 className="text-xs font-['Outfit'] font-bold text-inherit">
-                    Production Kotlin
+                    {getWorld(22).title}
                   </h3>
                   <span className="text-[10px] text-slate-500 dark:text-slate-400">
                     Full-stack Arch & CI/CD Mastery

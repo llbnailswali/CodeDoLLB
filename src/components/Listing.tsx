@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppTheme, WorldMeta } from '../types';
-import { WORLDS_CATALOG } from '../data/curriculumData';
+import { AppTheme, LessonMeta } from '../types';
+import { MasterWorldEntry } from '../data/curriculum/masterCurriculumCatalog';
+import { CODEDO_MASTER_WORLDS as WORLDS_CATALOG } from '../data/curriculum/masterCurriculumCatalog';
 import { soundFX } from '../utils/audio';
 
 interface ListingProps {
@@ -73,7 +74,7 @@ export const Listing: React.FC<ListingProps> = ({
   }, [initialWorldId]);
 
   const isDark = theme === 'dark';
-  const selectedWorld: WorldMeta =
+  const selectedWorld: MasterWorldEntry =
     WORLDS_CATALOG.find((w) => w.id === selectedWorldId) || WORLDS_CATALOG[0];
 
   // Recompute the stem line's height so it stops at the last node's icon
@@ -116,10 +117,16 @@ export const Listing: React.FC<ListingProps> = ({
     }
   };
 
-  const handleLaunchLesson = (lessonTitle: string) => {
+  const handleLaunchLesson = (lesson: LessonMeta) => {
     soundFX.playClick();
     if (onStartLesson) {
-      const lower = lessonTitle.toLowerCase();
+      if (lesson.fiveStageLessonKey) {
+        onStartLesson(lesson.fiveStageLessonKey);
+        return;
+      }
+      // Fallback for lessons that don't have real content authored yet --
+      // best-effort keyword guess so something reasonable still opens.
+      const lower = lesson.title.toLowerCase();
       if (lower.includes('loop') || lower.includes('for') || lower.includes('while')) {
         onStartLesson('loops');
       } else if (lower.includes('function') || lower.includes('scope') || lower.includes('parameter')) {
@@ -324,13 +331,13 @@ export const Listing: React.FC<ListingProps> = ({
                   return (
                     <div
                       key={lesson.id}
-                      onClick={() => handleLaunchLesson(lesson.title)}
+                      onClick={() => handleLaunchLesson(lesson)}
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
-                          handleLaunchLesson(lesson.title);
+                          handleLaunchLesson(lesson);
                         }
                       }}
                       className="relative flex items-center gap-4 group cursor-pointer select-none active:scale-[0.99] transition-transform"

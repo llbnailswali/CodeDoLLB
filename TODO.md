@@ -1,8 +1,21 @@
 # CodeDo — Active Task Tracker
 
 > **Source of Truth Documents:**
-> - `CODEDO_PROJECT_PLAN.md` (90-Day Product & Development Roadmap)
-> - `CODEDO_DATA_GATHERING.md` (90-Day Curriculum & Challenge Data Pipeline)
+> - `CODEDO_MASTER_PLAN.md` — **current** curriculum plan of record (22 worlds matching the app's actual world names: Kotlin Awakening, Operator Forge, ... Production Kotlin). Use this for world names, chapters, per-world topic scope, and the 6-step lesson-authoring methodology (Learn/Explore/Predict/Write&Run/Debug/Mastered, coverage-driven exercise counts, debugging bug-type/difficulty ladder).
+> - `CODEDO_PROJECT_PLAN.md` and `CODEDO_DATA_GATHERING.md`/`data_gathering_progress.md` are **deprecated** (old 10-world, topic-named curriculum) -- see the deprecation notices at the top of each. Their already-authored content (294+ questions) is still valuable and will be reused/remapped, but they are no longer the plan of record.
+
+---
+
+## 🔴 PRIORITY: Topic-aware activity selection (lesson authoring rule)
+
+**Do not default to writing all 6 stages for every lesson.** Per `CODEDO_MASTER_PLAN.md`'s "topic-aware activity selection" / "minimums apply only to applicable activities" principle: before authoring a lesson, decide which of Explore / Predict / Write&Run / Debug actually apply to that specific topic. A purely conceptual topic (the plan's own example: "What is Kotlin?") should be **Learn → Predict-as-MCQ → Mastered only** — no Explore, no Write&Run, no Debug, and no premature teaching of syntax/mechanics that belongs to a later topic (e.g. function parameters/return types belong to the Functions world, not a "what is X" theory lesson).
+
+This is now a real, supported feature, not just a content guideline:
+- `FiveStageLesson` (`src/data/lessonStagesData.ts`): only `learn` and `mastered` are required; `explore`, `predict`, `writeRun`, `debug` are all optional — omit whichever don't apply.
+- `PredictQuestion.code` is optional too, so `predict` can be used as a pure comprehension MCQ (no code snippet) for theory topics.
+- `Detail.tsx` computes `activeStages` dynamically from whichever fields are present and renders/steps through only those — stage numbering, progress dots, and the dev "Skip menu" all adapt automatically. No further engine work needed to skip stages for a new lesson; just omit the fields in its data.
+
+Reference implementation: World 1's `what-is-kotlin` lesson (Learn+MCQ only) vs `kotlin-syntax` lesson (full Learn/Explore/Predict/Write&Run/Debug) in `lessonStagesData.ts` — use these as the template for future lessons in this world and beyond.
 
 ---
 
