@@ -10,7 +10,7 @@ import { Predict } from './Predict';
 import { WriteRun } from './WriteRun';
 import { Mastered } from './Mastered';
 
-interface FiveStageLessonRunnerProps {
+interface DetailProps {
   theme: AppTheme;
   initialLessonKey?: string;
   userStats: UserStats;
@@ -118,7 +118,7 @@ const STAGE_TITLES: Record<number, string> = {
   5: 'Stage 5 - MASTERED',
 };
 
-export const FiveStageLessonRunner: React.FC<FiveStageLessonRunnerProps> = ({
+export const Detail: React.FC<DetailProps> = ({
   theme,
   initialLessonKey = 'functions',
   userStats,

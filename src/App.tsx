@@ -18,13 +18,13 @@ import { soundFX } from './utils/audio';
 import { StorageManager, DEFAULT_USER_STATS } from './utils/storage';
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
-import { LearnView } from './components/LearnView';
-import { CurriculumExplorer } from './components/CurriculumExplorer';
+import { Home } from './components/Home';
+import { Listing } from './components/Listing';
 import { ActiveLessonView } from './components/ActiveLessonView';
 import { PracticeView, DrillType } from './components/PracticeView';
 import { LeaderboardView } from './components/LeaderboardView';
 import { ProfileView } from './components/ProfileView';
-import { FiveStageLessonRunner } from './components/FiveStageLessonRunner';
+import { Detail } from './components/Detail';
 
 export default function App() {
   const [theme, setTheme] = useState<AppTheme>(() => StorageManager.getTheme());
@@ -175,7 +175,6 @@ export default function App() {
           <Header
             theme={theme}
             activeTab={activeTab}
-            userStats={userStats}
             onProfileClick={() => {
               setIsLessonActive(false);
               setFiveStageLessonKey(null);
@@ -198,7 +197,7 @@ export default function App() {
         <main className="flex-1 w-full flex flex-col">
           {fiveStageLessonKey ? (
             /* 5-Stage Interactive Lesson Flow (Learn -> Explore -> Predict -> Write & Run -> Mastered) */
-            <FiveStageLessonRunner
+            <Detail
               theme={theme}
               initialLessonKey={fiveStageLessonKey}
               userStats={userStats}
@@ -220,7 +219,7 @@ export default function App() {
             />
           ) : activeTab === 'curriculum' ? (
             /* Curriculum Explorer View (Unrestricted dynamic core topic worlds) */
-            <CurriculumExplorer
+            <Listing
               theme={theme}
               initialWorldId={curriculumWorldId}
               onJumpToToday={() => setActiveTab('learn')}
@@ -228,7 +227,7 @@ export default function App() {
             />
           ) : activeTab === 'learn' ? (
             /* Main Learning Odyssey Path: Worlds-only landing page */
-            <LearnView
+            <Home
               theme={theme}
               userStats={userStats}
               onStartLesson={() => setFiveStageLessonKey('variables')}

@@ -3,14 +3,14 @@ import { AppTheme, WorldMeta } from '../types';
 import { WORLDS_CATALOG } from '../data/curriculumData';
 import { soundFX } from '../utils/audio';
 
-interface CurriculumExplorerProps {
+interface ListingProps {
   theme: AppTheme;
   initialWorldId?: string;
   onJumpToToday: () => void;
   onStartLesson?: (topic?: string) => void;
 }
 
-export const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({
+export const Listing: React.FC<ListingProps> = ({
   theme,
   initialWorldId,
   onJumpToToday,
@@ -23,6 +23,13 @@ export const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({
   // Ref to the horizontal scrollable world strip
   const scrollStripRef = useRef<HTMLDivElement>(null);
   const worldButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+
+  // Refs to measure the connecting stem line so it ends exactly at the last
+  // visible lesson node's icon instead of a hardcoded offset (which drifted
+  // once boss lessons stopped rendering their own timeline node).
+  const timelineSectionRef = useRef<HTMLDivElement>(null);
+  const lastNodeIconRef = useRef<HTMLDivElement>(null);
+  const [stemHeight, setStemHeight] = useState<number | null>(null);
 
   // Function to scroll the world scroller so the active world is centered/visible
   const scrollToActiveWorld = (worldId: string) => {
@@ -69,10 +76,44 @@ export const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({
   const selectedWorld: WorldMeta =
     WORLDS_CATALOG.find((w) => w.id === selectedWorldId) || WORLDS_CATALOG[0];
 
+  // Recompute the stem line's height so it stops at the last node's icon
+  // center, never past it, whenever the visible lesson list changes.
+  useEffect(() => {
+    const measure = () => {
+      const section = timelineSectionRef.current;
+      const lastIcon = lastNodeIconRef.current;
+      if (section && lastIcon) {
+        const sectionTop = section.getBoundingClientRect().top;
+        const iconRect = lastIcon.getBoundingClientRect();
+        const iconCenter = iconRect.top - sectionTop + iconRect.height / 2;
+        setStemHeight(iconCenter);
+      }
+    };
+    const timer = setTimeout(measure, 0);
+    window.addEventListener('resize', measure);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', measure);
+    };
+  }, [selectedWorldId]);
+
   const handleWorldSelect = (worldId: string) => {
     soundFX.playClick();
     setSelectedWorldId(worldId);
     scrollToActiveWorld(worldId);
+  };
+
+  // Used by the "next world" milestone button at the bottom of the timeline --
+  // unlike the top world-pill strip, that button sits far down the page, so
+  // switching worlds from there should also bring the user back to the top.
+  const handleNextWorldSelect = (worldId: string) => {
+    handleWorldSelect(worldId);
+    const rootEl = document.getElementById('root');
+    if (rootEl) {
+      rootEl.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleLaunchLesson = (lessonTitle: string) => {
@@ -99,12 +140,16 @@ export const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({
     >
       <div className="w-full max-w-md flex flex-col">
         {/* ================= DYNAMIC HORIZONTAL WORLD SELECTOR ================= */}
-        <section className="mb-4 pt-1">
-          {/* Scrollable World Navigation Strip */}
+        <section className="mb-2 pt-1">
+          {/* Scrollable World Navigation Strip -- bleeds full-width (negating the
+              page's px-4) so a pill can reach the true screen edge once scrolled;
+              the leading/trailing spacers below restore the initial visual gap
+              without constraining how far the strip can scroll. */}
           <div
             ref={scrollStripRef}
-            className="flex items-center gap-2 overflow-x-auto pb-2 scroll-smooth scrollbar-none overscroll-x-contain touch-pan-x"
+            className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 scroll-smooth scrollbar-none overscroll-x-contain touch-pan-x"
           >
+            <div className="shrink-0 w-2" aria-hidden="true" />
             {WORLDS_CATALOG.map((w) => {
               const isSelected = w.id === selectedWorldId;
               return (
@@ -152,6 +197,7 @@ export const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({
                 </button>
               );
             })}
+            <div className="shrink-0 w-2" aria-hidden="true" />
           </div>
         </section>
 
@@ -161,7 +207,7 @@ export const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({
           <div className="flex flex-col">
             {/* World Hero Header */}
             <section
-              className={`rounded-3xl p-5 border mb-5 transition-all ${
+              className={`rounded-3xl p-5 border mb-3 transition-all ${
                 isDark
                   ? 'bg-[#151b28] border-white/10 shadow-lg'
                   : 'bg-white border-slate-200/80 shadow-sm'
@@ -249,92 +295,28 @@ export const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({
             </section>
 
             {/* Linear Curriculum Timeline */}
-            <section className="relative pl-3 pr-1">
-              {/* Central Connecting Stem Line */}
+            <section ref={timelineSectionRef} className="relative">
+              {/* Central Connecting Stem Line -- stops exactly at the last visible node's icon */}
               <div
                 aria-hidden="true"
-                className="absolute left-7 top-4 bottom-20 w-1 rounded-full bg-gradient-to-b from-indigo-500 via-indigo-500/50 to-slate-400"
+                className="absolute left-[18px] top-4 w-1 rounded-full bg-gradient-to-b from-indigo-500 via-indigo-500/50 to-slate-400"
+                style={{ height: stemHeight !== null ? Math.max(0, stemHeight - 16) : 0 }}
               />
 
               {/* Dynamic Lesson Nodes */}
-              <div className="space-y-6">
-                {selectedWorld.lessons.map((lesson, idx) => {
+              <div className="space-y-4">
+                {(() => {
+                  const lastVisibleIdx = selectedWorld.lessons.reduce(
+                    (acc, l, i) => (l.isBoss ? acc : i),
+                    -1
+                  );
+                  return selectedWorld.lessons.map((lesson, idx) => {
                   const isFirstThree = idx < 3;
                   const isCurrent = idx === 3;
                   const isBoss = lesson.isBoss;
 
                   if (isBoss) {
-                    /* Final Trial Boss Card */
-                    return (
-                      <div
-                        key={lesson.id}
-                        onClick={() => handleLaunchLesson(lesson.title)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            handleLaunchLesson(lesson.title);
-                          }
-                        }}
-                        className="relative z-10 pt-2 cursor-pointer select-none active:scale-[0.99] transition-transform"
-                      >
-                        <div
-                          className={`rounded-3xl p-5 border shadow-xl relative overflow-hidden transition-all group ${
-                            isDark
-                              ? 'bg-gradient-to-br from-indigo-950/60 via-[#151b28] to-[#0f1420] border-indigo-500/30 hover:border-indigo-400'
-                              : 'bg-white border-slate-200/80 shadow-md hover:border-indigo-300'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 group-hover:scale-105 transition-transform">
-                                <span className="material-symbols-outlined text-[24px]">
-                                  military_tech
-                                </span>
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2 mb-0.5">
-                                  <span className="text-[10px] font-mono font-bold tracking-wide uppercase text-indigo-400">
-                                    Final Trial
-                                  </span>
-                                  <span className="text-slate-400 text-xs">•</span>
-                                  <span className="text-[10px] font-mono font-bold text-slate-400">
-                                    +{lesson.xpReward} XP
-                                  </span>
-                                </div>
-                                <h3 className="text-base font-extrabold font-['Outfit'] leading-tight group-hover:text-indigo-400 transition-colors">
-                                  {lesson.title}
-                                </h3>
-                                <p className="text-xs text-slate-400 mt-0.5">
-                                  {lesson.description}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                                isDark
-                                  ? 'bg-[#090d16] text-slate-400 border border-white/5 group-hover:text-indigo-400 group-hover:border-indigo-500/30'
-                                  : 'bg-slate-100 text-slate-500 group-hover:text-indigo-600 group-hover:bg-indigo-50'
-                              }`}
-                            >
-                              <span className="material-symbols-outlined text-[18px]">play_arrow</span>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 pt-2.5 border-t border-slate-500/20 flex items-center justify-between text-[11px] text-slate-400">
-                            <div className="flex items-center">
-                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 mr-2" />
-                              <span>Capstone Trial Challenge</span>
-                            </div>
-                            <span className="text-indigo-500 font-bold group-hover:underline">
-                              Start Trial →
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
+                    return null;
                   }
 
                   const isClickable = true; // All lessons or review/available lessons can be launched
@@ -351,10 +333,11 @@ export const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({
                           handleLaunchLesson(lesson.title);
                         }
                       }}
-                      className="relative flex items-start gap-4 group cursor-pointer select-none active:scale-[0.99] transition-transform"
+                      className="relative flex items-center gap-4 group cursor-pointer select-none active:scale-[0.99] transition-transform"
                     >
                       {/* Node Dot Indicator (tick / play / lock icon) */}
                       <div
+                        ref={idx === lastVisibleIdx ? lastNodeIconRef : undefined}
                         className={`relative z-10 w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2 transition-all ${
                           isFirstThree
                             ? 'bg-indigo-600 border-indigo-400 text-white shadow-md group-hover:scale-105 group-hover:ring-2 group-hover:ring-indigo-400/40'
@@ -376,7 +359,7 @@ export const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({
 
                       {/* Node Card Details */}
                       <div
-                        className={`flex-1 pt-0.5 p-3.5 rounded-2xl border transition-all ${
+                        className={`flex-1 p-3.5 rounded-2xl border transition-all ${
                           isCurrent
                             ? isDark
                               ? 'bg-[#151b28] border-indigo-500/60 shadow-md group-hover:border-indigo-400 group-hover:bg-[#192132]'
@@ -386,44 +369,41 @@ export const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({
                             : 'bg-white/80 border-slate-200/60 shadow-sm group-hover:border-indigo-300 group-hover:bg-indigo-50/20'
                         }`}
                       >
-                        <div className="flex items-baseline justify-between">
-                          <h3 className="text-sm font-bold font-['Outfit'] group-hover:text-indigo-500 transition-colors">
-                            {lesson.title}
-                          </h3>
+                        <h3 className="text-sm font-bold font-['Outfit'] group-hover:text-indigo-500 transition-colors">
+                          {lesson.title}
+                        </h3>
+
+                        <div className="flex items-center justify-between mt-1">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-xs font-semibold ${
+                                isFirstThree
+                                  ? 'text-emerald-500'
+                                  : isCurrent
+                                  ? 'text-indigo-500'
+                                  : isDark
+                                  ? 'text-slate-400'
+                                  : 'text-slate-500'
+                              }`}
+                            >
+                              {isFirstThree ? 'Completed' : isCurrent ? 'Available Now' : 'Pending'}
+                            </span>
+                            <span className="text-slate-400 text-xs">•</span>
+                            <span
+                              className="text-xs font-bold text-indigo-500 group-hover:text-indigo-400 group-hover:underline decoration-indigo-300"
+                            >
+                              {isFirstThree ? 'Review' : 'Start'}
+                            </span>
+                          </div>
                           <span className="text-[10px] font-mono font-semibold text-slate-400">
                             Lesson {selectedWorld.order}.{idx + 1}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 mt-1">
-                          <span
-                            className={`text-xs font-semibold ${
-                              isFirstThree
-                                ? 'text-emerald-500'
-                                : isCurrent
-                                ? 'text-indigo-500'
-                                : isDark
-                                ? 'text-slate-400'
-                                : 'text-slate-500'
-                            }`}
-                          >
-                            {isFirstThree ? 'Completed' : isCurrent ? 'Available Now' : 'Start'}
-                          </span>
-                          <span className="text-slate-400 text-xs">•</span>
-                          <span className="text-xs font-mono text-slate-400">
-                            +{lesson.xpReward} XP
-                          </span>
-                          <span className="text-slate-400 text-xs">•</span>
-                          <span
-                            className="text-xs font-bold text-indigo-500 group-hover:text-indigo-400 group-hover:underline decoration-indigo-300"
-                          >
-                            {isFirstThree ? 'Review' : 'Start'}
                           </span>
                         </div>
                       </div>
                     </div>
                   );
-                })}
+                  });
+                })()}
               </div>
 
               {/* World Transition Milestone */}
@@ -435,7 +415,7 @@ export const CurriculumExplorer: React.FC<CurriculumExplorerProps> = ({
                   return (
                     <button
                       type="button"
-                      onClick={() => handleWorldSelect(nextWorld.id)}
+                      onClick={() => handleNextWorldSelect(nextWorld.id)}
                       className={`px-4 py-2.5 rounded-full border flex items-center gap-2 text-xs font-bold transition-all active:scale-95 ${
                         isDark
                           ? 'bg-[#151b28] border-white/10 text-slate-300 hover:text-white shadow-md'

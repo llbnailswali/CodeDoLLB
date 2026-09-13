@@ -1,11 +1,10 @@
 import React from 'react';
-import { AppTheme, TabType, UserStats } from '../types';
+import { AppTheme, TabType } from '../types';
 import { soundFX } from '../utils/audio';
 
 interface HeaderProps {
   theme: AppTheme;
   activeTab: TabType;
-  userStats: UserStats;
   onProfileClick: () => void;
   onToggleTheme: () => void;
   title?: string;
@@ -19,7 +18,6 @@ const CODEDO_LOGO_URL =
 export const Header: React.FC<HeaderProps> = ({
   theme,
   activeTab,
-  userStats,
   onProfileClick,
   onToggleTheme,
   title,
@@ -88,35 +86,8 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Right Side: Quick Stats Capsule, Theme Toggle & Profile Avatar */}
+        {/* Right Side: Theme Toggle & Profile Avatar */}
         <div className="flex items-center gap-1.5">
-          <div
-            className={`neu-pressed py-1 px-2.5 rounded-xl flex items-center gap-2 text-xs transition-colors ${
-              isDark ? 'bg-[#151b28] text-slate-200' : 'bg-[#e8eaf0] text-[#2e3040]'
-            }`}
-          >
-            <div className="flex items-center gap-1" title="Daily Streak">
-              <span className="text-[11px]">🔥</span>
-              <span className="font-mono text-[11px] font-bold">
-                {userStats.streakDays || 12}
-              </span>
-            </div>
-            <span className="opacity-30">|</span>
-            <div className="flex items-center gap-1" title="Overall Progress">
-              <span className="text-[11px]">📈</span>
-              <span className="font-mono text-[11px] font-bold">
-                {Math.round((userStats.completedLessons / Math.max(1, userStats.totalLessons || 120)) * 100) || 68}%
-              </span>
-            </div>
-            <span className="opacity-30">|</span>
-            <div className="flex items-center gap-1" title="Gems">
-              <span className="text-[11px]">💎</span>
-              <span className="font-mono text-[11px] font-bold">
-                {userStats.gems || 120}
-              </span>
-            </div>
-          </div>
-
           {/* Quick Theme Toggle */}
           <button
             aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}

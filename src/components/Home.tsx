@@ -2,7 +2,7 @@ import React from 'react';
 import { AppTheme, UserStats } from '../types';
 import { soundFX } from '../utils/audio';
 
-interface LearnViewProps {
+interface HomeProps {
   theme: AppTheme;
   userStats: UserStats;
   onOpenCurriculum: (worldId?: string) => void;
@@ -11,7 +11,7 @@ interface LearnViewProps {
   onSelectNode?: (nodeTitle: string) => void;
 }
 
-export const LearnView: React.FC<LearnViewProps> = ({
+export const Home: React.FC<HomeProps> = ({
   theme,
   userStats,
   onOpenCurriculum,
@@ -298,23 +298,6 @@ export const LearnView: React.FC<LearnViewProps> = ({
 
           {/* WORLD 5: CURRENT WORLD (CENTER FOCAL POINT) */}
           <div className="relative w-full flex flex-col items-center pt-10 pb-4 z-20">
-            {/* Big Glowing Current World Node */}
-            <div className="relative flex items-center justify-center mb-3">
-              <button
-                type="button"
-                onClick={handleStartCurrentLesson}
-                className="w-16 h-16 rounded-3xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] flex items-center justify-center pulsing-dot text-white neu-raised cta-glow active:scale-95 transition-transform cursor-pointer"
-                title="Start World 5"
-              >
-                <span
-                  className="material-symbols-outlined text-[30px]"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  play_arrow
-                </span>
-              </button>
-            </div>
-
             {/* Attached Callout Card */}
             <div
               className={`w-full max-w-[320px] neu-raised rounded-2xl p-4 relative flex flex-col gap-2.5 border transition-all ${
@@ -336,11 +319,19 @@ export const LearnView: React.FC<LearnViewProps> = ({
                   <h3 className="text-base font-['Outfit'] font-bold text-inherit tracking-tight">
                     05 · Function Forge
                   </h3>
-                  <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 font-mono">
+                  <span
+                    className={`text-[11px] font-semibold font-mono ${
+                      isDark ? 'text-indigo-400' : 'text-indigo-600'
+                    }`}
+                  >
                     7 / 12 lessons
                   </span>
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-snug mt-0.5">
+                <p
+                  className={`text-xs leading-snug mt-0.5 ${
+                    isDark ? 'text-slate-300' : 'text-slate-600'
+                  }`}
+                >
                   Master modular functions, default parameters, named calls, and scope contracts.
                 </p>
               </div>
@@ -708,7 +699,7 @@ export const LearnView: React.FC<LearnViewProps> = ({
           >
             <div className="max-w-md mx-auto px-5 py-2.5 flex items-center gap-3">
               <span
-                className={`text-[10px] font-mono font-bold tracking-wider uppercase text-slate-600 dark:text-slate-400 px-3 py-1 rounded-full neu-pressed border ${
+                className={`text-[10px] font-mono font-bold tracking-wider uppercase text-rose-600 dark:text-rose-400 px-3 py-1 rounded-full neu-pressed border ${
                   isDark ? 'bg-[#121824] border-white/5' : 'bg-[#e8eaf0] border-black/5'
                 }`}
               >

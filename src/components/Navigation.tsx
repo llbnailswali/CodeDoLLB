@@ -41,7 +41,9 @@ export const Navigation: React.FC<NavigationProps> = ({
               }}
               className={`flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] py-1 px-3 rounded-xl transition-all cursor-pointer ${
                 isActive
-                  ? 'text-indigo-600 dark:text-indigo-400 neu-pressed bg-[#e8eaf0] dark:bg-[#151b28]'
+                  ? isDark
+                    ? 'text-indigo-400 neu-pressed bg-[#151b28]'
+                    : 'text-indigo-600 neu-pressed bg-[#e8eaf0]'
                   : isDark
                   ? 'text-slate-400 hover:text-slate-200 active:neu-pressed'
                   : 'text-slate-600 hover:text-[#2e3040] active:neu-pressed'
