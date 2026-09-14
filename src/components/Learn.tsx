@@ -81,13 +81,6 @@ export const Learn: React.FC<LearnStageProps> = ({
         >
           {data.title}
         </h1>
-
-        {isFunctionTopic && tapToRevealEnabled && revealStep === 0 && (
-          <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 animate-pulse">
-            <span className="material-symbols-outlined text-[16px]">play_circle</span>
-            <span>Includes Animated Interactive Explainer • Tap anywhere to start</span>
-          </div>
-        )}
       </div>
 
       {/* 1: Concept Subtitle & Brief (Revealed on tap 1 or if tapToReveal is disabled) */}
@@ -104,7 +97,7 @@ export const Learn: React.FC<LearnStageProps> = ({
       {/* 1.5: Animated Explanation of "What is a Function and How It Works" */}
       {isFunctionTopic && (!tapToRevealEnabled || revealStep >= 1) && (
         <div
-          className="mb-5 transition-all duration-300 animate-fadeIn"
+          className="mb-4 transition-all duration-300 animate-fadeIn"
           onClick={(e) => e.stopPropagation()}
         >
           <FunctionAnimatedExplainer isDark={isDark} />
