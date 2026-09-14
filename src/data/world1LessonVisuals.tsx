@@ -3,6 +3,10 @@ import { FlowVisual } from '../components/visuals/FlowVisual';
 import { CompareVisual } from '../components/visuals/CompareVisual';
 import { ToggleVisual } from '../components/visuals/ToggleVisual';
 import { TokenVisual } from '../components/visuals/TokenVisual';
+import { KotlinOverviewVisual } from '../components/visuals/KotlinOverviewVisual';
+import { PrintCompareVisual } from '../components/visuals/PrintCompareVisual';
+import { ValVarVisual } from '../components/visuals/ValVarVisual';
+import { ProfileProgramVisual } from '../components/visuals/ProfileProgramVisual';
 
 export interface World1VisualEntry {
   lessonId: string;
@@ -13,26 +17,14 @@ export interface World1VisualEntry {
 
 // One mental-model visual per World 1 (Kotlin Awakening) lesson, in curriculum
 // order. Each renders the same tap-to-replay, auto-looping pattern as the
-// Functions lesson's FunctionAnimatedExplainer -- built from 4 shared
-// primitives (Flow / Compare / Toggle / Token) so the gallery reads as one
-// consistent system instead of 13 unrelated one-offs.
+// Functions lesson's FunctionAnimatedExplainer -- built from shared primitives
+// so the gallery reads as one consistent system.
 export const WORLD_1_LESSON_VISUALS: World1VisualEntry[] = [
   {
     lessonId: 'world-1-what-is-kotlin',
     title: 'What is Kotlin?',
-    idea: 'You write Kotlin once, and it runs everywhere.',
-    render: (isDark) => (
-      <FlowVisual
-        isDark={isDark}
-        inputLabel="You write"
-        inputValue="Kotlin"
-        processLabel="compile()"
-        processDetail="translates"
-        outputLabel="It runs on"
-        outputValue="App"
-        outputCaption="Android, server, and web"
-      />
-    ),
+    idea: 'You write modern Kotlin once, and it powers Android, backend, and multiplatform.',
+    render: (isDark) => <KotlinOverviewVisual isDark={isDark} />,
   },
   {
     lessonId: 'world-1-kotlin-syntax',
@@ -65,30 +57,14 @@ export const WORLD_1_LESSON_VISUALS: World1VisualEntry[] = [
   {
     lessonId: 'world-1-print-println',
     title: 'print() and println()',
-    idea: 'Whatever you pass in appears on screen -- println() then moves to a new line.',
-    render: (isDark) => (
-      <FlowVisual
-        isDark={isDark}
-        inputLabel="Value"
-        inputValue="Hi"
-        processLabel="println()"
-        processDetail="show it"
-        outputLabel="Screen"
-        outputValue="Hi⏎"
-      />
-    ),
+    idea: 'print() stays on the same line, while println() drops down to a new line.',
+    render: (isDark) => <PrintCompareVisual isDark={isDark} />,
   },
   {
     lessonId: 'world-1-val-vs-var',
     title: 'val vs var',
     idea: 'val locks a value forever; var can be reassigned anytime.',
-    render: (isDark) => (
-      <CompareVisual
-        isDark={isDark}
-        left={{ label: 'val', code: 'x = 5', note: "Can't reassign", valid: false }}
-        right={{ label: 'var', code: 'x = 5 → 6', note: 'Can reassign', valid: true }}
-      />
-    ),
+    render: (isDark) => <ValVarVisual isDark={isDark} />,
   },
   {
     lessonId: 'world-1-variables-type-inference',
@@ -169,17 +145,7 @@ export const WORLD_1_LESSON_VISUALS: World1VisualEntry[] = [
   {
     lessonId: 'world-1-boss',
     title: 'Personal Profile Program',
-    idea: 'Combine variables, strings, and print() to describe yourself.',
-    render: (isDark) => (
-      <FlowVisual
-        isDark={isDark}
-        inputLabel="Values"
-        inputValue="Ana, 21"
-        processLabel="build profile"
-        processDetail="combines"
-        outputLabel="Printed"
-        outputValue="Card"
-      />
-    ),
+    idea: 'Combine variables, string templates, and print() to create your profile.',
+    render: (isDark) => <ProfileProgramVisual isDark={isDark} />,
   },
 ];

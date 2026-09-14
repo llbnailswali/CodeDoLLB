@@ -1168,7 +1168,7 @@ export const VARIABLES_LESSON: FiveStageLesson = {
 // conceptual "what/why" topic, and function syntax (params, return types)
 // belongs to the Functions world (World 5), not here.
 export const WHAT_IS_KOTLIN_LESSON: FiveStageLesson = {
-  id: 'what-is-kotlin-lesson',
+  id: 'world-1-what-is-kotlin',
   worldId: 'world-1',
   worldName: 'Kotlin Awakening',
   stageName: 'STAGE 1 — FOUNDATIONS',
@@ -1303,7 +1303,7 @@ export const WHAT_IS_KOTLIN_LESSON: FiveStageLesson = {
 // NOT taught here -- that belongs to the Functions world (World 5). Here
 // main() is only introduced as "the place execution starts."
 export const KOTLIN_SYNTAX_LESSON: FiveStageLesson = {
-  id: 'kotlin-syntax-lesson',
+  id: 'world-1-kotlin-syntax',
   worldId: 'world-1',
   worldName: 'Kotlin Awakening',
   stageName: 'STAGE 1 — FOUNDATIONS',
@@ -1561,10 +1561,48 @@ export const KOTLIN_SYNTAX_LESSON: FiveStageLesson = {
   }
 };
 
+import {
+  COMMENTS_LESSON,
+  PRINT_PRINTLN_LESSON,
+  VAL_VS_VAR_LESSON,
+  VARIABLES_TYPE_INFERENCE_LESSON,
+  INT_LONG_LESSON,
+  FLOAT_DOUBLE_LESSON,
+  BOOLEAN_LESSON,
+  CHAR_LESSON,
+  STRING_LESSON,
+  STRING_TEMPLATES_LESSON,
+  WORLD_1_BOSS_LESSON,
+} from './curriculum/world1LessonsData';
+
 export const AVAILABLE_FIVE_STAGE_LESSONS: Record<string, FiveStageLesson> = {
   variables: VARIABLES_LESSON,
   functions: FUNCTIONS_LESSON,
   loops: LOOPS_LESSON,
+  // World 1 - Kotlin Awakening (13 lessons)
   'what-is-kotlin': WHAT_IS_KOTLIN_LESSON,
-  'kotlin-syntax': KOTLIN_SYNTAX_LESSON
+  'world-1-what-is-kotlin': WHAT_IS_KOTLIN_LESSON,
+  'kotlin-syntax': KOTLIN_SYNTAX_LESSON,
+  'world-1-kotlin-syntax': KOTLIN_SYNTAX_LESSON,
+  comments: COMMENTS_LESSON,
+  'world-1-comments': COMMENTS_LESSON,
+  'print-println': PRINT_PRINTLN_LESSON,
+  'world-1-print-println': PRINT_PRINTLN_LESSON,
+  'val-vs-var': VAL_VS_VAR_LESSON,
+  'world-1-val-vs-var': VAL_VS_VAR_LESSON,
+  'variables-type-inference': VARIABLES_TYPE_INFERENCE_LESSON,
+  'world-1-variables-type-inference': VARIABLES_TYPE_INFERENCE_LESSON,
+  'int-long': INT_LONG_LESSON,
+  'world-1-int-long': INT_LONG_LESSON,
+  'float-double': FLOAT_DOUBLE_LESSON,
+  'world-1-float-double': FLOAT_DOUBLE_LESSON,
+  boolean: BOOLEAN_LESSON,
+  'world-1-boolean': BOOLEAN_LESSON,
+  char: CHAR_LESSON,
+  'world-1-char': CHAR_LESSON,
+  string: STRING_LESSON,
+  'world-1-string': STRING_LESSON,
+  'string-templates': STRING_TEMPLATES_LESSON,
+  'world-1-string-templates': STRING_TEMPLATES_LESSON,
+  'world-1-boss': WORLD_1_BOSS_LESSON,
 };

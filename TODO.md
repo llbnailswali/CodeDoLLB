@@ -40,7 +40,21 @@ Reference implementation: World 1's `what-is-kotlin` lesson (Learn+MCQ only) vs 
 ### Phase 1: Core Learning & 90-Day Curriculum Expansion
 - [x] Snake Ribbon SVG winding path with Completed, Today Available, and Locked states
 - [x] Syntax highlighter (`renderKotlinCodeLine`) & dynamic challenge badges
-- [x] World 1 (Foundations) full lesson expansion: 8 lessons (40 questions complete)
+- [x] World 1 (Kotlin Awakening) full 13-lesson expansion authored & integrated:
+  - 1. What is Kotlin? (theory/conceptual: Learn + MCQ + Mastered)
+  - 2. Kotlin Syntax & main() (entry point & sequential execution)
+  - 3. Comments (// and /* */ with interactive compiler bypass visual)
+  - 4. print() and println() (console terminal newline behavior visual)
+  - 5. val vs var (immutability lock vs reassignable var visual)
+  - 6. Variables & Type Inference (automatic inference vs : Type visual)
+  - 7. Int & Long (32-bit vs 64-bit with L suffix visual)
+  - 8. Float & Double (Double default vs Float with f suffix visual)
+  - 9. Boolean (true/false binary logic & NOT operator visual)
+  - 10. Char (strict single quotes 'A' vs Strings visual)
+  - 11. Strings (double quotes, .length & concatenation visual)
+  - 12. String Templates ($var and ${expr} interpolation visual)
+  - 13. World 1 Boss: Personal Profile Program (capstone visual & comprehensive challenge)
+- [x] Integrated `WORLD_1_LESSON_VISUALS` directly into Step 1 (Learn stage) for all World 1 lessons
 - [x] World 2 (Logic) full lesson expansion: 5 lessons + Logic Boss (26 questions complete)
 - [x] World 3 (Loops) full lesson expansion: 5 lessons + Loop Boss (26 questions complete)
 - [x] World 4 (Functions) full lesson expansion: 7 lessons + Function Boss (36 questions complete)

@@ -66,8 +66,9 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "kotlin-fundamentals",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
-        "questionsCount": 0
+        "description": "Single-line // and multi-line /* */ comments: writing notes for humans that the compiler ignores.",
+        "questionsCount": 3,
+        "fiveStageLessonKey": "comments"
       },
       {
         "id": "world-1-print-println",
@@ -76,8 +77,9 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "kotlin-fundamentals",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
-        "questionsCount": 0
+        "description": "Console output and formatting: staying on the current line with print() vs dropping to a new line with println().",
+        "questionsCount": 3,
+        "fiveStageLessonKey": "print-println"
       },
       {
         "id": "world-1-val-vs-var",
@@ -86,8 +88,9 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "kotlin-fundamentals",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
-        "questionsCount": 0
+        "description": "The golden rule of Kotlin variables: immutable read-only val vs mutable reassignable var.",
+        "questionsCount": 3,
+        "fiveStageLessonKey": "val-vs-var"
       },
       {
         "id": "world-1-variables-type-inference",
@@ -96,8 +99,9 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "kotlin-fundamentals",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
-        "questionsCount": 0
+        "description": "How Kotlin deduces types automatically and how to write explicit : Type annotations.",
+        "questionsCount": 3,
+        "fiveStageLessonKey": "variables-type-inference"
       },
       {
         "id": "world-1-int-long",
@@ -106,8 +110,9 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "kotlin-fundamentals",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
-        "questionsCount": 0
+        "description": "Whole numbers: standard 32-bit Int vs 64-bit Long with the L suffix and underscore separators.",
+        "questionsCount": 3,
+        "fiveStageLessonKey": "int-long"
       },
       {
         "id": "world-1-float-double",
@@ -116,8 +121,9 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "kotlin-fundamentals",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
-        "questionsCount": 0
+        "description": "Decimal numbers: 64-bit Double by default and 32-bit Float with the mandatory f suffix.",
+        "questionsCount": 3,
+        "fiveStageLessonKey": "float-double"
       },
       {
         "id": "world-1-boolean",
@@ -126,8 +132,9 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "kotlin-fundamentals",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
-        "questionsCount": 0
+        "description": "Binary logic flags: true and false, comparison operations, and the ! NOT negation operator.",
+        "questionsCount": 3,
+        "fiveStageLessonKey": "boolean"
       },
       {
         "id": "world-1-char",
@@ -136,8 +143,9 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "kotlin-fundamentals",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
-        "questionsCount": 0
+        "description": "Single characters: strict single-quote 'A' syntax vs double-quote Strings and escape sequences.",
+        "questionsCount": 3,
+        "fiveStageLessonKey": "char"
       },
       {
         "id": "world-1-string",
@@ -146,8 +154,9 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "kotlin-fundamentals",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
-        "questionsCount": 0
+        "description": "Text in double quotes: .length property, string concatenation, and multi-line raw strings.",
+        "questionsCount": 3,
+        "fiveStageLessonKey": "string"
       },
       {
         "id": "world-1-string-templates",
@@ -156,8 +165,9 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "kotlin-fundamentals",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
-        "questionsCount": 0
+        "description": "Clean interpolation: embedding variables with $variable and expressions with ${expression}.",
+        "questionsCount": 3,
+        "fiveStageLessonKey": "string-templates"
       },
       {
         "id": "world-1-boss",
@@ -166,9 +176,10 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "boss",
         "durationMinutes": 10,
         "xpReward": 50,
-        "description": "Build a small standalone Kotlin program that declares different variables, uses appropriate data types, prints values, and uses string templates.",
-        "questionsCount": 0,
-        "isBoss": true
+        "description": "World 1 Capstone: Build a complete standalone Kotlin program integrating variables, data types, and string templates.",
+        "questionsCount": 3,
+        "isBoss": true,
+        "fiveStageLessonKey": "world-1-boss"
       }
     ]
   },

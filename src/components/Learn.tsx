@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Stage1LearnData } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
 import { FunctionAnimatedExplainer } from './FunctionAnimatedExplainer';
-import { FunctionMentalModel } from './FunctionMentalModel';
+import { WORLD_1_LESSON_VISUALS } from '../data/world1LessonVisuals';
 
 interface LearnStageProps {
   data: Stage1LearnData;
@@ -16,6 +16,8 @@ interface LearnStageProps {
    * Predict, etc.) -- stages can be skipped per-lesson, so this must not be
    * hardcoded. Defaults to 'Explore' only as a last-resort fallback. */
   nextStageLabel?: string;
+  lessonId?: string;
+  topicTitle?: string;
 }
 
 // Reveal stages:
@@ -34,6 +36,8 @@ export const Learn: React.FC<LearnStageProps> = ({
   renderSnippetLine,
   tapToRevealEnabled = true,
   nextStageLabel = 'Explore',
+  lessonId,
+  topicTitle,
 }) => {
   // Total steps = 2 (subtitle + example) + data.keyIdeas.length + 1 (key takeaway)
   const totalKeyIdeas = data.keyIdeas.length;
@@ -66,6 +70,37 @@ export const Learn: React.FC<LearnStageProps> = ({
     data.subtitle.toLowerCase().includes('function') ||
     data.exampleTitle.toLowerCase().includes('function');
 
+  // Match lesson visual from WORLD_1_LESSON_VISUALS with robust normalization
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/^world-?\d+-?/, '')
+      .replace(/-lesson$/, '')
+      .replace(/[^a-z0-9]/g, '');
+
+  const matchingVisual = WORLD_1_LESSON_VISUALS.find((v) => {
+    const visualNorm = normalize(v.lessonId);
+    const visualTitleNorm = normalize(v.title);
+
+    if (lessonId) {
+      if (v.lessonId === lessonId) return true;
+      const lessonNorm = normalize(lessonId);
+      if (lessonNorm === visualNorm) return true;
+      if (lessonNorm.length > 3 && visualNorm.length > 3) {
+        if (lessonNorm.includes(visualNorm) || visualNorm.includes(lessonNorm)) return true;
+      }
+    }
+    if (topicTitle) {
+      const topicNorm = normalize(topicTitle);
+      if (topicNorm === visualTitleNorm || topicNorm.includes(visualNorm)) return true;
+    }
+    if (data.title) {
+      const titleNorm = normalize(data.title);
+      if (titleNorm === visualTitleNorm || titleNorm.includes(visualNorm)) return true;
+    }
+    return false;
+  });
+
   return (
     <div
       onClick={!isFullyRevealed ? handleNextReveal : undefined}
@@ -95,26 +130,23 @@ export const Learn: React.FC<LearnStageProps> = ({
         </p>
       )}
 
-      {/* 1.5: Animated Explanation of "What is a Function and How It Works" */}
-      {isFunctionTopic && (!tapToRevealEnabled || revealStep >= 1) && (
+      {/* 1.5: Interactive Mental Model / Visual for World 1 lessons in Step 1 */}
+      {matchingVisual && (!tapToRevealEnabled || revealStep >= 1) && (
+        <div
+          className="mb-4 transition-all duration-300 animate-fadeIn"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {matchingVisual.render(isDark)}
+        </div>
+      )}
+
+      {/* Fallback to Function Animated Explainer if function topic and no custom visual */}
+      {!matchingVisual && isFunctionTopic && (!tapToRevealEnabled || revealStep >= 1) && (
         <div
           className="mb-4 transition-all duration-300 animate-fadeIn"
           onClick={(e) => e.stopPropagation()}
         >
           <FunctionAnimatedExplainer isDark={isDark} />
-        </div>
-      )}
-
-      {/* Temporary side-by-side comparison: our own take on the same mental model */}
-      {isFunctionTopic && (!tapToRevealEnabled || revealStep >= 1) && (
-        <div
-          className="mb-4 transition-all duration-300 animate-fadeIn"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <p className={`text-[10px] font-bold uppercase tracking-widest mb-1.5 px-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-            Alternate version
-          </p>
-          <FunctionMentalModel isDark={isDark} />
         </div>
       )}
 

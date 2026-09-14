@@ -156,6 +156,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   onExit,
   onCompleteLesson,
   onToggleTheme,
+  tapToRevealEnabled = true,
 }, ref) => {
   const [currentLessonKey] = useState<string>(initialLessonKey);
   const [exploreCardIndex, setExploreCardIndex] = useState<number>(0);
@@ -484,6 +485,9 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
             onContinue={handleNextStage}
             renderSnippetLine={renderSnippetLine}
             nextStageLabel={nextStageLabel}
+            tapToRevealEnabled={tapToRevealEnabled}
+            lessonId={lessonData.id}
+            topicTitle={lessonData.topicTitle}
           />
         )}
 
