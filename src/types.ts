@@ -85,6 +85,7 @@ export interface UserStats {
   completedLessons: number;
   todayLessonsCompleted: number;
   todayGoal: number;
+  completedWorlds?: number;
 }
 
 export interface UserMistake {

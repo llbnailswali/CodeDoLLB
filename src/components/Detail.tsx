@@ -16,7 +16,7 @@ interface DetailProps {
   initialLessonKey?: string;
   userStats: UserStats;
   onExit: () => void;
-  onCompleteLesson: (earnedXP: number) => void;
+  onCompleteLesson: (earnedXP: number, worldId?: string) => void;
   onToggleTheme?: () => void;
   tapToRevealEnabled?: boolean;
   onToggleTapToReveal?: () => void;
@@ -234,7 +234,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
       scrollToTop();
     } else {
       soundFX.playSuccess();
-      onCompleteLesson(lessonData.mastered.xpEarned);
+      onCompleteLesson(lessonData.mastered.xpEarned, lessonData.worldId);
     }
   };
 

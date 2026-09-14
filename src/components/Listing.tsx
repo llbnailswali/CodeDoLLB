@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppTheme, LessonMeta } from '../types';
+import { AppTheme, LessonMeta, UserStats } from '../types';
 import { MasterWorldEntry } from '../data/curriculum/masterCurriculumCatalog';
 import { CODEDO_MASTER_WORLDS as WORLDS_CATALOG } from '../data/curriculum/masterCurriculumCatalog';
 import { soundFX } from '../utils/audio';
@@ -7,6 +7,7 @@ import { soundFX } from '../utils/audio';
 interface ListingProps {
   theme: AppTheme;
   initialWorldId?: string;
+  userStats?: UserStats;
   onJumpToToday: () => void;
   onStartLesson?: (topic?: string) => void;
 }
@@ -14,6 +15,7 @@ interface ListingProps {
 export const Listing: React.FC<ListingProps> = ({
   theme,
   initialWorldId,
+  userStats,
   onJumpToToday,
   onStartLesson,
 }) => {
@@ -25,12 +27,17 @@ export const Listing: React.FC<ListingProps> = ({
   const scrollStripRef = useRef<HTMLDivElement>(null);
   const worldButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
-  // Refs to measure the connecting stem line so it ends exactly at the last
-  // visible lesson node's icon instead of a hardcoded offset (which drifted
-  // once boss lessons stopped rendering their own timeline node).
+  // Refs and geometry to measure the connecting stem line so it is precisely
+  // centered on the status circles, starts at the center of the first circle (never above it),
+  // and ends at the center of the last circle.
   const timelineSectionRef = useRef<HTMLDivElement>(null);
-  const lastNodeIconRef = useRef<HTMLDivElement>(null);
-  const [stemHeight, setStemHeight] = useState<number | null>(null);
+  const firstNodeIconRef = useRef<HTMLDivElement | null>(null);
+  const lastNodeIconRef = useRef<HTMLDivElement | null>(null);
+  const [stemGeometry, setStemGeometry] = useState<{
+    top: number;
+    height: number;
+    left: number;
+  } | null>(null);
 
   // Function to scroll the world scroller so the active world is centered/visible
   const scrollToActiveWorld = (worldId: string) => {
@@ -77,24 +84,51 @@ export const Listing: React.FC<ListingProps> = ({
   const selectedWorld: MasterWorldEntry =
     WORLDS_CATALOG.find((w) => w.id === selectedWorldId) || WORLDS_CATALOG[0];
 
-  // Recompute the stem line's height so it stops at the last node's icon
-  // center, never past it, whenever the visible lesson list changes.
+  const completedWorldsCount =
+    (userStats?.completedLessons ?? 0) > 15
+      ? userStats?.completedWorlds ?? 0
+      : 0;
+  const isSelectedWorldCompleted = selectedWorld.order <= completedWorldsCount;
+  const isSelectedWorldCurrent = selectedWorld.order === completedWorldsCount + 1;
+
+  // Recompute the stem line's geometry so it is precisely centered on the status
+  // circles, starts at the first circle center (never above it), and stops at the last circle.
   useEffect(() => {
     const measure = () => {
       const section = timelineSectionRef.current;
+      const firstIcon = firstNodeIconRef.current;
       const lastIcon = lastNodeIconRef.current;
-      if (section && lastIcon) {
-        const sectionTop = section.getBoundingClientRect().top;
-        const iconRect = lastIcon.getBoundingClientRect();
-        const iconCenter = iconRect.top - sectionTop + iconRect.height / 2;
-        setStemHeight(iconCenter);
+      if (section && firstIcon && lastIcon) {
+        const sectionRect = section.getBoundingClientRect();
+        const firstRect = firstIcon.getBoundingClientRect();
+        const lastRect = lastIcon.getBoundingClientRect();
+
+        const top = firstRect.top - sectionRect.top + firstRect.height / 2;
+        const bottom = lastRect.top - sectionRect.top + lastRect.height / 2;
+        const left = firstRect.left - sectionRect.left + firstRect.width / 2;
+
+        setStemGeometry({
+          top,
+          height: Math.max(0, bottom - top),
+          left,
+        });
       }
     };
+
     const timer = setTimeout(measure, 0);
     window.addEventListener('resize', measure);
+
+    // Use ResizeObserver if available to re-measure on layout/font shifts
+    let ro: ResizeObserver | null = null;
+    if (timelineSectionRef.current && typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => measure());
+      ro.observe(timelineSectionRef.current);
+    }
+
     return () => {
       clearTimeout(timer);
       window.removeEventListener('resize', measure);
+      if (ro) ro.disconnect();
     };
   }, [selectedWorldId]);
 
@@ -159,6 +193,8 @@ export const Listing: React.FC<ListingProps> = ({
             <div className="shrink-0 w-2" aria-hidden="true" />
             {WORLDS_CATALOG.map((w) => {
               const isSelected = w.id === selectedWorldId;
+              const isWorldDone = w.order <= completedWorldsCount;
+              const isWorldActive = w.order === completedWorldsCount + 1;
               return (
                 <button
                   key={w.id}
@@ -184,14 +220,22 @@ export const Listing: React.FC<ListingProps> = ({
                 >
                   <span
                     className={`w-6 h-6 rounded-lg flex items-center justify-center font-['Outfit'] text-xs font-bold shrink-0 ${
-                      isSelected
+                      isWorldDone
+                        ? 'bg-emerald-600 text-white'
+                        : isWorldActive
+                        ? 'bg-purple-600 text-white ring-2 ring-purple-400/40'
+                        : isSelected
                         ? 'bg-indigo-600 text-white shadow-sm'
                         : isDark
                         ? 'bg-[#0f1420] text-slate-400'
                         : 'bg-slate-100 text-slate-600'
                     }`}
                   >
-                    {w.order}
+                    {isWorldDone ? (
+                      <span className="material-symbols-outlined text-[13px] font-bold">check</span>
+                    ) : (
+                      w.order
+                    )}
                   </span>
                   <div className="flex flex-col min-w-0 pr-1">
                     <span className="font-['Outfit'] text-xs font-bold truncate max-w-[130px]">
@@ -255,78 +299,116 @@ export const Listing: React.FC<ListingProps> = ({
               </div>
 
               {/* Mastery Progress Card */}
-              <div
-                className={`p-4 rounded-2xl border ${
-                  isDark
-                    ? 'bg-[#0f1420] border-white/5'
-                    : 'bg-[#f0f3f8] border-slate-200/60 shadow-sm'
-                }`}
-              >
-                <div className="flex justify-between items-center mb-2.5">
-                  <span className="text-xs font-mono font-bold text-indigo-500 tracking-wide uppercase">
-                    72% Mastered
-                  </span>
+              {(() => {
+                const visibleLessons = selectedWorld.lessons.filter((l) => !l.isBoss);
+                const totalLessons = Math.max(1, visibleLessons.length);
+                const completedInThisWorld =
+                  selectedWorld.order === 1
+                    ? Math.min(totalLessons, userStats?.completedLessons ?? 1)
+                    : selectedWorld.order <= completedWorldsCount
+                    ? totalLessons
+                    : 0;
+                const masteryPercentage = Math.round((completedInThisWorld / totalLessons) * 100);
+
+                return (
                   <div
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs ${
+                    className={`p-4 rounded-2xl border transition-all ${
                       isDark
-                        ? 'bg-[#151b28] border-white/10 text-slate-300'
-                        : 'bg-white border-slate-200 text-slate-700 shadow-sm'
+                        ? 'bg-[#0f1420] border-white/5'
+                        : 'bg-[#f0f3f8] border-slate-200/60 shadow-sm'
                     }`}
                   >
-                    <span className="text-[10px] font-mono font-bold uppercase text-slate-400">
-                      Today
-                    </span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        isDark ? 'bg-slate-700' : 'bg-slate-300'
-                      }`}
-                    ></span>
-                    <span className="text-[11px] font-mono font-bold ml-0.5">2/3</span>
-                  </div>
-                </div>
+                    <div className="flex items-center justify-between gap-3 mb-2.5">
+                      <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 tracking-wide uppercase whitespace-nowrap shrink-0">
+                        {masteryPercentage}% Mastered
+                      </span>
+                      <div
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs whitespace-nowrap shrink-0 ${
+                          isDark
+                            ? 'bg-[#151b28] border-white/10 text-slate-300'
+                            : 'bg-white border-slate-200 text-slate-700 shadow-sm'
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            completedInThisWorld > 0
+                              ? 'bg-emerald-500'
+                              : isDark
+                              ? 'bg-slate-700'
+                              : 'bg-slate-300'
+                          }`}
+                        />
+                        <span className="text-[11px] font-mono font-bold">
+                          {completedInThisWorld}/{totalLessons} Lessons
+                        </span>
+                      </div>
+                    </div>
 
-                {/* Progress Track */}
-                <div
-                  className={`w-full h-2.5 rounded-full overflow-hidden p-0.5 ${
-                    isDark ? 'bg-[#090d16]' : 'bg-slate-200'
-                  }`}
-                >
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-sm"
-                    style={{ width: '72%' }}
-                  ></div>
-                </div>
-              </div>
+                    {/* Progress Track */}
+                    <div
+                      className={`w-full h-2 rounded-full overflow-hidden p-0.5 ${
+                        isDark ? 'bg-[#090d16]' : 'bg-slate-200'
+                      }`}
+                    >
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-purple-500 to-pink-500 shadow-sm transition-all duration-500"
+                        style={{ width: `${Math.max(masteryPercentage, completedInThisWorld > 0 ? 5 : 0)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })()}
             </section>
 
             {/* Linear Curriculum Timeline */}
             <section ref={timelineSectionRef} className="relative">
-              {/* Central Connecting Stem Line -- stops exactly at the last visible node's icon */}
-              <div
-                aria-hidden="true"
-                className="absolute left-[18px] top-4 w-1 rounded-full bg-gradient-to-b from-indigo-500 via-indigo-500/50 to-slate-400"
-                style={{ height: stemHeight !== null ? Math.max(0, stemHeight - 16) : 0 }}
-              />
+              {/* Central Connecting Stem Line -- precisely centered on status circles, starts at first circle center (never above it) and stops at last circle center */}
+              {stemGeometry && (
+                <div
+                  aria-hidden="true"
+                  className="absolute w-1 -translate-x-1/2 rounded-full bg-gradient-to-b from-indigo-500 via-purple-500 to-slate-300 dark:to-slate-700 pointer-events-none"
+                  style={{
+                    left: `${stemGeometry.left}px`,
+                    top: `${stemGeometry.top}px`,
+                    height: `${stemGeometry.height}px`,
+                  }}
+                />
+              )}
 
               {/* Dynamic Lesson Nodes */}
               <div className="space-y-4">
                 {(() => {
+                  const visibleLessons = selectedWorld.lessons.filter((l) => !l.isBoss);
+                  const totalLessons = Math.max(1, visibleLessons.length);
+                  const completedInThisWorld =
+                    selectedWorld.order === 1
+                      ? Math.min(totalLessons, userStats?.completedLessons ?? 1)
+                      : selectedWorld.order <= completedWorldsCount
+                      ? totalLessons
+                      : 0;
+
+                  const firstVisibleIdx = selectedWorld.lessons.findIndex(
+                    (l) => !l.isBoss
+                  );
                   const lastVisibleIdx = selectedWorld.lessons.reduce(
                     (acc, l, i) => (l.isBoss ? acc : i),
                     -1
                   );
                   return selectedWorld.lessons.map((lesson, idx) => {
-                  const isFirstThree = idx < 3;
-                  const isCurrent = idx === 3;
                   const isBoss = lesson.isBoss;
 
                   if (isBoss) {
                     return null;
                   }
 
-                  const isClickable = true; // All lessons or review/available lessons can be launched
+                  // Respect completed count in selected world:
+                  // Lessons before completedInThisWorld are completed,
+                  // lesson at completedInThisWorld is current (if world not fully completed),
+                  // and rest are upcoming
+                  const isCompleted = idx < completedInThisWorld;
+                  const isCurrent =
+                    idx === completedInThisWorld && completedInThisWorld < totalLessons;
+                  const isUpcoming = idx > completedInThisWorld;
 
                   return (
                     <div
@@ -340,51 +422,60 @@ export const Listing: React.FC<ListingProps> = ({
                           handleLaunchLesson(lesson);
                         }
                       }}
-                      className="relative flex items-center gap-4 group cursor-pointer select-none active:scale-[0.99] transition-transform"
+                      className="relative flex items-center gap-4 group cursor-pointer select-none active:scale-[0.99] transition-all"
                     >
-                      {/* Node Dot Indicator (tick / play / lock icon) */}
+                      {/* Node Dot Indicator (checkmark / purple pulse play / muted lock) */}
                       <div
-                        ref={idx === lastVisibleIdx ? lastNodeIconRef : undefined}
+                        ref={(el) => {
+                          if (idx === firstVisibleIdx) {
+                            firstNodeIconRef.current = el;
+                          }
+                          if (idx === lastVisibleIdx) {
+                            lastNodeIconRef.current = el;
+                          }
+                        }}
                         className={`relative z-10 w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2 transition-all ${
-                          isFirstThree
+                          isCompleted
                             ? 'bg-indigo-600 border-indigo-400 text-white shadow-md group-hover:scale-105 group-hover:ring-2 group-hover:ring-indigo-400/40'
                             : isCurrent
-                            ? 'bg-white dark:bg-[#151b28] border-indigo-500 text-indigo-500 shadow-md ring-4 ring-indigo-500/20 animate-pulse group-hover:scale-105'
+                            ? 'bg-purple-600 border-purple-300 dark:border-purple-300 text-white shadow-lg shadow-purple-500/35 ring-4 ring-purple-500/25 animate-pulse group-hover:scale-105'
                             : isDark
-                            ? 'bg-[#0f1420] border-slate-700 text-slate-500 group-hover:border-indigo-500/50 group-hover:text-indigo-400'
-                            : 'bg-white border-slate-300 text-slate-400 shadow-sm group-hover:border-indigo-400 group-hover:text-indigo-600'
+                            ? 'bg-[#0f1420] border-slate-700/80 text-slate-500 group-hover:border-slate-500 group-hover:text-slate-400'
+                            : 'bg-slate-100 border-slate-300 text-slate-400 shadow-sm group-hover:border-slate-400 group-hover:text-slate-600'
                         }`}
                       >
-                        {isFirstThree ? (
-                          <span className="material-symbols-outlined text-[18px]">check</span>
+                        {isCompleted ? (
+                          <span className="material-symbols-outlined text-[18px] font-bold">check</span>
                         ) : isCurrent ? (
-                          <span className="material-symbols-outlined text-[18px]">play_arrow</span>
+                          <span className="material-symbols-outlined text-[18px] font-bold">play_arrow</span>
                         ) : (
-                          <span className="material-symbols-outlined text-[16px]">play_arrow</span>
+                          <span className="material-symbols-outlined text-[15px]">lock_outline</span>
                         )}
                       </div>
 
-                      {/* Node Card Details */}
+                      {/* Node Card Details - highlighted border for current, controlled opacity for Up Next */}
                       <div
                         className={`flex-1 p-3.5 rounded-2xl border transition-all ${
+                          isUpcoming ? 'opacity-[0.65] hover:opacity-100' : 'opacity-100'
+                        } ${
                           isCurrent
                             ? isDark
-                              ? 'bg-[#151b28] border-indigo-500/60 shadow-md group-hover:border-indigo-400 group-hover:bg-[#192132]'
-                              : 'bg-white border-indigo-300 shadow-md group-hover:border-indigo-500 group-hover:bg-indigo-50/40'
+                              ? 'bg-[#151b28] border-purple-500 ring-1 ring-purple-500/30 shadow-sm group-hover:border-purple-400 group-hover:bg-[#171e2e]'
+                              : 'bg-white border-purple-500 ring-1 ring-purple-500/20 shadow-sm group-hover:border-purple-600 group-hover:bg-indigo-50/20'
                             : isDark
-                            ? 'bg-[#151b28]/60 border-white/5 group-hover:border-indigo-500/40 group-hover:bg-[#171e2e]'
-                            : 'bg-white/80 border-slate-200/60 shadow-sm group-hover:border-indigo-300 group-hover:bg-indigo-50/20'
+                            ? 'bg-[#151b28] border-white/10 shadow-sm group-hover:border-indigo-500/40 group-hover:bg-[#171e2e]'
+                            : 'bg-white border-slate-200/80 shadow-sm group-hover:border-indigo-300 group-hover:bg-indigo-50/20'
                         }`}
                       >
                         <h3 className="text-sm font-bold font-['Outfit'] group-hover:text-indigo-500 transition-colors">
                           {lesson.title}
                         </h3>
 
-                        <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center justify-between mt-1.5">
                           <div className="flex items-center gap-2">
                             <span
                               className={`text-xs font-semibold ${
-                                isFirstThree
+                                isCompleted
                                   ? 'text-emerald-500'
                                   : isCurrent
                                   ? 'text-indigo-500'
@@ -393,17 +484,24 @@ export const Listing: React.FC<ListingProps> = ({
                                   : 'text-slate-500'
                               }`}
                             >
-                              {isFirstThree ? 'Completed' : isCurrent ? 'Available Now' : 'Pending'}
+                              {isCompleted ? 'Completed' : isCurrent ? 'Available Now' : 'Up Next'}
                             </span>
                             <span className="text-slate-400 text-xs">•</span>
                             <span
-                              className="text-xs font-bold text-indigo-500 group-hover:text-indigo-400 group-hover:underline decoration-indigo-300"
+                              className={`text-xs font-bold ${
+                                isCompleted
+                                  ? 'text-indigo-500 group-hover:text-indigo-400 group-hover:underline decoration-indigo-300'
+                                  : isCurrent
+                                  ? 'text-indigo-500 group-hover:text-indigo-400 group-hover:underline decoration-indigo-300'
+                                  : 'text-slate-400 group-hover:text-indigo-500'
+                              }`}
                             >
-                              {isFirstThree ? 'Review' : 'Start'}
+                              {isCompleted ? 'Review' : 'Start'}
                             </span>
                           </div>
+
                           <span className="text-[10px] font-mono font-semibold text-slate-400">
-                            Lesson {selectedWorld.order}.{idx + 1}
+                            Lesson {idx + 1}
                           </span>
                         </div>
                       </div>
@@ -445,53 +543,85 @@ export const Listing: React.FC<ListingProps> = ({
         ) : (
           /* ALL WORLDS EXPANDED BROWSER */
           <div className="flex flex-col space-y-4">
-            {WORLDS_CATALOG.map((world) => (
-              <div
-                key={world.id}
-                className={`rounded-2xl p-4 border transition-all ${
-                  world.id === selectedWorldId
-                    ? isDark
-                      ? 'bg-indigo-950/40 border-indigo-500 shadow-md'
-                      : 'bg-indigo-50/70 border-indigo-300 shadow-sm'
-                    : isDark
-                    ? 'bg-[#151b28] border-white/10 shadow-sm'
-                    : 'bg-white border-slate-200/80 shadow-sm'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`w-7 h-7 rounded-xl flex items-center justify-center font-['Outfit'] font-bold text-xs ${
-                        isDark ? 'bg-indigo-900/60 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
-                      }`}
-                    >
-                      {world.order}
-                    </span>
-                    <div>
-                      <h3 className="font-['Outfit'] font-bold text-base">
-                        {world.title}
-                      </h3>
-                      <p className="text-xs text-slate-400">{world.subtitle}</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedWorldId(world.id);
-                      setViewMode('focused');
-                    }}
-                    className="px-3 py-1 rounded-xl bg-indigo-600 text-white font-['Outfit'] text-xs font-bold shadow-sm"
-                  >
-                    View Timeline
-                  </button>
-                </div>
+            {WORLDS_CATALOG.map((world) => {
+              const isWorldDone = world.order <= completedWorldsCount;
+              const isWorldActive = world.order === completedWorldsCount + 1;
 
-                <div className="mt-3 pt-2 border-t border-slate-500/10 flex items-center justify-between text-xs text-slate-400">
-                  <span>{world.lessons.length} structured modules</span>
-                  <span>+{world.lessons.reduce((acc, l) => acc + l.xpReward, 0)} Total XP</span>
+              return (
+                <div
+                  key={world.id}
+                  className={`rounded-2xl p-4 border transition-all ${
+                    world.id === selectedWorldId
+                      ? isDark
+                        ? 'bg-indigo-950/40 border-indigo-500 shadow-md'
+                        : 'bg-indigo-50/70 border-indigo-300 shadow-sm'
+                      : isDark
+                      ? 'bg-[#151b28] border-white/10 shadow-sm'
+                      : 'bg-white border-slate-200/80 shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`w-7 h-7 rounded-xl flex items-center justify-center font-['Outfit'] font-bold text-xs ${
+                          isWorldDone
+                            ? 'bg-emerald-600 text-white'
+                            : isWorldActive
+                            ? 'bg-purple-600 text-white ring-2 ring-purple-400/40'
+                            : isDark
+                            ? 'bg-indigo-900/60 text-indigo-300'
+                            : 'bg-indigo-100 text-indigo-700'
+                        }`}
+                      >
+                        {isWorldDone ? (
+                          <span className="material-symbols-outlined text-[15px] font-bold">check</span>
+                        ) : (
+                          world.order
+                        )}
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-['Outfit'] font-bold text-base">
+                            {world.title}
+                          </h3>
+                          {isWorldDone ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[11px] font-bold">check</span>
+                              Completed
+                            </span>
+                          ) : isWorldActive ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-800 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-ping"></span>
+                              Current
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                              Up Next
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400">{world.subtitle}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedWorldId(world.id);
+                        setViewMode('focused');
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-['Outfit'] text-xs font-bold shadow-sm transition-colors cursor-pointer"
+                    >
+                      View Timeline
+                    </button>
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-slate-500/10 flex items-center justify-between text-xs text-slate-400">
+                    <span>{world.lessons.length} structured modules</span>
+                    <span>+{world.lessons.reduce((acc, l) => acc + l.xpReward, 0)} Total XP</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

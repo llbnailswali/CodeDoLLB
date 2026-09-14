@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { AppTheme, FontSize, LessonQuestion, TabType, UserStats } from './types';
 import {
   ALL_CURRICULUM_QUESTIONS,
@@ -157,7 +158,11 @@ export default function App() {
   // lesson stages, close an active drill, or return to the Learn tab -- only
   // exiting the app once we're already at that true root.
   useEffect(() => {
-    const listenerPromise = CapacitorApp.addListener('backButton', () => {
+    if (!Capacitor.isNativePlatform()) {
+      return;
+    }
+    let removeListener: (() => void) | null = null;
+    CapacitorApp.addListener('backButton', () => {
       if (fiveStageLessonKey) {
         detailRef.current?.goBack();
       } else if (isLessonActive) {
@@ -171,21 +176,41 @@ export default function App() {
       } else {
         CapacitorApp.exitApp();
       }
-    });
+    })
+      .then((handle) => {
+        removeListener = () => handle.remove();
+      })
+      .catch(() => {
+        // Safe fallback on environments where plugin is not supported
+      });
 
     return () => {
-      listenerPromise.then((handle) => handle.remove());
+      removeListener?.();
     };
   }, [fiveStageLessonKey, isLessonActive, activeTab]);
 
-  const handleLessonComplete = (earnedXP: number) => {
+  const handleLessonComplete = (earnedXP: number, completedWorldId?: string) => {
     setUserStats((prev) => {
+      const nextCompletedLessons = prev.completedLessons + 1;
+      let nextCompletedWorlds = prev.completedWorlds ?? 4;
+
+      if (completedWorldId) {
+        const orderMatch = completedWorldId.match(/\d+/);
+        if (orderMatch) {
+          const worldOrder = parseInt(orderMatch[0], 10);
+          if (worldOrder > nextCompletedWorlds) {
+            nextCompletedWorlds = Math.min(22, worldOrder);
+          }
+        }
+      }
+
       const updated: UserStats = {
         ...prev,
         stars: prev.stars + earnedXP,
         xp: prev.xp + earnedXP,
         todayLessonsCompleted: Math.min(prev.todayGoal, prev.todayLessonsCompleted + 1),
-        completedLessons: prev.completedLessons + 1,
+        completedLessons: nextCompletedLessons,
+        completedWorlds: nextCompletedWorlds,
       };
       StorageManager.saveUserStats(updated);
       return updated;
@@ -243,8 +268,8 @@ export default function App() {
               initialLessonKey={fiveStageLessonKey}
               userStats={userStats}
               onExit={() => setFiveStageLessonKey(null)}
-              onCompleteLesson={(earnedXP) => {
-                handleLessonComplete(earnedXP);
+              onCompleteLesson={(earnedXP, worldId) => {
+                handleLessonComplete(earnedXP, worldId);
                 setFiveStageLessonKey(null);
               }}
               onToggleTheme={toggleTheme}
@@ -263,6 +288,7 @@ export default function App() {
             <Listing
               theme={theme}
               initialWorldId={curriculumWorldId}
+              userStats={userStats}
               onJumpToToday={() => setActiveTab('learn')}
               onStartLesson={(topic) => setFiveStageLessonKey(topic || 'variables')}
             />

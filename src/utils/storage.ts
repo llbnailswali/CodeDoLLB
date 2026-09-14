@@ -16,6 +16,7 @@ export const DEFAULT_USER_STATS: UserStats = {
   completedLessons: 2,
   todayLessonsCompleted: 1,
   todayGoal: 3,
+  completedWorlds: 4,
 };
 
 function getTodayDateString(): string {
