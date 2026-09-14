@@ -27,6 +27,7 @@ import { PracticeView, DrillType } from './components/PracticeView';
 import { LeaderboardView } from './components/LeaderboardView';
 import { ProfileView } from './components/ProfileView';
 import { Detail, DetailHandle } from './components/Detail';
+import { World1VisualsShowcase } from './components/World1VisualsShowcase';
 
 export default function App() {
   const [theme, setTheme] = useState<AppTheme>(() => StorageManager.getTheme());
@@ -41,6 +42,7 @@ export default function App() {
   // User Stats loaded from storage with daily reset check
   const [userStats, setUserStats] = useState<UserStats>(() => StorageManager.getUserStats());
   const [curriculumWorldId, setCurriculumWorldId] = useState<string>('world-1');
+  const [showVisualsGallery, setShowVisualsGallery] = useState<boolean>(false);
   const detailRef = useRef<DetailHandle>(null);
 
   // Open Curriculum Map with optional target world
@@ -163,7 +165,9 @@ export default function App() {
     }
     let removeListener: (() => void) | null = null;
     CapacitorApp.addListener('backButton', () => {
-      if (fiveStageLessonKey) {
+      if (showVisualsGallery) {
+        setShowVisualsGallery(false);
+      } else if (fiveStageLessonKey) {
         detailRef.current?.goBack();
       } else if (isLessonActive) {
         handleExitLesson();
@@ -187,7 +191,7 @@ export default function App() {
     return () => {
       removeListener?.();
     };
-  }, [fiveStageLessonKey, isLessonActive, activeTab]);
+  }, [showVisualsGallery, fiveStageLessonKey, isLessonActive, activeTab]);
 
   const handleLessonComplete = (earnedXP: number, completedWorldId?: string) => {
     setUserStats((prev) => {
@@ -236,7 +240,7 @@ export default function App() {
       theme === 'dark' ? 'bg-[#0b0f19] text-[#dfe2f1]' : 'bg-[#f8f9fb] text-[#191c1e]'
     }`}>
         {/* Top Header */}
-        {!fiveStageLessonKey && (
+        {!fiveStageLessonKey && !showVisualsGallery && (
           <Header
             theme={theme}
             activeTab={activeTab}
@@ -260,7 +264,9 @@ export default function App() {
 
         {/* Screen Switcher */}
         <main className={`flex-1 w-full flex flex-col font-size-${fontSize}`}>
-          {fiveStageLessonKey ? (
+          {showVisualsGallery ? (
+            <World1VisualsShowcase theme={theme} onBack={() => setShowVisualsGallery(false)} />
+          ) : fiveStageLessonKey ? (
             /* 5-Stage Interactive Lesson Flow (Learn -> Explore -> Predict -> Write & Run -> Mastered) */
             <Detail
               ref={detailRef}
@@ -326,12 +332,13 @@ export default function App() {
               fontSize={fontSize}
               onChangeFontSize={changeFontSize}
               onResetProgress={handleResetProgress}
+              onOpenVisualsGallery={() => setShowVisualsGallery(true)}
             />
           )}
         </main>
 
         {/* Bottom Navigation Bar (Hidden when actively in lesson or drill) */}
-        {!isLessonActive && !fiveStageLessonKey && (
+        {!isLessonActive && !fiveStageLessonKey && !showVisualsGallery && (
           <Navigation
             theme={theme}
             activeTab={activeTab === 'curriculum' ? 'learn' : activeTab}

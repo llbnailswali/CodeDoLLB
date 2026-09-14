@@ -13,6 +13,7 @@ interface ProfileViewProps {
   fontSize: FontSize;
   onChangeFontSize: (size: FontSize) => void;
   onResetProgress: () => void;
+  onOpenVisualsGallery: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -26,6 +27,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   fontSize,
   onChangeFontSize,
   onResetProgress,
+  onOpenVisualsGallery,
 }) => {
   const isDark = theme === 'dark';
   const [showResetConfirm, setShowResetConfirm] = useState<boolean>(false);
@@ -391,6 +393,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <span className="font-['Outfit'] text-xs font-bold text-slate-400 uppercase tracking-wider">
           Data &amp; System
         </span>
+
+        <button
+          type="button"
+          onClick={() => {
+            soundFX.playClick();
+            onOpenVisualsGallery();
+          }}
+          className={`px-3 py-2.5 rounded-xl font-['Outfit'] text-xs font-bold flex items-center gap-2 transition-colors ${
+            isDark
+              ? 'bg-[#171b26] text-indigo-300 hover:text-white border border-indigo-500/20'
+              : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
+          World 1 &middot; Lesson Visuals
+        </button>
 
         {showResetConfirm ? (
           <div

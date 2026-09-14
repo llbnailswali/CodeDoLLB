@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Stage1LearnData } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
 import { FunctionAnimatedExplainer } from './FunctionAnimatedExplainer';
+import { FunctionMentalModel } from './FunctionMentalModel';
 
 interface LearnStageProps {
   data: Stage1LearnData;
@@ -101,6 +102,19 @@ export const Learn: React.FC<LearnStageProps> = ({
           onClick={(e) => e.stopPropagation()}
         >
           <FunctionAnimatedExplainer isDark={isDark} />
+        </div>
+      )}
+
+      {/* Temporary side-by-side comparison: our own take on the same mental model */}
+      {isFunctionTopic && (!tapToRevealEnabled || revealStep >= 1) && (
+        <div
+          className="mb-4 transition-all duration-300 animate-fadeIn"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p className={`text-[10px] font-bold uppercase tracking-widest mb-1.5 px-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+            Alternate version
+          </p>
+          <FunctionMentalModel isDark={isDark} />
         </div>
       )}
 
