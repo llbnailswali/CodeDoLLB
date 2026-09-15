@@ -379,50 +379,57 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
         id: 'pred-func-4',
         questionNumber: 4,
         totalQuestions: 5,
-        title: 'Single-Expression Syntax',
-        topicMeta: 'Single-Expression Syntax',
+        title: 'Reusing a Function',
+        topicMeta: 'Reusing a Function',
         language: 'Kotlin',
         code: [
-          'fun square(n: Int) = n * n',
+          'fun shout(word: String) {',
+          '    println("$word!!!")',
+          '}',
           '',
-          'println(square(5))'
+          'shout("Kotlin")',
+          'shout("Rocks")'
         ],
-        prompt: 'What does this single-expression function output?',
+        prompt: 'What does this program print?',
         options: [
-          { id: 'A', label: '10', isCorrect: false },
-          { id: 'B', label: '25', isCorrect: true },
-          { id: 'C', label: '5', isCorrect: false },
-          { id: 'D', label: 'Nothing', isCorrect: false }
+          { id: 'A', label: 'Kotlin!!!\nRocks!!!', isCorrect: true },
+          { id: 'B', label: 'Kotlin!!!Rocks!!!', isCorrect: false },
+          { id: 'C', label: 'Kotlin!!!', isCorrect: false },
+          { id: 'D', label: 'Compilation Error', isCorrect: false }
         ],
         explanation: {
-          codeRef: 'n * n',
-          detail: 'Kotlin single-expression functions return the evaluated value directly, so 5 * 5 = 25.'
+          codeRef: 'shout("Kotlin")\nshout("Rocks")',
+          detail: 'Calling shout() twice with different arguments runs the same function body twice, printing "Kotlin!!!" and "Rocks!!!" on separate lines.'
         }
       },
       {
         id: 'pred-func-5',
         questionNumber: 5,
         totalQuestions: 5,
-        title: 'Default Arguments',
-        topicMeta: 'Default Arguments',
+        title: 'Functions Calling Functions',
+        topicMeta: 'Functions Calling Functions',
         language: 'Kotlin',
         code: [
-          'fun tag(item: String, prefix: String = "#"): String {',
-          '    return "$prefix$item"',
+          'fun square(n: Int): Int {',
+          '    return n * n',
           '}',
           '',
-          'println(tag("kotlin"))'
+          'fun sumOfSquares(a: Int, b: Int): Int {',
+          '    return square(a) + square(b)',
+          '}',
+          '',
+          'println(sumOfSquares(2, 3))'
         ],
         prompt: 'What is the resulting output?',
         options: [
-          { id: 'A', label: '#kotlin', isCorrect: true },
-          { id: 'B', label: 'kotlin', isCorrect: false },
-          { id: 'C', label: 'Compilation Error: Missing argument', isCorrect: false },
-          { id: 'D', label: '$prefix$item', isCorrect: false }
+          { id: 'A', label: '13', isCorrect: true },
+          { id: 'B', label: '25', isCorrect: false },
+          { id: 'C', label: '5', isCorrect: false },
+          { id: 'D', label: 'Compilation Error', isCorrect: false }
         ],
         explanation: {
-          codeRef: 'prefix: String = "#"',
-          detail: 'Since prefix defaults to "#", calling tag("kotlin") evaluates to "#kotlin".'
+          codeRef: 'square(a) + square(b)',
+          detail: 'sumOfSquares calls square(2) = 4 and square(3) = 9, then returns their sum: 4 + 9 = 13.'
         }
       }
     ]
@@ -685,6 +692,103 @@ export const LOOPS_LESSON: FiveStageLesson = {
           codeRef: 'total += i',
           detail: '1 + 2 + 3 equals 6. The loop accumulates each value into total.'
         }
+      },
+      {
+        id: 'pred-loop-2',
+        questionNumber: 2,
+        totalQuestions: 5,
+        topicMeta: 'While Loops',
+        language: 'Kotlin',
+        code: [
+          'var n = 4',
+          'while (n > 0) {',
+          '    print(n)',
+          '    n--',
+          '}'
+        ],
+        prompt: 'What will this while loop print?',
+        options: [
+          { id: 'A', label: '4321', isCorrect: true },
+          { id: 'B', label: '0123', isCorrect: false },
+          { id: 'C', label: '1234', isCorrect: false },
+          { id: 'D', label: 'It never stops', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'n--',
+          detail: 'n starts at 4 and prints before each decrement, so the loop prints 4, 3, 2, 1 and stops once n reaches 0.'
+        }
+      },
+      {
+        id: 'pred-loop-3',
+        questionNumber: 3,
+        totalQuestions: 5,
+        topicMeta: 'Loop Step',
+        language: 'Kotlin',
+        code: [
+          'var sum = 0',
+          'for (i in 0..10 step 5) {',
+          '    sum += i',
+          '}',
+          'println(sum)'
+        ],
+        prompt: 'What does this program output?',
+        options: [
+          { id: 'A', label: '15', isCorrect: true },
+          { id: 'B', label: '10', isCorrect: false },
+          { id: 'C', label: '55', isCorrect: false },
+          { id: 'D', label: '5', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: '0..10 step 5',
+          detail: 'step 5 visits 0, 5, and 10 only, so sum accumulates to 0 + 5 + 10 = 15.'
+        }
+      },
+      {
+        id: 'pred-loop-4',
+        questionNumber: 4,
+        totalQuestions: 5,
+        topicMeta: 'Reverse Range downTo',
+        language: 'Kotlin',
+        code: [
+          'for (i in 3 downTo 1) {',
+          '    print(i)',
+          '}'
+        ],
+        prompt: 'What will this loop print?',
+        options: [
+          { id: 'A', label: '321', isCorrect: true },
+          { id: 'B', label: '123', isCorrect: false },
+          { id: 'C', label: '3210', isCorrect: false },
+          { id: 'D', label: 'Compilation Error', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: '3 downTo 1',
+          detail: 'downTo counts backwards inclusively, visiting 3, 2, then 1, printing "321".'
+        }
+      },
+      {
+        id: 'pred-loop-5',
+        questionNumber: 5,
+        totalQuestions: 5,
+        topicMeta: 'Early break',
+        language: 'Kotlin',
+        code: [
+          'for (i in 1..5) {',
+          '    if (i == 3) break',
+          '    print(i)',
+          '}'
+        ],
+        prompt: 'What does this loop print?',
+        options: [
+          { id: 'A', label: '12', isCorrect: true },
+          { id: 'B', label: '123', isCorrect: false },
+          { id: 'C', label: '12345', isCorrect: false },
+          { id: 'D', label: '3', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'if (i == 3) break',
+          detail: 'The loop prints 1 and 2, then breaks immediately once i reaches 3, before that value is ever printed.'
+        }
       }
     ]
   },
@@ -848,7 +952,7 @@ export const VARIABLES_LESSON: FiveStageLesson = {
   },
   explore: {
     title: '5 progressive examples',
-    subtitle: '',
+    subtitle: 'Watch val and var evolve from a single declaration into template interpolation and type safety.',
     cards: [
       {
         id: 'card-1',
@@ -1074,20 +1178,20 @@ export const VARIABLES_LESSON: FiveStageLesson = {
     description:
       'Declare a read-only player name with val, and a mutable coin count with var. Increment coins by 15 and print the summary.',
     requirements: {
-      name: 'calculatePlayerInventory',
-      params: 'val player: String, var coins: Int',
-      returns: 'String -> "Player Alex holds 40 coins"'
+      name: 'main',
+      params: '(none)',
+      returns: 'Unit'
     },
     fileName: 'Main.kt',
     initialCode: `fun main() {
     // 1. Declare immutable player name "Alex" using val:
-    
+
     // 2. Declare mutable coins starting at 25 using var:
-    
+
     // 3. Add 15 coins to the inventory (coins += 15):
-    
+
     // 4. Print the formatted inventory: "Player $player holds $coins coins"
-    
+
 }`,
     solutionCode: `fun main() {
     val player = "Alex"
@@ -1095,10 +1199,12 @@ export const VARIABLES_LESSON: FiveStageLesson = {
     coins += 15
     println("Player $player holds $coins coins")
 }`,
-    sampleInput: 'Initial: player="Alex", coins=25',
+    sampleInput: 'main()',
     expectedOutput: 'Player Alex holds 40 coins',
+    // No testCase.call here: kotlinRunner.ts already auto-invokes main() once
+    // whenever it's present (see KOTLIN_SYNTAX_LESSON for the same convention).
     testCase: {
-      call: 'calculatePlayerInventory("Alex", 25)',
+      call: '',
       expected: 'Player Alex holds 40 coins'
     }
   },
@@ -1575,6 +1681,56 @@ import {
   WORLD_1_BOSS_LESSON,
 } from './curriculum/world1LessonsData';
 
+import {
+  ARITHMETIC_OPERATORS_LESSON,
+  COMPARISON_OPERATORS_LESSON,
+  LOGICAL_OPERATORS_LESSON,
+  ASSIGNMENT_OPERATORS_LESSON,
+  INCREMENT_DECREMENT_LESSON,
+  OPERATOR_PRECEDENCE_LESSON,
+  WORLD_2_BOSS_LESSON,
+} from './curriculum/world2LessonsData';
+
+import {
+  IF_LESSON,
+  IF_ELSE_LESSON,
+  ELSE_IF_LESSON,
+  WHEN_LESSON,
+  WHEN_WITH_RANGES_LESSON,
+  WHEN_AS_EXPRESSION_LESSON,
+  MULTIPLE_NESTED_CONDITIONS_LESSON,
+  TYPE_CHECKS_IS_LESSON,
+  WORLD_3_BOSS_LESSON,
+} from './curriculum/world3LessonsData';
+
+import {
+  FOR_LESSON,
+  WHILE_LESSON,
+  DO_WHILE_LESSON,
+  RANGES_LESSON,
+  PROGRESSIONS_LESSON,
+  DOWNTO_LESSON,
+  STEP_LESSON,
+  BREAK_LESSON,
+  CONTINUE_LESSON,
+  NESTED_LOOPS_LESSON,
+  WORLD_4_BOSS_LESSON,
+} from './curriculum/world4LessonsData';
+
+import {
+  DEFINING_FUNCTIONS_LESSON,
+  FUNCTION_PARAMETERS_LESSON,
+  RETURN_VALUES_LESSON,
+  DEFAULT_PARAMETERS_LESSON,
+  NAMED_ARGUMENTS_LESSON,
+  SINGLE_EXPRESSION_FUNCTIONS_LESSON,
+  LOCAL_FUNCTIONS_LESSON,
+  VARARG_LESSON,
+  WORLD_5_BOSS_LESSON,
+} from './curriculum/world5LessonsData';
+
+import { ARRAYS_LESSON, LISTS_LESSON } from './curriculum/world6LessonsData';
+
 export const AVAILABLE_FIVE_STAGE_LESSONS: Record<string, FiveStageLesson> = {
   variables: VARIABLES_LESSON,
   functions: FUNCTIONS_LESSON,
@@ -1605,4 +1761,53 @@ export const AVAILABLE_FIVE_STAGE_LESSONS: Record<string, FiveStageLesson> = {
   'string-templates': STRING_TEMPLATES_LESSON,
   'world-1-string-templates': STRING_TEMPLATES_LESSON,
   'world-1-boss': WORLD_1_BOSS_LESSON,
+  // World 2 - Operator Forge (7 lessons)
+  'arithmetic-operators': ARITHMETIC_OPERATORS_LESSON,
+  'world-2-arithmetic-operators': ARITHMETIC_OPERATORS_LESSON,
+  'comparison-operators': COMPARISON_OPERATORS_LESSON,
+  'world-2-comparison-operators': COMPARISON_OPERATORS_LESSON,
+  'logical-operators': LOGICAL_OPERATORS_LESSON,
+  'world-2-logical-operators': LOGICAL_OPERATORS_LESSON,
+  'assignment-operators': ASSIGNMENT_OPERATORS_LESSON,
+  'world-2-assignment-operators': ASSIGNMENT_OPERATORS_LESSON,
+  'increment-decrement': INCREMENT_DECREMENT_LESSON,
+  'world-2-increment-decrement': INCREMENT_DECREMENT_LESSON,
+  'operator-precedence': OPERATOR_PRECEDENCE_LESSON,
+  'world-2-operator-precedence': OPERATOR_PRECEDENCE_LESSON,
+  'world-2-boss': WORLD_2_BOSS_LESSON,
+  // World 3 - Decision Maker (9 lessons)
+  'world-3-if': IF_LESSON,
+  'world-3-if-else': IF_ELSE_LESSON,
+  'world-3-else-if': ELSE_IF_LESSON,
+  'world-3-when': WHEN_LESSON,
+  'world-3-when-with-ranges': WHEN_WITH_RANGES_LESSON,
+  'world-3-when-as-an-expression': WHEN_AS_EXPRESSION_LESSON,
+  'world-3-multiple-conditions-and-nested-condition': MULTIPLE_NESTED_CONDITIONS_LESSON,
+  'world-3-type-checks-with-is-where-appropriate': TYPE_CHECKS_IS_LESSON,
+  'world-3-boss': WORLD_3_BOSS_LESSON,
+  // World 4 - Loop Master (11 lessons)
+  'world-4-for': FOR_LESSON,
+  'world-4-while': WHILE_LESSON,
+  'world-4-do-while': DO_WHILE_LESSON,
+  'world-4-ranges': RANGES_LESSON,
+  'world-4-progressions': PROGRESSIONS_LESSON,
+  'world-4-downto': DOWNTO_LESSON,
+  'world-4-step': STEP_LESSON,
+  'world-4-break': BREAK_LESSON,
+  'world-4-continue': CONTINUE_LESSON,
+  'world-4-nested-loops': NESTED_LOOPS_LESSON,
+  'world-4-boss': WORLD_4_BOSS_LESSON,
+  // World 5 - Function Forge (9 lessons)
+  'world-5-defining-functions': DEFINING_FUNCTIONS_LESSON,
+  'world-5-function-parameters': FUNCTION_PARAMETERS_LESSON,
+  'world-5-return-values': RETURN_VALUES_LESSON,
+  'world-5-default-parameters': DEFAULT_PARAMETERS_LESSON,
+  'world-5-named-arguments': NAMED_ARGUMENTS_LESSON,
+  'world-5-single-expression-functions': SINGLE_EXPRESSION_FUNCTIONS_LESSON,
+  'world-5-local-functions': LOCAL_FUNCTIONS_LESSON,
+  'world-5-vararg': VARARG_LESSON,
+  'world-5-boss': WORLD_5_BOSS_LESSON,
+  // World 6 - Collection Valley
+  'world-6-arrays': ARRAYS_LESSON,
+  'world-6-lists': LISTS_LESSON,
 };

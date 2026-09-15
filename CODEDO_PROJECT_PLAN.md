@@ -1,4 +1,4 @@
-# CodeDo — 90-Day Product & Development Plan
+# CodeDo — Product & Development Plan
 
 > **Purpose:** Persistent source of truth for building CodeDo as a polished, gamified programming-learning product.
 >
@@ -28,18 +28,6 @@ CodeDo should NOT feel like:
 - A coding IDE
 - A documentation website
 
-### Initial learning promise
-
-The product is designed around a **90-day Kotlin journey**.
-
-Recommended positioning:
-
-> **CodeDo — Your 90-Day Kotlin Journey**
->
-> Learn. Practice. Build. Level up every day.
-
-Do not make the product dependent on a “finish Kotlin in 30 days” promise. Thirty days can be a milestone, but the initial product should support approximately 90 days of structured progression.
-
 ---
 
 # 2. Product Goals
@@ -52,7 +40,7 @@ Do not make the product dependent on a “finish Kotlin in 30 days” promise. T
 4. Build real Kotlin understanding rather than memorization.
 5. Turn mistakes into personalized practice.
 6. Gradually move the user from beginner Kotlin to practical Kotlin/Android development.
-7. Support at least 2–3 months of meaningful daily use.
+7. Support sustained, meaningful daily use.
 8. Keep the architecture extensible for future curricula and backend integration.
 
 ## Engagement loop
@@ -66,17 +54,13 @@ START NEXT LESSON
     ↓
 SOLVE SHORT CHALLENGES
     ↓
-EARN XP
-    ↓
 COMPLETE LESSON
     ↓
 GET REWARD
     ↓
 PRACTICE WEAK SKILLS
     ↓
-DAILY QUEST / BATTLE
-    ↓
-MAINTAIN STREAK
+DAILY BATTLE
     ↓
 UNLOCK NEXT CONTENT
     ↓
@@ -157,7 +141,6 @@ Raised:
 - Cards
 - Stats
 - Navigation
-- Achievement badges
 
 Inset:
 - Progress indicators
@@ -220,7 +203,6 @@ Users can scroll through the full future journey.
 #### Completed
 - Checkmark
 - Success treatment
-- XP indicator
 
 #### Available Today
 Most visually prominent:
@@ -237,7 +219,6 @@ Future lessons remain visible:
 - Lock icon
 - Muted but attractive treatment
 - Lesson name
-- XP preview
 
 Users may scroll through locked content but cannot start it.
 
@@ -255,19 +236,17 @@ Default:
 
 This rule controls the core learning path.
 
-Important clarification for the 90-day product:
+Important clarification:
 
 **The 3/day rule applies to new core lessons, not to the total amount of activity available each day.**
 
 Users may additionally complete:
 - Practice
 - Mistake review
-- Daily quests
 - Daily Battle
 - Speed challenges
 - Mastery challenges
 - Project activities
-- Achievements
 
 This prevents the core curriculum from being exhausted too quickly while still allowing users to spend more time in the app.
 
@@ -277,265 +256,24 @@ At a new calendar day:
 
 1. Unlock the next core lessons.
 2. Reset daily lesson count.
-3. Generate daily quests.
-4. Generate daily battle.
-5. Update streak status.
-6. Refresh daily recommendations.
+3. Generate daily battle.
+4. Refresh daily recommendations.
 
 For development, an internal test mechanism may simulate a new day. Never expose development controls in normal production UI.
 
 ---
 
-# 7. 90-Day Curriculum Strategy
+# 7. Curriculum Strategy
 
-The original 36 lessons remain the foundation, but they are no longer considered the complete curriculum.
+For the authoritative world-by-world, topic-by-topic curriculum (worlds,
+topics, boss fights, the six-step lesson structure), see
+**`CODEDO_MASTER_PLAN.md`** — do not duplicate or re-derive curriculum
+structure here.
 
-The 90-day curriculum should be organized into approximately 10 worlds.
-
-## World 1 — Kotlin Foundations
-
-Approx. Days 1–10
-
-Core topics:
-1. Welcome to Kotlin
-2. Variables
-3. val vs var
-4. Data Types
-5. Operators
-6. Strings
-7. String Templates
-8. Null Safety
-
-Additional reinforcement:
-- Type recognition
-- Mutability decisions
-- Basic expressions
-- Reading simple Kotlin
-- Output prediction
-- Debugging beginner syntax
-
----
-
-## World 2 — Logic
-
-Approx. Days 11–18
-
-Original topics:
-9. Boolean Values
-10. Comparisons
-11. if / else
-12. when
-13. Logical Operators
-
-Expansion:
-- Nested conditions
-- Range conditions
-- Combining conditions
-- Common logic mistakes
-- Output prediction
-- Debugging logic
-
-End with:
-### 🔥 Logic Boss
-
----
-
-## World 3 — Loops
-
-Approx. Days 19–27
-
-Original topics:
-14. for Loops
-15. while Loops
-16. Ranges
-17. Nested Loops
-18. Loop Control
-
-Expansion:
-- step
-- downTo
-- until
-- break
-- continue
-- loop tracing
-- nested loop reasoning
-- debugging loops
-- pattern problems
-
-End with:
-### 🔥 Loop Boss
-
----
-
-## World 4 — Functions
-
-Approx. Days 28–37
-
-Original topics:
-19. Functions
-20. Parameters
-21. Return Values
-22. Default Arguments
-23. Named Arguments
-24. Lambdas
-
-Expansion:
-- Function design
-- Single responsibility
-- Expression bodies
-- Higher-order functions
-- Function references
-- Lambda syntax
-- Common function bugs
-
-End with:
-### 🔥 Function Boss
-
----
-
-## World 5 — Collections
-
-Approx. Days 38–48
-
-Original topics:
-25. Lists
-26. Sets
-27. Maps
-28. map()
-29. filter()
-30. reduce()
-
-Expansion:
-- Mutable vs immutable collections
-- Iteration
-- contains
-- find
-- any/all/none
-- sorted/sortedBy
-- grouping
-- chaining operations
-- collection debugging
-- practical data transformation
-
-End with:
-### 🔥 Collections Boss
-
----
-
-## World 6 — Object-Oriented Kotlin
-
-Approx. Days 49–58
-
-Original topics:
-31. Classes
-32. Objects
-33. Constructors
-34. Properties
-35. Inheritance
-36. Interfaces
-
-Expansion:
-- Primary/secondary constructors
-- Visibility
-- Encapsulation
-- Data classes
-- Enum classes
-- Abstract classes
-- Interface implementation
-- Composition vs inheritance
-
-End with:
-### 🔥 OOP Boss
-
----
-
-## World 7 — Kotlin Mastery
-
-Approx. Days 59–68
-
-Topics:
-- Scope functions: let/run/with/apply/also
-- Extension functions
-- Destructuring
-- Smart casts
-- Type checks
-- Sealed classes
-- Generics
-- Delegation concepts
-- Functional programming patterns
-- Exception handling
-- Advanced collection patterns
-
-End with:
-### 🏆 Kotlin Mastery Challenge
-
----
-
-## World 8 — Coroutines & Async Kotlin
-
-Approx. Days 69–75
-
-Topics:
-- Why asynchronous programming exists
-- suspend
-- Coroutine basics
-- Dispatchers
-- launch
-- async/await
-- Structured concurrency
-- Cancellation
-- Exception handling
-- Flow fundamentals
-
-End with:
-### ⚡ Async Boss
-
----
-
-## World 9 — Android Development Foundations
-
-Approx. Days 76–84
-
-Topics:
-- Android app structure
-- Activity/lifecycle concepts
-- State
-- ViewModel
-- UI state
-- Jetpack Compose fundamentals
-- Composables
-- Layouts
-- Lists
-- Navigation
-- Basic architecture
-- Repository concept
-- Networking basics
-- JSON
-- Room/Firebase concepts
-
-This world begins transitioning from “learn Kotlin” to “use Kotlin to build Android apps.”
-
----
-
-## World 10 — Real Projects
-
-Approx. Days 85–90 and then expandable indefinitely.
-
-Initial project ladder:
-
-1. Number Guessing Game
-2. Quiz Game
-3. To-Do App
-4. Notes App
-5. Expense Tracker
-6. Weather App
-7. Movie/Content App
-8. Chat App
-9. Larger Android project
-
-Projects should unlock based on prerequisite skills.
-
-The 90-day journey is the initial product horizon, not the end of CodeDo.
+This file governs the *product* wrapper around that curriculum: the daily
+progression rule (§6 above), session design, and the rest of this document
+apply regardless of how many worlds or lessons `MASTER_PLAN.md` currently
+defines.
 
 ---
 
@@ -554,10 +292,7 @@ Short reinforcement questions.
 ### 3. Mastery
 Target weak skills.
 
-### 4. Daily Quest
-Progress toward 3 contextual goals.
-
-### 5. Daily Battle
+### 4. Daily Battle
 10 questions, 5-minute default.
 
 A user should be able to complete the required learning in approximately 5–15 minutes, while motivated users can stay for 15–30+ minutes.
@@ -607,11 +342,31 @@ code
 options
 correctAnswer
 explanation
-xp
 hint
 difficulty
 skill
 ```
+
+## Implementation: topic-aware activity selection is a real, supported feature
+
+Per `CODEDO_MASTER_PLAN.md`'s "Minimums Apply Only to Applicable Activities"
+principle: not every lesson needs every stage. This isn't just a content
+guideline — it's implemented in code:
+
+- `FiveStageLesson` (`src/data/lessonStagesData.ts`): only `learn` and
+  `mastered` are required; `explore`, `predict`, `writeRun`, `debug` are
+  all optional — omit whichever don't apply to a given topic.
+- `PredictQuestion.code` is optional too, so `predict` can be used as a
+  pure comprehension MCQ (no code snippet) for theory topics.
+- `Detail.tsx` computes `activeStages` dynamically from whichever fields
+  are present and renders/steps through only those — stage numbering,
+  progress dots, and the dev "Skip menu" all adapt automatically. No
+  further engine work is needed to skip stages for a new lesson; just omit
+  the fields in its data.
+
+Reference implementation: World 1's `what-is-kotlin` lesson (Learn+MCQ
+only) vs. `kotlin-syntax` lesson (full Learn/Explore/Predict/Write&Run/
+Debug) in `lessonStagesData.ts`.
 
 ---
 
@@ -716,38 +471,7 @@ Skill cards:
 
 ---
 
-# 14. Daily Quests
-
-Generate three contextual daily quests.
-
-Examples:
-
-```text
-✓ Complete 2 lessons
-✓ Answer 10 questions
-○ Fix 2 bugs
-```
-
-Reward:
-
-`+100–150 XP`
-
-Optional gem reward.
-
-Quest progress updates immediately.
-
-When all are complete:
-
-> 🎉 DAILY QUEST COMPLETE!
->
-> +XP
-> +Gems
-
-Quest generation should use the user's current unlocked content and activity history.
-
----
-
-# 15. Daily Battle
+# 14. Daily Battle
 
 Default:
 
@@ -777,7 +501,7 @@ Future architecture should allow real multiplayer without rewriting the battle U
 
 ---
 
-# 16. Weekly League
+# 15. Weekly League
 
 Leagues:
 
@@ -794,7 +518,7 @@ Show:
 - Rank
 - Avatar
 - Name
-- XP
+- Weekly Score (cumulative Daily Battle results)
 - Promotion zone
 - Current user
 - Time remaining
@@ -807,144 +531,7 @@ Prototype leaderboard data can be simulated, but never falsely present simulated
 
 ---
 
-# 17. XP
-
-Suggested baseline:
-
-```text
-Correct challenge      +10 XP
-Lesson completion      +30 XP
-Perfect lesson         +20 bonus XP
-Daily quest            +100–150 XP
-Daily battle           +50–200 XP
-World completion       +300 XP
-Achievement            +50–500 XP
-```
-
-XP should animate with:
-- Count-up
-- Floating +XP
-- Subtle sound
-
-Avoid excessive XP inflation.
-
----
-
-# 18. Levels
-
-Use cumulative XP.
-
-Example:
-
-```text
-Level 1    0 XP
-Level 2    100 XP
-Level 3    250 XP
-```
-
-Exact progression can evolve.
-
-When leveling up:
-
-```text
-🎉 LEVEL UP!
-LEVEL 9
-+100 💎
-```
-
-Trigger:
-- Confetti
-- Sound
-- XP animation
-- Progress transition
-
----
-
-# 19. Gems
-
-Gems are soft currency.
-
-Earn from:
-- Lessons
-- Quests
-- Achievements
-- Streak milestones
-- Level ups
-- Perfect lessons
-
-Potential uses:
-- Hints
-- Streak Freeze
-- Cosmetic items
-- Optional retries
-
-**Basic learning must never require gems.**
-
----
-
-# 20. Streak
-
-A day counts when the required daily goal is completed.
-
-Milestones:
-
-```text
-7 days
-30 days
-100 days
-365 days
-```
-
-Missing a day normally breaks the streak.
-
-A Streak Freeze can protect it.
-
-Do not use manipulative or excessive notifications.
-
----
-
-# 21. Achievements
-
-Initial achievements:
-
-### Hello World
-Complete first lesson.
-
-### Bug Hunter
-Fix 50 bugs.
-
-### Speed Coder
-Complete a speed challenge.
-
-### Perfect
-Get 100% in a lesson.
-
-### Week One
-Maintain 7-day streak.
-
-### Code Warrior
-Maintain 30-day streak.
-
-### 100 Days
-Maintain 100-day streak.
-
-Add additional achievements for:
-- World completion
-- Skill mastery
-- Battle wins
-- Projects
-- Practice volume
-- Perfect runs
-
-Every achievement supports:
-- Locked state
-- Unlocked state
-- Progress
-- Unlock animation
-
----
-
-# 22. World Completion
+# 16. World Completion
 
 When a world finishes:
 
@@ -960,8 +547,6 @@ KOTLIN FOUNDATIONS
 
 🏆 Foundation Badge
 
-+300 XP
-
 NEXT WORLD
 🧠 LOGIC
 ```
@@ -970,7 +555,7 @@ Animate the next world unlocking.
 
 ---
 
-# 23. Onboarding
+# 17. Onboarding
 
 Screen 1:
 > Welcome to CodeDo 👋
@@ -988,22 +573,13 @@ Screen 3:
 - Kotlin
 
 Screen 4:
-> Choose your daily goal
-- Casual — 5 min
-- Regular — 10 min
-- Serious — 15 min
-
-Default:
-**Regular**
-
-Screen 5:
 > Your journey begins 🚀
 
 Show World 1 and start the first lesson.
 
 ---
 
-# 24. Profile
+# 18. Profile
 
 Profile should feel like a game character profile.
 
@@ -1012,16 +588,12 @@ Show:
 ```text
 Avatar
 Name
-CODE LEVEL
-XP
-STREAK
 LEAGUE
 ```
 
 Then:
 - Skill Mastery
 - Statistics
-- Achievements
 - Completed worlds
 - Projects
 
@@ -1029,14 +601,12 @@ Statistics:
 - Lessons completed
 - Challenges solved
 - Battle wins
-- Current streak
-- Longest streak
 - Projects completed
 - Skills mastered
 
 ---
 
-# 25. Motivation
+# 19. Motivation
 
 Use contextual feedback rather than spam.
 
@@ -1051,14 +621,11 @@ After a mistake:
 Daily goal complete:
 > You’re done for today! See you tomorrow. 🔥
 
-Streak warning:
-> Complete today’s goal to keep your streak alive.
-
 Avoid excessive notifications and pressure.
 
 ---
 
-# 26. Sound
+# 20. Sound
 
 Continue using Web Audio API.
 
@@ -1068,9 +635,6 @@ Reusable functions:
 playTap()
 playCorrect()
 playIncorrect()
-playXP()
-playLevelUp()
-playAchievement()
 playUnlock()
 playComplete()
 ```
@@ -1087,7 +651,7 @@ Respect sound settings.
 
 ---
 
-# 27. Animation
+# 21. Animation
 
 Use purposeful animations for:
 
@@ -1095,9 +659,6 @@ Use purposeful animations for:
 - Lesson selection
 - Correct answer
 - Incorrect answer
-- XP gain
-- Level up
-- Achievement unlock
 - Lesson completion
 - Node unlock
 - World completion
@@ -1109,23 +670,17 @@ Never make users wait unnecessarily.
 
 ---
 
-# 28. State Architecture
+# 22. State Architecture
 
 Centralize:
 
 ```text
-XP
-Level
-Gems
-Streak
 Daily Progress
 Lesson Progress
-Achievements
 League
-Weekly XP
+Weekly Score
 Skill Mastery
 Mistakes
-Quests
 Battle Results
 Project Progress
 Last Active Date
@@ -1138,9 +693,7 @@ Conceptual repositories:
 UserRepository
 LessonRepository
 ProgressRepository
-AchievementRepository
 LeaderboardRepository
-QuestRepository
 BattleRepository
 PracticeRepository
 ProjectRepository
@@ -1150,7 +703,7 @@ The UI should not directly manipulate localStorage.
 
 ---
 
-# 29. Local Persistence
+# 23. Local Persistence
 
 Current prototype uses localStorage.
 
@@ -1158,21 +711,14 @@ Persist:
 
 ```text
 User
-XP
-Level
-Gems
-Streak
-Streak Freeze
 Daily Progress
 Completed Lessons
 Lesson Mastery
 Mistakes
-Achievements
 League
-Weekly XP
+Weekly Score
 Battle Results
 Skill Progress
-Daily Quests
 Last Active Date
 Settings
 Sound Preference
@@ -1186,7 +732,7 @@ Architecture must remain compatible with a future API backend.
 
 ---
 
-# 30. Data Separation
+# 24. Data Separation
 
 Never put large curriculum datasets inside UI components.
 
@@ -1211,7 +757,7 @@ UI consumes typed data.
 
 ---
 
-# 31. TypeScript Models
+# 25. TypeScript Models
 
 Maintain explicit models for:
 
@@ -1223,8 +769,6 @@ Challenge
 ChallengeResult
 Skill
 UserSkill
-Achievement
-DailyQuest
 Battle
 League
 Project
@@ -1236,89 +780,163 @@ Avoid `any`.
 
 ---
 
-# 32. Development Priority
+# 25a. Mastery, Mistake & Personalization Data Model
+
+(Salvaged from the now-retired `CODEDO_DATA_GATHERING.md` — this is app
+data-architecture, not curriculum-authoring process, so it lives here.)
+
+## Adaptive learning priority order
+
+When deciding what to serve a user next, prioritize in this order:
+
+```text
+1. Repeated mistakes
+2. Low mastery
+3. Recently introduced Sub-Concepts
+4. Due-for-review skills
+5. Appropriate expertise level
+6. Useful reinforcement
+```
+
+Do not repeat the exact same question indefinitely after a mistake — vary
+code, values, wording, context, difficulty, challenge type, and mistake
+pattern instead.
+
+## Mastery data (per Sub-Concept / skill)
+
+```text
+subConceptId
+masteryPercent
+attempts
+correctAttempts
+incorrectAttempts
+lastPracticedAt
+lastMistakeAt
+mistakeCount
+masteredAt
+```
+
+Mastery must be based on actual performance — merely opening a lesson stage
+must not automatically increase mastery.
+
+## Mistake data
+
+```text
+questionId
+subConceptId
+mistakeCount
+lastMistakeDate
+```
+
+Optional: `errorCategory`, `attemptsBeforeCorrect`, `reviewCount`,
+`masteryBefore`, `masteryAfter`, `compilerError`.
+
+Feeds: Mistake Review, Weak Skills, Adaptive Practice, Daily
+recommendations. Incorrect answers should teach, not punish.
+
+## Spaced repetition
+
+```text
+nextReviewAt
+reviewInterval
+reviewStrength
+```
+
+Reviews should strengthen weak or forgotten Sub-Concepts without blocking
+the main learning path.
+
+## Goal personalization
+
+Goal tags may include: `android_developer`, `kotlin_job`,
+`android_app_builder`, `kotlin_mastery`, `college`,
+`beginner_programming`, `game_development`, `finance_app`,
+`productivity_app`.
+
+Do not duplicate the entire curriculum per goal — tag and reuse content.
+
+## Content tagging model
+
+Every content item needs enough metadata for the personalization engine to
+decide what to serve:
+
+```text
+difficulty
+expertiseLevels[]
+prerequisites[]
+relatedSubConcepts[]
+tags[]
+```
+
+For questions/challenges specifically: `difficulty`, `expertiseLevels[]`,
+`skillTags[]`, `misconceptionTags[]`.
+
+## Stable ID convention
+
+Every entity needs a stable ID, e.g.:
+
+```text
+language.kotlin
+world.functions
+concept.functions
+subconcept.functions.parameters
+lesson.functions.parameters
+
+learn.functions.parameters
+explore.functions.parameters.example01
+predict.functions.parameters.q01
+write.functions.parameters.c01
+mastered.functions.parameters
+```
+
+IDs must not change after user progress depends on them, unless a migration
+exists.
+
+## Duplicate content detection (authoring QA rule)
+
+Before adding content, check for: same question, same code, same correct
+answer, same objective, near-identical wording, same challenge with only
+trivial value changes.
+
+Intentional variants are fine when they meaningfully change: values,
+context, code structure, challenge type, misconception, difficulty, or
+expertise level.
+
+---
+
+# 26. Development Priority
 
 Build in this order:
 
 1. Learning path
 2. Lesson engine
 3. Daily progression
-4. XP
-5. Streak
-6. Practice
-7. Achievements
-8. Daily quests
-9. Leaderboard
-10. Daily Battle
-11. Profile
-12. Projects
-13. Advanced polish
+4. Practice
+5. Leaderboard
+6. Daily Battle
+7. Profile
+8. Projects
+9. Advanced polish
 
 Do not attempt every future feature at once.
 
 ---
 
-# 33. 90-Day Delivery Roadmap
+# 27. Outstanding Product Work
 
-## Phase 0 — Foundation
-- Preserve existing design
-- Confirm data/state architecture
-- Separate curriculum data
-- Confirm daily progression engine
+Genuine open product items (not curriculum content — see
+`data_gathering_progress.md` for that). Two items previously tracked here
+(a Daily Quests engine, an Achievements system) have been dropped: those
+systems are no longer part of the product plan.
 
-## Phase 1 — Core Learning
-- Expand Worlds 1–6
-- Lesson engine
-- Challenge engine
-- XP
-- Streak
-- Daily reset
-- Snake path
-
-## Phase 2 — Retention
-- Mastery
-- Mistakes
-- Practice
-- Daily quests
-- Achievements
-
-## Phase 3 — Competition
-- Daily Battle
-- Weekly leagues
-- Better battle scoring
-- Leaderboard polish
-
-## Phase 4 — Advanced Kotlin
-- World 7
-- World 8
-- More difficult challenges
-- Boss challenges
-
-## Phase 5 — Android
-- World 9
-- Kotlin-to-Android transition
-- Compose
-- Architecture
-- Practical coding
-
-## Phase 6 — Projects
-- World 10
-- Project unlock system
-- Project challenges
-- Completion badges
-
-## Phase 7 — Polish
-- UX refinement
-- Animation refinement
-- Sound refinement
-- Performance
-- Accessibility
-- Empty/error/loading states
-- Mobile spacing audit
+- [ ] "Today's Goal Complete" celebratory card when the 3 daily core lessons are finished
+- [ ] Fine-grained Skill Mastery percentage tracking (influenced by attempts, difficulty, recency)
+- [ ] Battle completion summary with percentile ranking vs. simulated field
+- [ ] Weekly League promotion/relegation timer & dynamic user movement
+- [ ] Project prerequisite skill-gate checks (once project content exists)
 
 ---
 
-# 34. Feature Completion Standard
+# 28. Feature Completion Standard
 
 A feature is complete only when:
 
@@ -1338,7 +956,7 @@ A feature is complete only when:
 
 ---
 
-# 35. Development Workflow
+# 29. Development Workflow
 
 Before implementing:
 
@@ -1366,28 +984,32 @@ Never assume the project is at the beginning.
 
 ---
 
-# 36. Documentation Files
+# 30. Documentation Files
 
 Maintain:
 
 ```text
+CODEDO_MASTER_PLAN.md
 CODEDO_PROJECT_PLAN.md
-CODEDO_DATA_GATHERING.md
-DEVELOPMENT_LOG.md
-TODO.md
+data_gathering_progress.md
+PITFALLS.md
 ```
 
-`CODEDO_PROJECT_PLAN.md` defines the long-term product and development roadmap.
+`CODEDO_MASTER_PLAN.md` is the single source of truth for the curriculum itself — worlds, topics, the six-step lesson structure (including which stages are optional per topic), boss fights. Curriculum structure and authoring methodology both belong there, not in this file.
 
-`CODEDO_DATA_GATHERING.md` defines how curriculum/challenge data is created, validated, tracked, and resumed.
+`CODEDO_PROJECT_PLAN.md` (this file) defines the long-term *product* and development roadmap — architecture, UI, competitive/gamification elements still in scope (Daily Battle, Leagues), outstanding product work (§27), and the app's mastery/mistake/personalization data model (§25a) — everything around the curriculum, not the curriculum content itself.
 
-`DEVELOPMENT_LOG.md` records implementation history.
+`data_gathering_progress.md` tracks the actual current status of curriculum authoring — which worlds have real content vs. not, against `CODEDO_MASTER_PLAN.md`'s real world list — plus the resume protocol and session log for authoring sessions.
 
-`TODO.md` tracks actionable work.
+There is no separate `CODEDO_DATA_GATHERING.md` — it was almost entirely redundant with `CODEDO_MASTER_PLAN.md` (both described curriculum-authoring methodology independently and had drifted apart before); its handful of genuinely unique sections (data model, resume protocol) were salvaged into the two files above before it was removed.
+
+There is no separate `TODO.md` — product tasks live in §27 above, and curriculum-authoring status lives in `data_gathering_progress.md`. The topic-aware activity-selection rule lives in `CODEDO_MASTER_PLAN.md` (the pedagogy) and §9 above (the engineering implementation).
+
+`PITFALLS.md` (auto-loaded via `CLAUDE.md`) logs bugs already found once, their root cause, and the fix/rule to stop them recurring — engine/rendering gotchas, not product or curriculum planning.
 
 ---
 
-# 37. Data Quality Principles
+# 31. Data Quality Principles
 
 Educational content must prioritize:
 
@@ -1406,7 +1028,7 @@ Do not generate large quantities of low-quality filler content just to increase 
 
 ---
 
-# 38. Product North Star
+# 32. Product North Star
 
 Every design and engineering decision should support:
 

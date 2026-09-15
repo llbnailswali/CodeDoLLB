@@ -192,9 +192,9 @@ export const COMMENTS_LESSON: FiveStageLesson = {
   writeRun: {
     challengeNumber: 1,
     totalChallenges: 1,
-    xpReward: 15,
-    title: 'Comment Out the Broken Line',
-    description: 'A bug is preventing the message from printing. Comment out the broken line using // so only "Mission Ready!" prints.',
+    xpReward: 20,
+    title: 'Comment Out the Extra Line',
+    description: 'An unwanted line is printing alongside the real message. Comment it out using // so only "Mission Ready!" prints.',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -202,11 +202,11 @@ export const COMMENTS_LESSON: FiveStageLesson = {
     },
     fileName: 'CommentsChallenge.kt',
     initialCode: `fun main() {
-    println("Broken code that fails")
+    println("Not part of the final output")
     println("Mission Ready!")
 }`,
     solutionCode: `fun main() {
-    // println("Broken code that fails")
+    // println("Not part of the final output")
     println("Mission Ready!")
 }`,
     sampleInput: 'main()',
@@ -438,7 +438,7 @@ export const PRINT_PRINTLN_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Format a Status Banner',
-    description: 'Use print() to output "Status: " and println() to output "ACTIVE" so they appear together as "Status: ACTIVE".',
+    description: 'Use print() to output "Status:" and println() to output "ACTIVE" so they appear together as "Status:ACTIVE".',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -446,17 +446,17 @@ export const PRINT_PRINTLN_LESSON: FiveStageLesson = {
     },
     fileName: 'StatusBanner.kt',
     initialCode: `fun main() {
-    // TODO: print "Status: " without newline, then println "ACTIVE"
+    // TODO: print "Status:" without newline, then println "ACTIVE"
 }`,
     solutionCode: `fun main() {
-    print("Status: ")
+    print("Status:")
     println("ACTIVE")
 }`,
     sampleInput: 'main()',
-    expectedOutput: 'Status: ACTIVE',
+    expectedOutput: 'Status:ACTIVE',
     testCase: {
       call: '',
-      expected: 'Status: ACTIVE'
+      expected: 'Status:ACTIVE'
     }
   },
   debug: {
@@ -535,7 +535,7 @@ export const VAL_VS_VAR_LESSON: FiveStageLesson = {
       {
         number: 3,
         title: 'Default to val',
-        description: 'Professional Kotlin code always uses val unless reassignment is strictly required.'
+        description: 'Idiomatic Kotlin code favors val by default, switching to var only when reassignment is genuinely required.'
       }
     ],
     keyTakeaway: 'Use val by default. Only switch to var when you know a value must change.'
@@ -850,8 +850,10 @@ export const VARIABLES_TYPE_INFERENCE_LESSON: FiveStageLesson = {
         topicMeta: 'Type inference',
         language: 'Kotlin',
         code: [
-          'val message = "CodeDo"',
-          'println(message)'
+          'fun main() {',
+          '    val message = "CodeDo"',
+          '    println(message)',
+          '}'
         ],
         prompt: 'What type does Kotlin infer for `message`?',
         options: [
@@ -1019,7 +1021,7 @@ export const INT_LONG_LESSON: FiveStageLesson = {
         description: 'You can write 1_000_000 for 1 million -- underscores are ignored by Kotlin.'
       }
     ],
-    keyTakeaway: 'Use Int for everyday counts. Use Long with an L suffix for timestamps, file sizes, or values exceeding 2 billion.'
+    keyTakeaway: 'Use Int for everyday counts. Use Long for timestamps, file sizes, or values exceeding 2 billion -- Kotlin infers Long automatically for oversized literals, but adding the L suffix makes that intent explicit.'
   },
   explore: {
     title: 'Explore Int & Long',
@@ -1052,7 +1054,7 @@ export const INT_LONG_LESSON: FiveStageLesson = {
           'println(stars)'
         ],
         whatItMeans: [
-          { label: 'L suffix', description: 'Designates the literal as a Long' },
+          { label: 'L suffix', description: 'Makes the Long type explicit for readability -- this literal already exceeds Int\'s range, so Kotlin would infer Long even without it' },
           { label: 'Underscores', description: 'Make large numbers easy for humans to read' }
         ],
         whatChanged: 'Safely represented a number far beyond Int capacity.'
@@ -1087,8 +1089,10 @@ export const INT_LONG_LESSON: FiveStageLesson = {
         topicMeta: 'Int vs Long',
         language: 'Kotlin',
         code: [
-          'val count = 500',
-          'println(count)'
+          'fun main() {',
+          '    val count = 500',
+          '    println(count)',
+          '}'
         ],
         prompt: 'What type is `count` by default?',
         options: [
@@ -1110,8 +1114,10 @@ export const INT_LONG_LESSON: FiveStageLesson = {
         topicMeta: 'Long suffix',
         language: 'Kotlin',
         code: [
-          'val distance = 500L',
-          'println(distance)'
+          'fun main() {',
+          '    val distance = 500L',
+          '    println(distance)',
+          '}'
         ],
         prompt: 'What does appending `L` do?',
         options: [
@@ -1133,8 +1139,10 @@ export const INT_LONG_LESSON: FiveStageLesson = {
         topicMeta: 'Number formatting',
         language: 'Kotlin',
         code: [
-          'val amount = 1_000_000',
-          'println(amount)'
+          'fun main() {',
+          '    val amount = 1_000_000',
+          '    println(amount)',
+          '}'
         ],
         prompt: 'What is printed to the console?',
         options: [
@@ -1180,28 +1188,33 @@ export const INT_LONG_LESSON: FiveStageLesson = {
     }
   },
   debug: {
-    title: 'Fix Integer Out of Range',
-    subtitle: 'A number exceeds the 32-bit Int limit.',
+    title: 'Fix the Long Arithmetic Mistake',
+    subtitle: 'The total across all batches is wrong -- identify why, and fix the operator.',
     challengeNumber: 1,
     totalChallenges: 1,
     difficulty: 'easy',
-    bugType: 'syntax',
-    bugLabel: 'Compiler Error: The value is out of the Int range',
+    bugType: 'logic',
+    bugLabel: 'Logic Bug: Wrong Arithmetic Operator',
     brokenCode: `fun main() {
-    val views = 5000000000
-    println(views)
+    val satellitesPerBatch = 4_000L
+    val totalBatches = 25L
+    // BUG: adding gives one batch plus a leftover count, not the true total!
+    val totalSatellites = satellitesPerBatch + totalBatches
+    println(totalSatellites)
 }`,
     fixedCode: `fun main() {
-    val views = 5000000000L
-    println(views)
+    val satellitesPerBatch = 4_000L
+    val totalBatches = 25L
+    val totalSatellites = satellitesPerBatch * totalBatches
+    println(totalSatellites)
 }`,
-    expectedOutput: '5000000000',
+    expectedOutput: '100000',
     hints: [
-      '5,000,000,000 is larger than 2,147,483,647 (the maximum Int).',
-      'Numbers larger than 2 billion must be Longs.',
-      'Add the suffix "L" to the end of 5000000000.'
+      'The total across 25 batches of 4,000 satellites each should be found by repeating (multiplying), not by adding a leftover count once.',
+      'satellitesPerBatch + totalBatches gives 4,000 + 25 = 4,025 -- nowhere near the real total of 25 batches of 4,000.',
+      'Change the + to * so totalSatellites = satellitesPerBatch * totalBatches = 100,000.'
     ],
-    explanation: '5,000,000,000 exceeds the 32-bit signed integer limit. Appending `L` declares it as a 64-bit `Long`.'
+    explanation: 'satellitesPerBatch + totalBatches only adds 25 to 4,000, giving 4,025 -- it never accounts for having 25 separate batches of 4,000 each. Replacing + with * correctly multiplies 4,000 by 25, producing the real total: 100000. Both values are declared as Long (with underscore-formatted literals and no suffix needed beyond the L) since a satellite constellation count like this is exactly the kind of large, growing value Long is meant for.'
   },
   mastered: {
     topicTitle: 'Int & Long',
@@ -1416,28 +1429,33 @@ export const FLOAT_DOUBLE_LESSON: FiveStageLesson = {
     }
   },
   debug: {
-    title: 'Fix the Missing Float Suffix',
-    subtitle: 'Resolve the Float type mismatch.',
+    title: 'Fix the Decimal Arithmetic Mistake',
+    subtitle: 'The total price is wrong -- identify why, and fix the operator.',
     challengeNumber: 1,
     totalChallenges: 1,
     difficulty: 'easy',
-    bugType: 'type',
-    bugLabel: 'Type Mismatch: Expected Float, got Double',
+    bugType: 'logic',
+    bugLabel: 'Logic Bug: Wrong Arithmetic Operator',
     brokenCode: `fun main() {
-    val taxRate: Float = 0.08
-    println(taxRate)
+    val pricePerItem = 2.5
+    val quantity = 3.0
+    // BUG: adding gives one item's price plus the quantity, not the total cost!
+    val total = pricePerItem + quantity
+    println(total)
 }`,
     fixedCode: `fun main() {
-    val taxRate: Float = 0.08f
-    println(taxRate)
+    val pricePerItem = 2.5
+    val quantity = 3.0
+    val total = pricePerItem * quantity
+    println(total)
 }`,
-    expectedOutput: '0.08',
+    expectedOutput: '7.5',
     hints: [
-      'The variable is typed as Float, but 0.08 is a Double.',
-      'Float literals must end with an "f" or "F".',
-      'Change 0.08 to 0.08f.'
+      'The total cost of buying multiple items at a fixed price should come from repeating (multiplying), not from adding.',
+      'pricePerItem + quantity gives 2.5 + 3.0 = 5.5 -- that never accounts for buying 3 units at $2.5 each.',
+      'Change the + to * so total = pricePerItem * quantity = 7.5.'
     ],
-    explanation: '0.08 defaults to a Double. Because taxRate is explicitly annotated as `: Float`, appending `f` resolves the mismatch.'
+    explanation: 'pricePerItem + quantity only adds 3.0 to 2.5, giving 5.5 -- it never accounts for buying 3 units at $2.5 each. Replacing + with * correctly multiplies 2.5 by 3.0, producing the real total: 7.5. Both values default to Double since neither literal has an f suffix, which is exactly the default behavior this lesson teaches.'
   },
   mastered: {
     topicTitle: 'Float & Double',
@@ -1653,28 +1671,33 @@ export const BOOLEAN_LESSON: FiveStageLesson = {
     }
   },
   debug: {
-    title: 'Fix the Quoted Boolean',
-    subtitle: 'A Boolean variable was accidentally assigned a String.',
+    title: 'Fix the Boolean Logic Mistake',
+    subtitle: 'Backstage access is being granted incorrectly -- identify why, and fix the operator.',
     challengeNumber: 1,
     totalChallenges: 1,
     difficulty: 'easy',
-    bugType: 'type',
-    bugLabel: 'Type Mismatch: Expected Boolean, got String',
+    bugType: 'logic',
+    bugLabel: 'Logic Bug: Wrong Logical Operator',
     brokenCode: `fun main() {
-    val isOnline: Boolean = "true"
-    println(isOnline)
+    val hasTicket = true
+    val isVip = false
+    // BUG: this grants access with EITHER condition, not both!
+    val canEnterBackstage = hasTicket || isVip
+    println(canEnterBackstage)
 }`,
     fixedCode: `fun main() {
-    val isOnline: Boolean = true
-    println(isOnline)
+    val hasTicket = true
+    val isVip = false
+    val canEnterBackstage = hasTicket && isVip
+    println(canEnterBackstage)
 }`,
-    expectedOutput: 'true',
+    expectedOutput: 'false',
     hints: [
-      'isOnline is typed as Boolean.',
-      '"true" wrapped in quotes is a String.',
-      'Remove the double quotes around true.'
+      'Backstage access should require BOTH a ticket AND vip status -- check whether the operator actually enforces that.',
+      'hasTicket || isVip is true if EITHER condition holds, so it wrongly grants access with just a ticket.',
+      'Change || to && so canEnterBackstage = hasTicket && isVip.'
     ],
-    explanation: 'Booleans in Kotlin are written directly as `true` or `false` without quotation marks.'
+    explanation: 'hasTicket || isVip grants access if either condition is true, so having just a ticket (with isVip false) still evaluates to true. Requiring both conditions with && correctly evaluates to false when isVip is false, producing the real answer: false.'
   },
   mastered: {
     topicTitle: 'Boolean',
@@ -1800,6 +1823,9 @@ export const CHAR_LESSON: FiveStageLesson = {
         title: 'Char Quotes',
         topicMeta: 'Quotation syntax',
         language: 'Kotlin',
+        code: [
+          'val grade: Char = \'Z\''
+        ],
         prompt: 'Which of the following is a valid Char literal in Kotlin?',
         options: [
           { id: 'A', label: '\'Z\'', isCorrect: true },
@@ -1824,7 +1850,7 @@ export const CHAR_LESSON: FiveStageLesson = {
         ],
         prompt: 'What happens when compiling this line?',
         options: [
-          { id: 'A', label: 'Compile error: Too many characters in a character literal', isCorrect: true },
+          { id: 'A', label: 'Compile error: too many characters in a character literal', isCorrect: true },
           { id: 'B', label: 'Inferred as String', isCorrect: false },
           { id: 'C', label: 'Takes only the first character \'A\'', isCorrect: false },
           { id: 'D', label: 'Creates an array of characters', isCorrect: false }
@@ -1886,15 +1912,16 @@ export const CHAR_LESSON: FiveStageLesson = {
     }
   },
   debug: {
-    title: 'Fix Double Quotes on Char',
-    subtitle: 'A Char variable was assigned a String literal.',
+    title: 'Fix the Character Case Mistake',
+    subtitle: 'The printed initial has the wrong case -- identify why, and fix the value.',
     challengeNumber: 1,
     totalChallenges: 1,
     difficulty: 'easy',
-    bugType: 'type',
-    bugLabel: 'Type Mismatch: Expected Char, got String',
+    bugType: 'logic',
+    bugLabel: 'Logic Bug: Wrong Character Case',
     brokenCode: `fun main() {
-    val letter: Char = "Z"
+    // BUG: this initial should be uppercase to match the expected output!
+    val letter: Char = 'z'
     println(letter)
 }`,
     fixedCode: `fun main() {
@@ -1903,11 +1930,11 @@ export const CHAR_LESSON: FiveStageLesson = {
 }`,
     expectedOutput: 'Z',
     hints: [
-      'The variable letter is explicitly typed as Char.',
-      '"Z" with double quotes is a String.',
-      'Replace the double quotes with single quotes: \'Z\'.'
+      'Compare the printed letter to the expected output -- do they match exactly, including case?',
+      '\'z\' (lowercase) and \'Z\' (uppercase) are different Char values in Kotlin.',
+      'Change \'z\' to \'Z\'.'
     ],
-    explanation: 'In Kotlin, `Char` literals must be enclosed in single quotes (`\'Z\'`). Double quotes create a `String`.'
+    explanation: '\'z\' and \'Z\' are distinct Char values -- Kotlin is case-sensitive. Changing the lowercase \'z\' to uppercase \'Z\' produces the correct output: Z.'
   },
   mastered: {
     topicTitle: 'Char',
@@ -2013,13 +2040,14 @@ export const STRING_LESSON: FiveStageLesson = {
           'val banner = """',
           '  LINE 1',
           '  LINE 2',
-          '"""',
+          '""".trimIndent()',
           'println(banner)'
         ],
         whatItMeans: [
-          { label: '"""', description: 'Starts and ends a multi-line raw string' }
+          { label: '"""', description: 'Starts and ends a multi-line raw string' },
+          { label: '.trimIndent()', description: 'Strips the common leading whitespace and the leading/trailing blank lines the raw string would otherwise keep' }
         ],
-        whatChanged: 'Wrote multiple lines of text without \\n.'
+        whatChanged: 'Wrote multiple lines of text without \\n, then trimmed the indentation raw strings preserve by default.'
       }
     ]
   },
@@ -2205,7 +2233,7 @@ export const STRING_TEMPLATES_LESSON: FiveStageLesson = {
       {
         number: 3,
         title: 'Escaping the dollar sign',
-        description: 'To print a literal $ sign, escape it as \\$ or use \'$\'.'
+        description: 'To print a literal $ sign, escape it as \\$ (or, inside a raw string where \\ escapes don\'t work, use ${\'$\'}).'
       }
     ],
     keyTakeaway: 'Always prefer string templates over `+` concatenation -- they are cleaner, faster, and idiomatic.'
@@ -2591,7 +2619,7 @@ export const WORLD_1_BOSS_LESSON: FiveStageLesson = {
   writeRun: {
     challengeNumber: 1,
     totalChallenges: 1,
-    xpReward: 35,
+    xpReward: 50,
     title: 'Build the Personal Profile Program',
     description: 'Declare `val name = "CodeDo"`, `val grade = \'A\'`, `val score = 100`. Print `"User: $name | Grade: $grade | Score: $score"`.',
     requirements: {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Stage2ExploreData } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
+import { renderKotlinCodeLines } from '../utils/codeHighlighter';
 
 interface ExploreStageProps {
   data: Stage2ExploreData;
@@ -372,27 +373,9 @@ export const Explore: React.FC<ExploreStageProps> = ({
                     : 'bg-slate-50 border border-slate-200/70 text-slate-800'
                 }`}
               >
-                {card.code.map((line, lIdx) => (
+                {renderKotlinCodeLines(card.code, { isDark }).map((node, lIdx) => (
                   <div key={lIdx} className="whitespace-pre">
-                    {line.startsWith('fun ') ? (
-                      <>
-                        <span className="text-indigo-500 font-semibold">fun </span>
-                        <span className={`font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                          {line.substring(4)}
-                        </span>
-                      </>
-                    ) : line.includes('println') ? (
-                      <span className="pl-4">
-                        <span className={isDark ? 'text-white' : 'text-slate-900'}>println</span>
-                        (
-                        <span className="text-emerald-500">
-                          {line.substring(line.indexOf('(') + 1, line.lastIndexOf(')'))}
-                        </span>
-                        )
-                      </span>
-                    ) : (
-                      <span>{line}</span>
-                    )}
+                    {node}
                   </div>
                 ))}
               </div>

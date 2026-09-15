@@ -3,6 +3,7 @@ import { Stage1LearnData } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
 import { FunctionAnimatedExplainer } from './FunctionAnimatedExplainer';
 import { WORLD_1_LESSON_VISUALS } from '../data/world1LessonVisuals';
+import { renderKotlinCodeLines } from '../utils/codeHighlighter';
 
 interface LearnStageProps {
   data: Stage1LearnData;
@@ -10,7 +11,6 @@ interface LearnStageProps {
   revealStep: number;
   setRevealStep: React.Dispatch<React.SetStateAction<number>>;
   onContinue: () => void;
-  renderSnippetLine: (line: string, isDark: boolean) => React.ReactNode;
   tapToRevealEnabled?: boolean;
   /** Label of whichever stage actually comes next for this lesson (Explore,
    * Predict, etc.) -- stages can be skipped per-lesson, so this must not be
@@ -33,7 +33,6 @@ export const Learn: React.FC<LearnStageProps> = ({
   revealStep,
   setRevealStep,
   onContinue,
-  renderSnippetLine,
   tapToRevealEnabled = true,
   nextStageLabel = 'Explore',
   lessonId,
@@ -178,9 +177,9 @@ export const Learn: React.FC<LearnStageProps> = ({
                 : 'silk-inset text-slate-800'
             }`}
           >
-            {data.codeSnippet.map((line, idx) => (
+            {renderKotlinCodeLines(data.codeSnippet, { isDark }).map((node, idx) => (
               <div key={idx} className="whitespace-pre">
-                {renderSnippetLine(line, isDark)}
+                {node}
               </div>
             ))}
           </div>

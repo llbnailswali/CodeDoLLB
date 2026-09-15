@@ -8,6 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
+    "audit:output-quotes": "node scripts/audit-output-quotes.mjs",
+    "update-progress": "node scripts/update-data-gathering-progress.mjs",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

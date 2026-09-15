@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Stage5DebugData } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
 import { compileAndRunKotlin, KotlinExecutionResult } from '../utils/kotlinRunner';
+import { renderVisibleWhitespace } from '../utils/outputDisplay';
 
 interface DebugStageProps {
   data: Stage5DebugData;
@@ -222,11 +223,11 @@ export const Debug: React.FC<DebugStageProps> = ({
           </span>
         </div>
         <div
-          className={`px-3 py-2 rounded-xl font-mono text-xs ${
+          className={`px-3 py-2 rounded-xl font-mono text-xs whitespace-nowrap overflow-x-auto ${
             isDark ? 'bg-[#090d16] text-emerald-400' : 'bg-slate-100 text-emerald-700'
           }`}
         >
-          {data.expectedOutput}
+          {renderVisibleWhitespace(data.expectedOutput)}
         </div>
       </section>
       )}
@@ -315,7 +316,7 @@ export const Debug: React.FC<DebugStageProps> = ({
                 setIsResolved(false);
               }}
               spellCheck={false}
-              className="flex-1 bg-transparent border-0 outline-none text-indigo-300 font-mono text-xs leading-[1.625rem] resize-none p-0 focus:ring-0 overflow-y-hidden overflow-x-hidden block whitespace-pre min-w-0"
+              className="flex-1 bg-transparent border-0 outline-none text-indigo-300 font-mono text-xs leading-[1.625rem] resize-none p-0 focus:ring-0 overflow-y-hidden overflow-x-auto block whitespace-pre min-w-0"
             />
           </div>
         </div>
@@ -526,10 +527,12 @@ export const Debug: React.FC<DebugStageProps> = ({
             <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
               Program Output
             </div>
-            <pre>
+            <pre className="whitespace-pre">
               {executionResult.error
                 ? `Line ${executionResult.error.line}: ${executionResult.error.message}`
-                : executionResult.output || '(no output produced)'}
+                : executionResult.output
+                ? renderVisibleWhitespace(executionResult.output)
+                : '(no output produced)'}
             </pre>
           </div>
         </section>

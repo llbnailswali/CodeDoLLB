@@ -29,97 +29,6 @@ export interface DetailHandle {
   goBack: () => void;
 }
 
-const renderSnippetLine = (line: string, isDark: boolean) => {
-  const trimmed = line.trim();
-  const indent = line.startsWith('    ') || line.startsWith('\t');
-  const indentClass = indent ? 'pl-4' : '';
-
-  if (trimmed.startsWith('//')) {
-    return (
-      <div className={`${indentClass} ${isDark ? 'text-slate-500 italic' : 'text-slate-400 italic'}`}>
-        {line}
-      </div>
-    );
-  }
-
-  if (trimmed.startsWith('fun ')) {
-    const afterFun = trimmed.slice(4);
-    const parenIdx = afterFun.indexOf('(');
-    const fnName = parenIdx !== -1 ? afterFun.slice(0, parenIdx) : afterFun;
-    const rest = parenIdx !== -1 ? afterFun.slice(parenIdx) : '';
-    return (
-      <div className={indentClass}>
-        <span className={isDark ? 'text-[#c084fc] font-semibold' : 'text-indigo-600 font-semibold'}>fun</span>{' '}
-        <span className={isDark ? 'text-[#93c5fd] font-semibold' : 'text-indigo-900 font-semibold'}>{fnName}</span>
-        <span className={isDark ? 'text-[#94a3b8]' : 'text-slate-700'}>{rest}</span>
-      </div>
-    );
-  }
-
-  if (trimmed.startsWith('for ')) {
-    return (
-      <div className={indentClass}>
-        <span className={isDark ? 'text-[#c084fc] font-semibold' : 'text-indigo-600 font-semibold'}>for</span>{' '}
-        <span className={isDark ? 'text-[#94a3b8]' : 'text-slate-700'}>(</span>
-        <span className={isDark ? 'text-slate-200 font-medium' : 'text-slate-900 font-medium'}>i</span>{' '}
-        <span className={isDark ? 'text-[#c084fc] font-semibold' : 'text-indigo-600 font-semibold'}>in</span>{' '}
-        <span className={isDark ? 'text-[#fbbf24]' : 'text-amber-600'}>1..3</span>
-        <span className={isDark ? 'text-[#94a3b8]' : 'text-slate-700'}>) {'{'}</span>
-      </div>
-    );
-  }
-
-  if (trimmed.startsWith('val ') || trimmed.startsWith('var ')) {
-    const kw = trimmed.startsWith('val ') ? 'val' : 'var';
-    const rest = trimmed.slice(4);
-    const eqIdx = rest.indexOf('=');
-    if (eqIdx !== -1) {
-      const lhs = rest.slice(0, eqIdx).trim();
-      const rhs = rest.slice(eqIdx + 1).trim();
-      return (
-        <div className={indentClass}>
-          <span className={isDark ? 'text-[#c084fc] font-semibold' : 'text-indigo-600 font-semibold'}>{kw}</span>{' '}
-          <span className={isDark ? 'text-slate-200 font-medium' : 'text-slate-900 font-medium'}>{lhs}</span>{' '}
-          <span className={isDark ? 'text-[#94a3b8]' : 'text-slate-700'}>=</span>{' '}
-          <span className={isDark ? 'text-[#34d399]' : 'text-emerald-600'}>{rhs}</span>
-        </div>
-      );
-    }
-  }
-
-  if (trimmed.startsWith('println(')) {
-    const inside = trimmed.slice(8, trimmed.lastIndexOf(')'));
-    return (
-      <div className={indentClass}>
-        <span className={isDark ? 'text-[#38bdf8]' : 'text-blue-600'}>println</span>
-        <span className={isDark ? 'text-[#94a3b8]' : 'text-slate-700'}>(</span>
-        <span className={isDark ? 'text-[#34d399]' : 'text-emerald-600'}>{inside}</span>
-        <span className={isDark ? 'text-[#94a3b8]' : 'text-slate-700'}>)</span>
-      </div>
-    );
-  }
-
-  if (trimmed.startsWith('return ')) {
-    const expr = trimmed.slice(7);
-    return (
-      <div className={indentClass}>
-        <span className={isDark ? 'text-[#c084fc] font-semibold' : 'text-indigo-600 font-semibold'}>return</span>{' '}
-        <span className={isDark ? 'text-slate-200' : 'text-slate-800'}>{expr}</span>
-      </div>
-    );
-  }
-
-  if (trimmed === '}') {
-    return (
-      <div className={indentClass}>
-        <span className={isDark ? 'text-[#94a3b8]' : 'text-slate-700'}>{'}'}</span>
-      </div>
-    );
-  }
-
-  return <div className={`${indentClass} ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{line}</div>;
-};
-
 // The six possible stage keys, in their fixed relative order. Which ones are
 // actually present for a given lesson depends on its data (see activeStages
 // below) -- Learn and Mastered always run; the rest only run when the lesson
@@ -483,7 +392,6 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
             revealStep={learnRevealStep}
             setRevealStep={setLearnRevealStep}
             onContinue={handleNextStage}
-            renderSnippetLine={renderSnippetLine}
             nextStageLabel={nextStageLabel}
             tapToRevealEnabled={tapToRevealEnabled}
             lessonId={lessonData.id}

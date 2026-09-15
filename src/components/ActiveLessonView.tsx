@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppTheme, LessonQuestion, UserStats } from '../types';
 import { soundFX } from '../utils/audio';
-import { renderKotlinCodeLine } from '../utils/codeHighlighter';
+import { renderKotlinCodeLines } from '../utils/codeHighlighter';
 import { LessonSuccessModal } from './LessonSuccessModal';
 
 interface ActiveLessonViewProps {
@@ -242,7 +242,9 @@ export const ActiveLessonView: React.FC<ActiveLessonViewProps> = ({
 
           {/* Code Editor Body */}
           <div className="p-4 font-['JetBrains_Mono'] text-xs leading-relaxed select-none overflow-x-auto text-slate-200">
-            {question.codeSnippet.map((line, idx) => {
+            {renderKotlinCodeLines(question.codeSnippet, {
+              isBlankHighlighted: question.challengeType === 'code-completion'
+            }).map((node, idx) => {
               const isBuggyLine =
                 question.challengeType === 'bug-fix' && question.buggyLineIndex === idx;
 
@@ -258,12 +260,7 @@ export const ActiveLessonView: React.FC<ActiveLessonViewProps> = ({
                   <span className="w-6 text-slate-600 select-none text-right mr-4 text-[11px]">
                     {idx + 1}
                   </span>
-                  <span>
-                    {renderKotlinCodeLine(
-                      line,
-                      question.challengeType === 'code-completion'
-                    )}
-                  </span>
+                  <span>{node}</span>
                 </div>
               );
             })}

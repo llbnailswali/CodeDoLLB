@@ -4,6 +4,7 @@ import {
   KotlinExecutionResult,
 } from '../utils/kotlinRunner';
 import { soundFX } from '../utils/audio';
+import { renderVisibleWhitespace } from '../utils/outputDisplay';
 
 export interface KotlinCodeRunnerProps {
   /** The Kotlin program source code to compile and run */
@@ -257,8 +258,10 @@ export const KotlinCodeRunner: React.FC<KotlinCodeRunnerProps> = ({
           {/* Success View */}
           {result.success && (
             <div className="bg-slate-900 rounded-xl p-3.5 border border-slate-800">
-              <div className="font-mono text-sm font-semibold tracking-wide text-emerald-400 whitespace-pre-wrap break-words">
-                {result.output || (
+              <div className="font-mono text-sm font-semibold tracking-wide text-emerald-400 whitespace-nowrap overflow-x-auto">
+                {result.output ? (
+                  renderVisibleWhitespace(result.output)
+                ) : (
                   <span className="text-slate-500 italic text-xs">
                     (Program produced no output)
                   </span>
@@ -267,11 +270,13 @@ export const KotlinCodeRunner: React.FC<KotlinCodeRunnerProps> = ({
 
               {/* Output diff helper if expectedOutput provided and doesn't match */}
               {expectedOutput && !isOutputMatching && (
-                <div className="mt-3 pt-2.5 border-t border-slate-800 text-[11px] text-amber-300/90 flex items-center justify-between gap-2">
-                  <span>Expected: &quot;{expectedOutput}&quot;</span>
-                  <span className="text-slate-400 text-[10px]">
+                <div className="mt-3 pt-2.5 border-t border-slate-800 text-[11px] text-amber-300/90 space-y-1">
+                  <div className="whitespace-nowrap overflow-x-auto">
+                    Expected: &quot;{renderVisibleWhitespace(expectedOutput)}&quot;
+                  </div>
+                  <div className="text-slate-400 text-[10px]">
                     Adjust code to match target
-                  </span>
+                  </div>
                 </div>
               )}
             </div>

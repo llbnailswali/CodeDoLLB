@@ -3,6 +3,7 @@ import { Stage4WriteRunData } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
 import { KotlinCodeRunner } from './KotlinCodeRunner';
 import { KotlinExecutionResult } from '../utils/kotlinRunner';
+import { renderProseWithUnbreakableQuotes } from '../utils/outputDisplay';
 
 interface WriteRunStageProps {
   data: Stage4WriteRunData;
@@ -156,7 +157,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
               isDark ? 'text-slate-300' : 'text-slate-600'
             }`}
           >
-            {data.description}
+            {renderProseWithUnbreakableQuotes(data.description)}
           </p>
         )}
       </section>
@@ -326,7 +327,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                           autoResizeTextarea();
                         }}
                         onInput={autoResizeTextarea}
-                        className="w-full bg-transparent border-0 outline-none text-indigo-300 font-mono text-xs leading-[1.625rem] resize-none p-0 focus:ring-0 overflow-y-hidden overflow-x-hidden block whitespace-pre"
+                        className="w-full bg-transparent border-0 outline-none text-indigo-300 font-mono text-xs leading-[1.625rem] resize-none p-0 focus:ring-0 overflow-y-hidden overflow-x-auto block whitespace-pre"
                         spellCheck={false}
                       />
                       <div className="text-slate-500 italic text-[11px] pt-2 select-none">
