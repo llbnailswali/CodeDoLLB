@@ -1729,7 +1729,9 @@ import {
   WORLD_5_BOSS_LESSON,
 } from './curriculum/world5LessonsData';
 
-import { ARRAYS_LESSON, LISTS_LESSON } from './curriculum/world6LessonsData';
+import { ARRAYS_LESSON, LISTS_LESSON, SETS_LESSON, MAPS_LESSON, MUTABLE_VS_READONLY_LESSON, CREATING_ACCESSING_COLLECTIONS_LESSON, ADDING_REMOVING_UPDATING_LESSON, ITERATING_COLLECTIONS_LESSON, BASIC_COLLECTION_OPERATIONS_LESSON, CHOOSING_COLLECTION_TYPE_LESSON, WORLD_6_BOSS_LESSON } from './curriculum/world6LessonsData';
+import { NULLABLE_TYPES_LESSON, NULLABLE_VARIABLES_LESSON, SAFE_CALL_LESSON, ELVIS_OPERATOR_LESSON, NON_NULL_ASSERTION_LESSON, NULL_CHECKS_LESSON, SMART_CASTS_LESSON, SAFE_CASTS_LESSON, NULLABLE_COLLECTIONS_LESSON, CHAINING_NULLABLE_OPERATIONS_LESSON, WORLD_7_BOSS_LESSON } from './curriculum/world7LessonsData';
+import { CLASSES_LESSON, OBJECTS_LESSON, PROPERTIES_LESSON, METHODS_LESSON, CONSTRUCTORS_LESSON, PRIMARY_CONSTRUCTORS_LESSON, INIT_LESSON, VISIBILITY_MODIFIERS_LESSON, DATA_CLASSES_LESSON, ENUMS_LESSON, BASIC_INHERITANCE_LESSON, INTERFACES_LESSON, OVERRIDING_MEMBERS_LESSON, WORLD_8_BOSS_LESSON } from './curriculum/world8LessonsData';
 
 export const AVAILABLE_FIVE_STAGE_LESSONS: Record<string, FiveStageLesson> = {
   variables: VARIABLES_LESSON,
@@ -1810,4 +1812,40 @@ export const AVAILABLE_FIVE_STAGE_LESSONS: Record<string, FiveStageLesson> = {
   // World 6 - Collection Valley
   'world-6-arrays': ARRAYS_LESSON,
   'world-6-lists': LISTS_LESSON,
+  'world-6-sets': SETS_LESSON,
+  'world-6-maps': MAPS_LESSON,
+  'world-6-mutable-vs-read-only-collections': MUTABLE_VS_READONLY_LESSON,
+  'world-6-creating-and-accessing-collections': CREATING_ACCESSING_COLLECTIONS_LESSON,
+  'world-6-adding-removing-updating-mutable-element': ADDING_REMOVING_UPDATING_LESSON,
+  'world-6-iterating-over-collections': ITERATING_COLLECTIONS_LESSON,
+  'world-6-basic-collection-operations': BASIC_COLLECTION_OPERATIONS_LESSON,
+  'world-6-choosing-the-right-collection-type': CHOOSING_COLLECTION_TYPE_LESSON,
+  'world-6-boss': WORLD_6_BOSS_LESSON,
+  // World 7 - Null Safety Shield
+  'world-7-nullable-types': NULLABLE_TYPES_LESSON,
+  'world-7-nullable-variables': NULLABLE_VARIABLES_LESSON,
+  'world-7-safe-call': SAFE_CALL_LESSON,
+  'world-7-elvis-operator': ELVIS_OPERATOR_LESSON,
+  'world-7-non-null-assertion': NON_NULL_ASSERTION_LESSON,
+  'world-7-null-checks': NULL_CHECKS_LESSON,
+  'world-7-smart-casts': SMART_CASTS_LESSON,
+  'world-7-safe-casts-as': SAFE_CASTS_LESSON,
+  'world-7-nullable-collections-and-collection-valu': NULLABLE_COLLECTIONS_LESSON,
+  'world-7-chaining-nullable-operations': CHAINING_NULLABLE_OPERATIONS_LESSON,
+  'world-7-boss': WORLD_7_BOSS_LESSON,
+  // World 8 - Object Kingdom
+  'world-8-classes': CLASSES_LESSON,
+  'world-8-objects': OBJECTS_LESSON,
+  'world-8-properties': PROPERTIES_LESSON,
+  'world-8-methods': METHODS_LESSON,
+  'world-8-constructors': CONSTRUCTORS_LESSON,
+  'world-8-primary-constructors': PRIMARY_CONSTRUCTORS_LESSON,
+  'world-8-init': INIT_LESSON,
+  'world-8-visibility-modifiers': VISIBILITY_MODIFIERS_LESSON,
+  'world-8-data-classes': DATA_CLASSES_LESSON,
+  'world-8-enums': ENUMS_LESSON,
+  'world-8-basic-inheritance': BASIC_INHERITANCE_LESSON,
+  'world-8-interfaces': INTERFACES_LESSON,
+  'world-8-overriding-members': OVERRIDING_MEMBERS_LESSON,
+  'world-8-boss': WORLD_8_BOSS_LESSON,
 };

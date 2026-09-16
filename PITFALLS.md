@@ -507,3 +507,244 @@ whitespace mismatches like this are invisible by eye (a missing single
 space in a paragraph of prose is not something a reviewer will reliably
 spot by reading), so use the script rather than manually re-reading the
 text.
+
+## World 6's Sets lesson needed `.contains()` and mutable-Set `.remove()` added to the engine first
+
+Before authoring World 6's Sets topic, `kotlinRunner.ts` had `setOf`/
+`mutableSetOf` support (native JS `Set`, from the Arrays/Lists work) but no
+`.contains(...)` method on any collection, and no `.remove(...)` on a
+`mutableSetOf` result. Kotlin's `Set.contains(value)` is central to what a
+Set lesson has to teach (membership checking is the main reason to reach
+for a Set over a List), and a bare `.contains(` call would have transpiled
+to valid-looking JS that throws `TypeError: ... .contains is not a
+function` at runtime for every array/Set/mutableSetOf value — not a silent
+wrong answer this time, but still a hard blocker discovered only by
+actually running the exercise code, not by reading it.
+
+Fixed by attaching real instance methods on the collection factories
+themselves (no line-level regex transform needed, since `.contains(x)` and
+`.remove(x)` are already valid JS method-call syntax once something in the
+prototype chain — or, here, the instance itself — defines them):
+`__kt_arrayOf`/`__kt_listOf`/`__kt_mutableListOf` results get a `.contains`
+that delegates to `Array.prototype.includes`; `__kt_setOf`/
+`__kt_mutableSetOf` results get a `.contains` delegating to
+`Set.prototype.has`; and `__kt_mutableSetOf` additionally gets a `.remove`
+delegating to `Set.prototype.delete` (mirroring how `__kt_mutableListOf`
+already synthesizes `.add`/`.remove` on a plain JS array). `mapOf`/
+`mutableMapOf` (`containsKey`/`containsValue`) were deliberately left
+untouched — no Maps lesson content needed them yet at the time of this fix,
+so extend them narrowly if/when a Maps exercise actually requires it,
+rather than pre-building unused surface area.
+
+**Rule, reinforced:** before writing Explore/Predict/Write&Run/Debug
+content for any collection-related topic, grep `kotlinRunner.ts` for the
+exact method/operator the lesson's code will call (`.contains(`, `.remove(`,
+`in`, etc.) — a missing method here throws loudly rather than silently
+misbehaving, but it's still a blocker only caught by actually running the
+code through `compileAndRunKotlin`, exactly as every other entry on this
+page insists.
+
+## Finishing World 6 needed six more collection methods, Map destructuring in for-loops, and a near-miss with `!!`
+
+Authoring World 6's remaining lessons (Mutable vs Read-Only, Creating and
+Accessing, Adding/Removing/Updating, Iterating, Basic Operations, and the
+World Boss) needed several more `kotlinRunner.ts` additions beyond the
+`.contains()`/`.containsKey()` work already documented above:
+
+- `.isEmpty()`/`.isNotEmpty()`/`.first()`/`.last()`/`.get(index)` on
+  List/Array/Set results, and `.sorted()` (returning a **new**, ascending
+  copy via `[...list].sort((a, b) => a < b ? -1 : a > b ? 1 : 0)` — the
+  default `Array.prototype.sort()` compares elements as strings, which
+  would silently misorder a list of numbers like `[5, 10, 2]` into
+  `[10, 2, 5]` instead of `[2, 5, 10]`).
+- `.removeAt(index)` on `mutableListOf` results (`list.splice(index, 1)[0]`,
+  mirroring the existing `.add`/`.remove` synthesis).
+- Destructured Map iteration, `for ((key, value) in map) { ... }` →
+  `for (const [key, value] of map) {` in `transformForLoops` — the
+  existing bare-identifier branch only matched a single loop variable, not
+  a parenthesized pair, so this needed its own regex branch checked first.
+
+All were verified with a 12-case scratch harness (including two
+regression checks confirming plain `for (x in list/set)` iteration still
+worked) before any lesson content was authored against them.
+
+**A near-miss worth calling out:** the World 6 Boss's first draft used
+`scores[name]!!` to satisfy what would be real Kotlin's nullable
+`Map[key]` return type. Running it hit an immediate parse error —
+`kotlinRunner.ts` has **no** support at all yet for `!!`, `?.`, or `?:`
+(Null Safety is World 7, not yet built). Rather than half-building
+non-null-assertion support just to unblock one exercise, the Boss was
+redesigned to use `for ((name, score) in scores)` destructuring instead,
+which yields a plain, already-non-null `Int` with no nullable ambiguity at
+all — sidestepping the unbuilt feature entirely instead of reaching for it.
+
+**Rule, reinforced again:** before authoring content that would naturally
+reach for a nullable-safety operator (`?.`, `?:`, `!!`, `as?`) ahead of
+World 7, redesign the exercise to avoid the nullable case structurally
+(e.g. destructuring a Map's entries instead of indexing it by a
+possibly-absent key) rather than writing Kotlin that this engine cannot
+run yet. When World 7 is actually authored, `!!`/`?.`/`?:` need real
+transpiler support added and verified the same way every other operator on
+this page was, before any Null Safety lesson content is written.
+
+## World 7 (Null Safety Shield): building `?.`/`?:`/`!!`/`as?` from zero
+
+World 7 is entirely about nullable types and their operators, and
+`kotlinRunner.ts` had **no** support for any of them beforehand (see the
+entry above). Building it surfaced several gotchas:
+
+1. **`?.` needed no new transform at all.** JS has had optional chaining
+   (`?.`) since ES2020, with the same short-circuit-on-null/undefined
+   semantics Kotlin's safe call has. The only wrinkle: JS optional chaining
+   short-circuits to `undefined`, not `null`, while Kotlin has only one
+   null. Fixed by making `formatKotlinValue` print `undefined` the same as
+   `null` — otherwise `x?.length` for a null `x` would print the word
+   "undefined" while `x` alone prints "null", an inconsistency with no
+   Kotlin equivalent.
+
+2. **`?:` (Elvis) is just JS `??`.** A single `line.replace(/\?:/g, '??')`
+   is enough, since nullish coalescing treats null/undefined identically to
+   Kotlin's Elvis operator.
+
+3. **`!!` needed a real runtime helper, not a no-op strip.** A naive
+   approach might just delete the `!!` characters, but that would silently
+   turn a would-be-crashing assertion into a silent pass-through — exactly
+   the "plausible-looking wrong answer" anti-pattern this file already
+   warns about repeatedly. Instead, `expr!!` compiles to
+   `__kt_notNull(expr)`, a helper that throws when the value is actually
+   null/undefined, mirroring Kotlin's own NullPointerException-on-failed-
+   assertion behavior. **Scope limit:** the regex is deliberately
+   non-global, supporting only ONE `!!` per line. A naive global version
+   mis-binds a second, independent `!!` on the same line to the wrong
+   sub-expression (verified this failure mode directly before choosing the
+   single-match design) — so lesson content never chains two separate `!!`
+   assertions on one line.
+
+4. **Nullable type annotations needed the type-stripping regexes widened
+   twice, not once.** First pass: `val name: String? = ...` needed `?`
+   added to the character class the `val`/`var` (and `fun` return-type)
+   regexes use to consume and discard a declared type. Second, easy-to-miss
+   pass: `val scores: Map<String, Int?> = ...` still failed to transpile
+   even after that fix, because a multi-parameter generic like
+   `Map<String, Int?>` contains a **comma and a space**, neither of which
+   were in the character class either — the whole optional type-annotation
+   group would then fail to match ANYTHING for that declaration, leaving
+   the raw `val scores: Map<...> = ...` untouched and producing a
+   `SyntaxError` at execution. A single-parameter generic (`List<Int?>`)
+   happened to already work by accident (no comma inside), which is
+   exactly the kind of instance that hides a bug until a differently-
+   shaped example is actually run — caught only by executing a Map-typed
+   nullable declaration through the real engine, not by reading the regex.
+
+5. **A nullable collection reference's `.size` needed its own transform.**
+   `bonuses?.size` for a `List<Int>?` doesn't match the existing
+   `x.size` -> `__kt_size(x)` regex at all (the `?` breaks the match), so
+   it fell through as literal `bonuses?.size` -- which IS valid JS
+   (optional chaining), but JS arrays have `.length`, not `.size`, so it
+   silently evaluated to `undefined` instead of the real count. Fixed with
+   a dedicated `bonuses?.size` -> `(bonuses == null ? null : __kt_size(bonuses))`
+   transform that runs before the plain one, preserving both the null-safety
+   AND the custom size semantics together.
+
+6. **`as? Type` reuses `is`/`!is`'s existing typeof-map**, scoped to the
+   same Int/Long/Float/Double/String/Boolean set (never Char, for the
+   established reason). Plain, unsafe `as` remains unsupported —
+   deliberately out of scope since it isn't in World 7's topic list.
+
+**Rule, reinforced yet again:** every one of these six gaps was caught by
+actually executing code through `compileAndRunKotlin` in a scratch harness
+*before* authoring lesson content against it -- reading the transform's
+regex was not enough to predict any of these failures, especially #4
+(single- vs multi-parameter generics) and #5 (a property name that
+collides with a custom helper function, not a real JS property).
+
+## World 8 (Object Kingdom): building class/data class/enum/interface/object from zero
+
+World 8 is entirely about basic OOP, and needed the single largest
+`kotlinRunner.ts` addition so far: a whole-source pre-pass,
+`transpileOOPDeclarations`, that runs BEFORE every other transform and
+handles `class`, `data class`, `enum class`, `interface`, and `object`
+declarations. The full implementation lives in `kotlinRunner.ts` around
+`transpileClassDeclarations`/`transpileEnumClasses`/
+`transpileObjectDeclarations`/`stripInterfaceDeclarations`. Three bugs
+here were only caught by actually running the generated JS:
+
+1. **Trailing blank lines silently misclassified single-line members.**
+   `splitClassMembers` divides a class body into members by scanning line
+   by line, but a blank line sitting right before the class's own closing
+   brace gets attached to the LAST member as an extra trailing line. That
+   made a genuinely single-line member (a single-expression `fun greet() =
+   ...` or a `val x = ...` property) look like a multi-line member, so the
+   single-line-only classification checks failed and the member fell
+   through to "pass through unchanged" -- leaving raw, un-transpiled Kotlin
+   (`fun greet() = ...`) sitting inside a JS class body, a guaranteed
+   syntax error. Fixed by trimming trailing blank lines in
+   `transpileClassMember` before classifying the member.
+
+2. **A data class's generated `toString()` got corrupted by the very next
+   pass that runs after it.** The first version built it as a template
+   literal, `` `${className}(${...})` ``, which puts the literal text
+   `ClassName(` directly in the generated source. But the LAST step of the
+   OOP pipeline, `insertNewForInstantiation`, blindly inserts `new` before
+   ANY occurrence of `ClassName(` in the whole code string -- with zero
+   awareness of whether that occurrence is a real instantiation or just
+   characters sitting inside a string literal. It matched the toString’s
+   own generated text and rewrote it into `new ClassName(...)` mid-string,
+   corrupting the output. Fixed by building the toString via string
+   concatenation instead (`'ClassName' + '(' + ...`), so the class name is
+   never immediately followed by a literal `(` anywhere in the generated
+   source text -- this is a general hazard for anything that pre-generates
+   code containing a class name: check it doesn't accidentally look like a
+   call site to the next pass.
+
+3. **A bare-name supertype (`: Greetable`, an interface) was treated as a
+   real superclass.** The class regex captures a supertype name whether or
+   not it’s followed by constructor-call parens, but the first version
+   added `extends SuperName` unconditionally whenever a supertype was
+   present at all -- so implementing an interface (no parens) produced
+   `extends Greetable`, and since `Greetable`'s own declaration had already
+   been deleted entirely (see below), this threw `Greetable is not
+   defined` at runtime. Fixed by gating `extends`/`super(...)` on whether
+   the supertype was ACTUALLY followed by parens -- that presence/absence
+   is exactly what distinguishes "extends a class" from "implements an
+   interface" in Kotlin’s own grammar.
+
+**A deliberate, load-bearing scope decision, not a bug:** method bodies in
+this engine MUST reference their own class's properties via explicit
+`this.propertyName` -- never a bare identifier. Method body statements are
+passed through completely unchanged (verbatim) by the OOP pre-pass, relying
+entirely on the *outer* per-line pipeline to process them normally
+afterward, which is what keeps the whole implementation tractable. But that
+also means there is no real lexical scope resolution: a bare `name` inside
+a method has no way to know it should resolve to `this.name` instead of,
+say, a same-named parameter (`fun setName(name: String) { name = name }`
+is a completely ordinary, realistic pattern that a naive bare-name rewrite
+would corrupt). Author every World 8+ lesson's method bodies with explicit
+`this.` for property access, and never rely on Kotlin's real behavior of
+resolving a bare name to a property when no local shadows it.
+
+**Other scope limits, deliberately not supported (document before
+extending):**
+- A member's header (`fun foo(...) {`, `init {`, `val x: Int = ...`) must
+  be a single line -- wrapping it across multiple lines before the opening
+  brace breaks `splitClassMembers`'s member detection.
+- No secondary constructors, no multiple supertypes/interfaces at once
+  (single inheritance/interface only), no nested/inner classes.
+- `enum class` bodies support only a plain, optionally-constructor-
+  parameterized constant list -- no extra members after the constants, and
+  no `.values()`/`.ordinal`.
+- `interface` declarations are deleted WHOLESALE at transpile time (JS has
+  no structural-interface concept to enforce, and every implementing class
+  already supplies real methods via `override fun`) -- an interface with a
+  DEFAULT method body that some implementer relies on WITHOUT overriding it
+  would silently vanish. Every World 8 lesson's interfaces only declare
+  abstract signatures, never default bodies, for exactly this reason.
+
+**Rule, reinforced once more:** every one of these three bugs, plus the
+`this.`-required convention, was found by actually compiling and running
+representative snippets through `compileAndRunKotlin` in a scratch harness
+BEFORE authoring lesson content -- including printing the transpiled output
+directly (`transpileOOPDeclarations` was temporarily exported for this,
+then reverted) to see exactly what JS a given piece of Kotlin produced.
+Reading the regex/string-building code was not enough to predict any of
+these three failures.

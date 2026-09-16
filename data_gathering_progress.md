@@ -28,9 +28,9 @@ markers below is overwritten.
 | World 3 — Decision Maker | 9 / 9 | ✅ Complete |
 | World 4 — Loop Master | 11 / 11 | ✅ Complete |
 | World 5 — Function Forge | 9 / 9 | ✅ Complete |
-| World 6 — Collection Valley | 1 / 11 | 🟡 In progress |
-| World 7 — Null Safety Shield | 0 / 11 | ⬜ Not started |
-| World 8 — Object Kingdom | 0 / 14 | ⬜ Not started |
+| World 6 — Collection Valley | 11 / 11 | ✅ Complete |
+| World 7 — Null Safety Shield | 11 / 11 | ✅ Complete |
+| World 8 — Object Kingdom | 14 / 14 | ✅ Complete |
 | World 9 — Lambda Lab | 0 / 12 | ⬜ Not started |
 | World 10 — Collection Wizardry | 0 / 10 | ⬜ Not started |
 | World 11 — OOP Evolution | 0 / 14 | ⬜ Not started |
@@ -46,7 +46,7 @@ markers below is overwritten.
 | World 21 — Performance Lab | 0 / 15 | ⬜ Not started |
 | World 22 — Production Kotlin | 0 / 22 | ⬜ Not started |
 
-**5 of 22 worlds complete by the format that actually ships.** Everything else in `masterCurriculumCatalog.ts` beyond the complete worlds is placeholder metadata (`questionsCount: 0`, no `fiveStageLessonKey`) — this is expected and self-documented in that file, not a bug.
+**8 of 22 worlds complete by the format that actually ships.** Everything else in `masterCurriculumCatalog.ts` beyond the complete worlds is placeholder metadata (`questionsCount: 0`, no `fiveStageLessonKey`) — this is expected and self-documented in that file, not a bug.
 
 <!-- AUTO-GENERATED:FIVE-STAGE-PROGRESS:END -->
 
@@ -89,7 +89,7 @@ The "topic → real world" mapping above is a first-pass guess based on topic ov
 
 ## 4. Next action
 
-Author World 5 (Function Forge) as real five-stage content, remapping applicable questions from the legacy `world4_functions.ts` bank where topically relevant, following World 1-4's already-completed lessons as the template.
+Author World 9 (Lambda Lab) as real five-stage content: lambda expressions, anonymous functions, function types, higher-order functions, `it`, function references, returning from lambdas, local returns, inline functions, `noinline`, and `crossinline`. This will need new `kotlinRunner.ts` engine support for function-as-value syntax — lambda literals (`{ x -> x * 2 }`), the implicit single-param `it`, and passing/storing functions as values are all currently unsupported. Follow World 1-8's already-completed lessons as the template.
 
 ---
 
@@ -117,6 +117,315 @@ Author World 5 (Function Forge) as real five-stage content, remapping applicable
 Append one entry per meaningful session, most recent first.
 
 ```text
+## 2026-09-16 (World 8, COMPLETE)
+
+World/Lesson: World 8 — Object Kingdom, all 14 lessons: Classes, Objects,
+Properties, Methods, Constructors, Primary Constructors, init, Visibility
+Modifiers, Data Classes, Enums, Basic Inheritance, Interfaces, Overriding
+Members, and the World Boss (Student Grade Manager).
+Completed:
+- Authored all 14 topics as real five-stage content in the new
+  src/data/curriculum/world8LessonsData.ts, registered each in
+  AVAILABLE_FIVE_STAGE_LESSONS, and gave each masterCurriculumCatalog.ts
+  entry a real description/questionsCount/fiveStageLessonKey (all were
+  placeholders).
+- Visibility Modifiers used the Reasoning topic-type pattern (Learn ->
+  Explore -> Predict -> Mastered, no Write & Run/Debug) since real access-
+  control ENFORCEMENT is a compile-time-only concept this engine has no
+  way to check (a private property is just a plain, fully-accessible JS
+  property once transpiled) -- grading a "private access should fail" bug
+  would be exactly the silent-auto-pass trap this file warns about
+  repeatedly. Every other lesson used the full six stages.
+- World 8 — Object Kingdom is now 14/14, COMPLETE (8/22 overall).
+Added:
+- The single largest kotlinRunner.ts engine addition to date: a whole-
+  source OOP pre-pass (`transpileOOPDeclarations`, run before every other
+  transform) adding real support for `class`/`data class`/`enum class`/
+  `interface`/`object`, primary constructors (val/var shorthand and plain
+  parameters), `init` blocks (including multiple, running in written
+  order), methods, property overrides, `open`/`override` inheritance with
+  `extends`+`super()`, and interface implementation (distinguished from
+  class extension by the presence/absence of constructor-call parens after
+  the supertype name). Kotlin's no-`new`-keyword instantiation is handled
+  by collecting every declared class name and inserting `new` before its
+  call sites in one final pass.
+- Three real bugs caught only by executing generated JS, not by reading
+  the transform code: (1) trailing blank lines from body-splitting made a
+  single-line member look multi-line, so single-expression methods and
+  property initializers were misclassified and left untranspiled -- fixed
+  by trimming trailing blank lines in `transpileClassMember`. (2) a data
+  class's generated `toString()` used a template literal with the class
+  name directly adjacent to `(`, which the later `new`-insertion pass then
+  corrupted (since it has no notion of "inside a string literal") --
+  fixed by building the string via concatenation instead, so the class
+  name is never immediately followed by a literal `(` in the source text.
+  (3) the `extends` clause was being added whenever ANY supertype was
+  named, without checking whether it was a real class (parens) or an
+  interface (no parens) -- fixed to gate `extends`/`super()` on the
+  presence of constructor-call parens specifically.
+- One scope decision adopted (not a bug, a documented convention): method
+  bodies must reference a class's own properties via explicit
+  `this.propertyName`, never a bare identifier. Bare-name property access
+  would require real lexical scope resolution to avoid corrupting a method
+  parameter that happens to share a property's name (e.g.
+  `fun setName(name: String) { name = name }`), which this line-based
+  transpiler can't safely do. All World 8 lesson content was authored
+  consistently with this convention.
+- A `data class`'s `toString()` needed the class name genuinely absent
+  from the `new`-insertion regex's blast radius (see bug #2 above);
+  verified by printing a data class instance both directly and inside a
+  string concatenation.
+Reused (from legacy bank):
+- world5_oop.ts was noted as the likely source for World 8 remapping in
+  Section 2, but was not read this session -- all content was authored
+  fresh against the newly-built engine subset, following the same
+  from-scratch-content pattern as Worlds 4, 6, and 7.
+Verification:
+- 109 checks across every lesson's writeRun.solutionCode, debug.brokenCode/
+  fixedCode pairs, every executable predict snippet, AND every Explore
+  card's code (not just writeRun/debug/predict, extended this session
+  since Explore cards are illustrative but still worth confirming they
+  actually run) were executed through compileAndRunKotlin by importing
+  world8LessonsData.ts directly -- 0 failures, and every debug pair
+  confirmed to produce genuinely different broken-vs-fixed output.
+- A full regression sweep re-ran Worlds 2-8's existing writeRun/debug
+  content after the OOP engine changes (World 1 skipped due to a pre-
+  existing circular-import quirk between world1LessonsData.ts and
+  lessonStagesData.ts when imported directly outside Vite -- confirmed
+  unrelated to this session by testing World-1-style constructs inline
+  instead, and via npm run build, which resolves the real circular import
+  fine) -- 0 regressions across 130 checks.
+- npm run audit:output-quotes passed (49 blocks -- this world's content
+  mostly concatenates variables/expressions into println rather than bare
+  string literals, so little of it was newly flagged). npx tsc --noEmit
+  shows only the same three pre-existing ErrorBoundary.tsx errors. npm run
+  build succeeds.
+Gaps found:
+- None new. The pre-existing orphaned-lesson bug (`functions-lesson`,
+  `loops-lesson`) remains unfixed and out of scope, flagged again here
+  only for continuity.
+Scope limitations documented in PITFALLS.md for future OOP-adjacent
+content (World 11 — OOP Evolution will need to respect these too):
+- Method/member headers must be single-line (no wrapping before `{`).
+- No chained/nested classes, no secondary constructors, no multiple
+  supertypes (single inheritance/interface at a time).
+- Enum bodies support only a plain constant list -- no extra members,
+  `.values()`, or `.ordinal`.
+- Interfaces with a DEFAULT method body (not just abstract signatures) are
+  silently dropped -- interface declarations are deleted wholesale at
+  transpile time.
+
+## 2026-09-16 (World 7, COMPLETE)
+
+World/Lesson: World 7 — Null Safety Shield, all 11 lessons: Nullable Types,
+Nullable Variables, Safe Call ?., Elvis Operator ?:, Non-null Assertion !!,
+Null Checks, Smart Casts, Safe Casts as?, Nullable Collections & Collection
+Values, Chaining Nullable Operations, and the World Boss (Safe Data
+Processor).
+Completed:
+- Authored all 11 topics as real five-stage content in the new
+  src/data/curriculum/world7LessonsData.ts, registered each in
+  AVAILABLE_FIVE_STAGE_LESSONS, and gave each masterCurriculumCatalog.ts
+  entry a real description/questionsCount/fiveStageLessonKey (all were
+  placeholders).
+- World 7 — Null Safety Shield is now 11/11, COMPLETE (7/22 overall).
+Added:
+- This world needed the single largest kotlinRunner.ts engine expansion
+  since the project started, since it had ZERO prior support for any
+  null-safety syntax. New support, in the order it was built:
+  - Nullable type annotations (`String?`, `List<Int?>`, `Map<String, Int?>`)
+    -- widened the val/var (and fun-signature) type-stripping regexes to
+    accept `?`, and separately to accept `,`/whitespace for multi-param
+    generics like `Map<K, V>` (the first version only handled single-
+    parameter generics and silently failed to transpile a Map-typed
+    declaration at all -- caught by the harness, not by reading the regex).
+  - `?.` needs NO new transform -- it's already valid JS optional chaining
+    with matching null-propagation semantics.
+  - `?:` (Elvis) -- straight `?:` -> `??` (JS nullish coalescing is
+    semantically equivalent for this simulator's null/undefined model).
+  - `!!` (non-null assertion) -- a new `__kt_notNull()` runtime helper that
+    throws a real error (surfacing as `result.success: false`, exactly like
+    Kotlin's own NullPointerException) when the asserted value actually is
+    null/undefined. Deliberately scoped to ONE `!!` per line (non-global
+    regex) -- chaining two independent `!!` assertions on the same line is
+    NOT supported and documented as an explicit scope limit, since a naive
+    global match mis-binds the second assertion to the wrong sub-expression
+    (verified this failure mode before choosing the single-match design).
+  - `as? Type` (safe cast) -- reuses the same Int/Long/Float/Double/String/
+    Boolean typeof-map `is`/`!is` already used, deliberately excluding Char
+    for the same reason documented elsewhere in PITFALLS.md. Plain
+    (unsafe) `as` remains unsupported -- not in this world's topic list.
+  - `formatKotlinValue` now treats JS `undefined` the same as `null` when
+    printing -- needed because a `?.` chain that short-circuits produces
+    `undefined` in JS, not `null`, and Kotlin has only one null to begin
+    with.
+  - A nullable collection reference's safe-call size (`list?.size`) needed
+    its own transform, `($1 == null ? null : __kt_size($1))`, since the
+    existing `.size` -> `__kt_size(...)` regex doesn't match across the
+    `?` and, more importantly, `__kt_size` itself would throw on a null
+    receiver rather than safely producing null.
+  - Destructured Map iteration (`for ((key, value) in map)`) was already
+    added during World 6 and reused directly here for the Boss and the
+    Chaining/Nullable-Collections lessons -- no changes needed.
+- All additions verified with dedicated scratch harnesses (15 cases for
+  the core operators, 9 more for nullable-collection access, plus a 9-case
+  full regression sweep across Worlds 1-7) before any lesson content was
+  authored against them, confirming zero regressions.
+Reused (from legacy bank):
+- Not applicable this session -- World 7 has no corresponding legacy-bank
+  entry in Section 2 (the old catalog's null-safety coverage, if any, was
+  folded elsewhere); all content authored fresh against the newly-built
+  engine subset.
+Verification:
+- Every one of the 11 lessons' writeRun.solutionCode and debug.brokenCode/
+  fixedCode pairs (22 checks total) were executed through the real
+  compileAndRunKotlin by importing world7LessonsData.ts directly in a
+  scratch harness, confirming fixedCode matches expectedOutput exactly AND
+  that brokenCode produces genuinely different output (including several
+  brokenCode cases that correctly crash outright -- e.g. calling `!!` on an
+  actual null, or `.length` on a null String with no safe call -- verified
+  as loud, real errors rather than silent wrong answers).
+- All 33 executable predict-question code snippets across the world were
+  also run through the same engine and diffed against each question's
+  marked-correct option.
+- npm run audit:output-quotes passed (49 blocks checked -- this world's
+  content mostly concatenates variables into println rather than using
+  bare literal arguments, so little of it was newly flagged by this
+  whitespace-specific audit; still ran it to confirm no regressions).
+  npx tsc --noEmit shows only the same three pre-existing
+  ErrorBoundary.tsx errors, unrelated to this session. npm run build
+  succeeds.
+Gaps found:
+- None new. The pre-existing orphaned-lesson bug (`functions-lesson`,
+  `loops-lesson`) noted in earlier sessions remains unfixed and out of
+  scope, flagged again here only for continuity.
+
+## 2026-09-16 (World 6, COMPLETE)
+
+World/Lesson: World 6 — Collection Valley, remaining 7 lessons (5 through 11 of 11):
+Mutable vs Read-Only Collections, Creating and Accessing Collections,
+Adding/Removing/Updating Mutable Elements, Iterating Over Collections,
+Basic Collection Operations, Choosing the Right Collection Type, and the
+World Boss (Student Records).
+Completed:
+- Authored all 7 remaining topics as real five-stage content in
+  src/data/curriculum/world6LessonsData.ts, registered each in
+  AVAILABLE_FIVE_STAGE_LESSONS, and gave each masterCurriculumCatalog.ts
+  entry a real description/questionsCount/fiveStageLessonKey (all were
+  placeholders).
+- "Choosing the Right Collection Type" deliberately used the Reasoning
+  topic-type pattern from CODEDO_MASTER_PLAN.md (Learn -> Explore ->
+  Predict -> Mastered, no Write & Run/Debug) since it's a comparison
+  topic, not new code to write -- mirrors World 1's "What is Kotlin?"
+  conceptual pattern. Every other lesson used the full six stages.
+- World 6 — Collection Valley is now 11/11, COMPLETE (6/22 overall).
+Added:
+- Major kotlinRunner.ts engine work required before these lessons could
+  run: `.isEmpty()`/`.isNotEmpty()`/`.first()`/`.last()`/`.sorted()`/
+  `.get(index)` on List/Array/Set results, `.removeAt(index)` on
+  mutableListOf results, and destructured Map iteration
+  (`for ((key, value) in map)`) in transformForLoops. Verified with a
+  12-case scratch harness before authoring any lesson content, plus every
+  individual lesson's writeRun/debug/predict snippets re-verified after
+  assembly.
+- Deliberately did NOT add `!!`/`?:` (Null Safety, World 7) support this
+  session -- discovered while first drafting the World Boss, which
+  originally tried `scores[name]!!` and hit a hard parse error. Redesigned
+  the Boss to use `for ((name, score) in scores)` destructuring instead
+  (which returns a non-null Int directly, with no nullable ambiguity),
+  avoiding the unbuilt feature entirely rather than half-supporting it.
+  Flagged as the concrete first blocker for World 7 in Section 4 above.
+- The World Boss (Student Records) combines a List, a Set, and a mutable
+  Map with an accumulator loop, plus a debug exercise built around an
+  off-by-boundary comparison (score > 40 vs >= 40) rather than a syntax
+  bug, matching the "boundary is subtle, not just a typo" spirit of a
+  boss-level bug.
+Verification:
+- All 6 remaining writeRun/debug pairs (Mutable vs Read-Only through the
+  World Boss; Choosing the Right Collection Type has neither) executed
+  through compileAndRunKotlin and diffed against expectedOutput, including
+  confirming every debug bugType:'logic'/'runtime' pair produces genuinely
+  different broken-vs-fixed output. All executable predict snippets passed
+  the same way. The Mutable vs Read-Only debug/predict content
+  deliberately includes a case that errors out (calling .add() on a
+  read-only listOf result) -- confirmed via the harness that this is a
+  real, loud runtime error in the engine (TypeError), not a silent wrong
+  answer, before using it as a debug/predict scenario.
+- npm run audit:output-quotes passed (49 blocks checked -- most of this
+  session's new code prints concatenated expressions/variables rather than
+  bare string literals, so it wasn't newly flagged by this whitespace-
+  specific audit; still ran it to confirm no regressions). npx tsc
+  --noEmit shows only the same three pre-existing ErrorBoundary.tsx
+  errors, unrelated to this session.
+Next: World 7 — Null Safety Shield. Needs new kotlinRunner.ts support for
+nullable types, `?.`, `?:`, and `!!` before any content can be authored --
+see Section 4 above.
+
+## 2026-09-16 (World 6, in progress, continued)
+
+World/Lesson: World 6 — Collection Valley, Maps (4 of 11 lessons)
+Completed:
+- Authored Maps as real five-stage content in
+  src/data/curriculum/world6LessonsData.ts, registered it in
+  AVAILABLE_FIVE_STAGE_LESSONS and gave masterCurriculumCatalog.ts's
+  world-6-maps entry real description/questionsCount/fiveStageLessonKey
+  (was placeholder).
+- World 6 is now 4/11 in the auto-generated progress table.
+Added:
+- kotlinRunner.ts engine work required before Maps content could run:
+  `.containsKey(...)` and `.containsValue(...)` on mapOf/mutableMapOf
+  results (delegating to Map.prototype.has and a values-array .includes
+  check respectively). Verified with a 9-case scratch harness (create +
+  print, key lookup, containsKey true/false, size, mutable key update, and
+  a genuine broken/fixed wrong-key debug pair) run through the real
+  compileAndRunKotlin engine before authoring the final lesson content.
+- Deliberately avoided teaching missing-key bracket access (map["missing"])
+  in Predict content: the engine's Map.get returns JS undefined for an
+  absent key, which formatKotlinValue renders as the string "undefined"
+  rather than Kotlin's "null" for a nullable lookup miss. Used
+  containsKey (which the engine handles correctly) instead of relying on
+  an unverified null-formatting edge case.
+Verification:
+- All Maps Write & Run solution, broken/fixed Debug code, and all three
+  prediction snippets pass compileAndRunKotlin exactly, including
+  confirming the debug bugType:'logic' pair produces genuinely different
+  output.
+- npm run audit:output-quotes passed (49 blocks checked, no mismatches).
+  npx tsc --noEmit shows only the same three pre-existing
+  ErrorBoundary.tsx errors, unrelated to this change.
+Next: Mutable vs read-only collections (world-6-mutable-vs-read-only-collections),
+the 5th of 11 World 6 lessons.
+
+## 2026-09-16 (World 6, in progress)
+
+World/Lesson: World 6 — Collection Valley, Sets (3 of 11 lessons)
+Completed:
+- Authored Sets as real five-stage content in
+  src/data/curriculum/world6LessonsData.ts, registered it in
+  AVAILABLE_FIVE_STAGE_LESSONS and gave masterCurriculumCatalog.ts's
+  world-6-sets entry real description/questionsCount/fiveStageLessonKey
+  (was placeholder).
+- World 6 is now 3/11 in the auto-generated progress table.
+Added:
+- kotlinRunner.ts engine work required before Sets content could run:
+  `.contains(...)` on arrayOf/listOf/mutableListOf/setOf/mutableSetOf
+  results, and `.remove(...)` on mutableSetOf results (delegating to
+  Set.prototype.delete) — see new PITFALLS.md entry for detail. Verified
+  with a 9-case scratch harness (dedup on creation, contains true/false,
+  mutable add, duplicate-add no-op, and a genuine broken/fixed debug pair)
+  run through the real compileAndRunKotlin engine before authoring the
+  final lesson content, and again after assembly.
+Verification:
+- All Sets Write & Run solution, broken/fixed Debug code, and all three
+  prediction snippets pass compileAndRunKotlin exactly, including
+  confirming the debug bugType:'logic' pair produces genuinely different
+  output (per the "Debug exercises must be reproducible by this app's
+  simulator" pitfall).
+- npm run audit:output-quotes passed (49 blocks checked, no mismatches).
+  npx tsc --noEmit shows only the same three pre-existing
+  ErrorBoundary.tsx errors, unrelated to this change.
+Next: Maps (world-6-maps), the 4th of 11 World 6 lessons.
+
 ## 2026-09-15 (World 6, in progress)
 
 World/Lesson: World 6 — Collection Valley, Arrays (1 of 11 lessons)
