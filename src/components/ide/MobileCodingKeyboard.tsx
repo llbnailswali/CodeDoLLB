@@ -52,7 +52,7 @@ export const MobileCodingKeyboard: React.FC<MobileCodingKeyboardProps> = ({
 
   return (
     <footer
-      className={`bg-[#121622] pt-1.5 pb-4 px-1 shrink-0 border-t border-slate-800/90 select-none ${className}`}
+      className={`bg-[#121622] pt-1 pb-1.5 px-1 shrink-0 border-t border-slate-800/90 select-none ${className}`}
       data-purpose="mobile-keyboard"
     >
       {/* Key Row 1 */}
@@ -194,9 +194,6 @@ export const MobileCodingKeyboard: React.FC<MobileCodingKeyboardProps> = ({
           </svg>
         </button>
       </div>
-
-      {/* Android Home Indicator Pill Bar */}
-      <div className="w-32 h-1 bg-slate-600/50 rounded-full mx-auto mt-2.5" />
     </footer>
   );
 };

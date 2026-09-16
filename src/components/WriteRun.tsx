@@ -75,13 +75,10 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
 
     if (newCursorPos !== undefined) {
       setCursorPosition(newCursorPos);
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.selectionStart = newCursorPos;
-          textareaRef.current.selectionEnd = newCursorPos;
-          textareaRef.current.focus();
-        }
-      }, 10);
+      if (textareaRef.current) {
+        textareaRef.current.selectionStart = newCursorPos;
+        textareaRef.current.selectionEnd = newCursorPos;
+      }
     }
   };
 
@@ -270,42 +267,62 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
     }
   };
 
-  // Physical Keyboard listener
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      if (!userCode.includes('return a * b')) {
-        handleAcceptSuggestion();
-      } else {
-        handleInsertToken('    ');
-      }
-    } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault();
-      handleExecute();
-    } else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-      e.preventDefault();
-      if (e.shiftKey) {
+  // Desktop physical keyboard listener - allows typing without focusing a native mobile input
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ignore if a modal is open
+      if (showTaskModal || showOutputPanel) return;
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        if (!userCode.includes('return a * b')) {
+          handleAcceptSuggestion();
+        } else {
+          handleInsertToken('    ');
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleExecute();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
         handleRedo();
-      } else {
-        handleUndo();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSmartReturn();
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        handleSmartBackspace();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setCursorPosition((prev) => Math.max(0, prev - 1));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setCursorPosition((prev) => Math.min(userCode.length, prev + 1));
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        handleInsertToken(e.key);
       }
-    } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-      e.preventDefault();
-      handleRedo();
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSmartReturn();
-    } else if (e.key === 'Backspace') {
-      // Allow default or smart backspace
-    }
-  };
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, [userCode, cursorPosition, historyIndex, showTaskModal, showOutputPanel]);
 
   // Calculate lines and active line index
   const lines = userCode.split('\n');
   const displayLineCount = Math.max(14, lines.length + 1);
 
   // Compute line index for cursor
-  let currentLineIndex = 7; // Default to line 8 (0-indexed 7) matching screenshot
+  let currentLineIndex = 0;
   let charCount = 0;
   for (let i = 0; i < lines.length; i++) {
     charCount += lines[i].length + 1;
@@ -313,12 +330,40 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
       currentLineIndex = i;
       break;
     }
+    if (i === lines.length - 1) {
+      currentLineIndex = i;
+    }
   }
 
+  // Tap directly on a line to move cursor without opening device keyboard
+  const handleLineClick = (lineIdx: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    let offset = 0;
+    for (let i = 0; i < lineIdx && i < lines.length; i++) {
+      offset += lines[i].length + 1;
+    }
+    const targetLine = lines[lineIdx] ?? '';
+    const newPos = Math.min(offset + targetLine.length, userCode.length);
+    setCursorPosition(newPos);
+    if (textareaRef.current) {
+      textareaRef.current.selectionStart = newPos;
+      textareaRef.current.selectionEnd = newPos;
+    }
+  };
+
+  // Tap empty canvas below code to position cursor at end of code
+  const handleCanvasClick = () => {
+    setCursorPosition(userCode.length);
+    if (textareaRef.current) {
+      textareaRef.current.selectionStart = userCode.length;
+      textareaRef.current.selectionEnd = userCode.length;
+    }
+  };
+
   return (
-    <main className="w-full max-w-[412px] h-full max-h-[100dvh] bg-[#090d16] flex flex-col relative overflow-hidden shadow-2xl border border-slate-800/80 md:rounded-[36px] text-slate-100 select-none">
-      {/* ================= BEGIN: Minimal Top Toolbar ================= */}
-      <header className="w-full bg-[#0d121d] border-b border-ide-border px-3 h-10 flex items-center justify-between shrink-0 z-20 select-none">
+    <main className="w-full max-w-[412px] h-full h-[100dvh] max-h-[100dvh] bg-[#090d16] flex flex-col justify-between relative overflow-hidden shadow-2xl border-x-0 md:border md:border-slate-800/80 md:rounded-[36px] text-slate-100 select-none">
+      {/* ================= BEGIN: Minimal Top Toolbar (Sticky Top) ================= */}
+      <header className="sticky top-0 z-30 w-full bg-[#0d121d] border-b border-ide-border px-3 h-10 flex items-center justify-between shrink-0 select-none pt-[env(safe-area-inset-top,0px)]">
         {/* Left: Back button & Problem Details Trigger */}
         <div className="flex items-center gap-2">
           <button
@@ -522,8 +567,8 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
         {/* Code Canvas Surface: dominant, clear, comfortable font */}
         <div
           ref={editorScrollRef}
-          onClick={() => textareaRef.current?.focus()}
-          className="flex-1 overflow-y-auto overflow-x-auto relative flex font-mono text-[13.5px] leading-[24px] bg-[#0b0f19] cursor-text"
+          onClick={handleCanvasClick}
+          className="flex-1 overflow-y-auto overflow-x-auto overscroll-contain relative flex font-mono text-[13.5px] leading-[24px] bg-[#0b0f19] cursor-text"
         >
           {/* Gutter: Ultra-thin line numbers to maximize horizontal space for code */}
           <div className="w-auto min-w-[14px] py-2 flex flex-col items-center px-0.5 text-slate-600 select-none bg-[#090d15]/90 border-r border-ide-border shrink-0 text-[10px] font-mono tracking-tighter">
@@ -533,8 +578,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
               return (
                 <span
                   key={lineNum}
-                  className={`h-[24px] leading-[24px] text-center w-full block transition-colors ${
-                    isActive ? 'text-indigo-400 font-bold' : 'text-slate-600'
+                  onClick={(e) => handleLineClick(idx, e)}
+                  className={`h-[24px] leading-[24px] text-center w-full block transition-colors cursor-pointer ${
+                    isActive ? 'text-indigo-400 font-bold' : 'text-slate-600 hover:text-slate-400'
                   }`}
                 >
                   {lineNum}
@@ -545,27 +591,19 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
 
           {/* Code Text Content */}
           <div className="flex-1 py-2 pl-1.5 pr-2 whitespace-pre relative font-medium min-w-max">
-            {/* Hidden sync textarea for native typing & cursor gestures */}
+            {/* Read-only sync textarea with inputMode="none" ensuring native device keyboard is NEVER triggered */}
             <textarea
               ref={textareaRef}
               wrap="off"
               spellCheck={false}
               autoCapitalize="off"
               autoCorrect="off"
+              readOnly
+              inputMode="none"
+              tabIndex={-1}
+              aria-hidden="true"
               value={userCode}
-              onChange={(e) => {
-                const val = e.target.value;
-                setUserCode(val);
-                setCursorPosition(e.target.selectionStart);
-                setExecutionResult(null);
-                setShowOutputPanel(false);
-              }}
-              onSelect={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                setCursorPosition(target.selectionStart);
-              }}
-              onKeyDown={handleKeyDown}
-              className="absolute inset-0 opacity-0 w-full h-full resize-none p-0 cursor-text font-mono text-[13.5px] leading-[24px] z-10"
+              className="absolute inset-0 opacity-0 w-full h-full resize-none p-0 pointer-events-none font-mono text-[13.5px] leading-[24px] -z-10 select-none"
             />
 
             {/* Syntax Highlighted Lines */}
@@ -575,8 +613,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
               return (
                 <div
                   key={lineIdx}
-                  className={`leading-[24px] transition-colors relative ${
-                    isActive ? '-mx-1.5 px-1.5 bg-[#13192c] rounded-xs' : ''
+                  onClick={(e) => handleLineClick(lineIdx, e)}
+                  className={`leading-[24px] transition-colors relative cursor-pointer ${
+                    isActive ? '-mx-1.5 px-1.5 bg-[#13192c] rounded-xs' : 'hover:bg-slate-800/30'
                   }`}
                 >
                   {renderHighlightedLine(lineStr || ' ', `line-${lineIdx}`)}
@@ -593,24 +632,27 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
       </section>
       {/* ================= END: Dominant Code Editor Surface ================= */}
 
-      {/* ================= BEGIN: Code Helper Keywords and Symbols ================= */}
-      <CodingAccessoryToolbar
-        onInsertToken={handleInsertToken}
-        onInsertSymbol={handleInsertToken}
-        customTokens={['a', 'b', 'a * b']}
-      />
-      {/* ================= END: Code Helper Keywords and Symbols ================= */}
-
-      {/* ================= BEGIN: Mobile Coding Keyboard ================= */}
-      {showVirtualKeyboard && (
-        <MobileCodingKeyboard
-          onInsertChar={handleInsertToken}
-          onBackspace={handleSmartBackspace}
-          onReturn={handleSmartReturn}
-          onSpace={handleSpace}
+      {/* ================= BEGIN: Sticky Bottom Keyboard & Accessories ================= */}
+      <div
+        className="sticky bottom-0 z-30 w-full shrink-0 mt-auto bg-[#121622] pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_20px_rgba(0,0,0,0.5)] border-t border-slate-800/80"
+        data-purpose="sticky-bottom-keyboard-panel"
+      >
+        <CodingAccessoryToolbar
+          onInsertToken={handleInsertToken}
+          onInsertSymbol={handleInsertToken}
+          customTokens={['a', 'b', 'a * b']}
         />
-      )}
-      {/* ================= END: Mobile Coding Keyboard ================= */}
+
+        {showVirtualKeyboard && (
+          <MobileCodingKeyboard
+            onInsertChar={handleInsertToken}
+            onBackspace={handleSmartBackspace}
+            onReturn={handleSmartReturn}
+            onSpace={handleSpace}
+          />
+        )}
+      </div>
+      {/* ================= END: Sticky Bottom Keyboard & Accessories ================= */}
 
       {/* ================= BEGIN: Task Details Modal ================= */}
       {showTaskModal && (

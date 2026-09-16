@@ -216,7 +216,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   if (currentStageKey === 'writeRun' && lessonData.writeRun) {
     return (
       <div
-        className={`min-h-screen w-full flex flex-col items-center justify-center p-0 md:p-3 select-none ${
+        className={`fixed inset-0 z-40 w-full h-full h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col items-center justify-center p-0 md:p-3 select-none ${
           isDark ? 'bg-[#06080e]' : 'bg-[#0f141f]'
         }`}
       >
@@ -465,26 +465,6 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
             setActivePredictCardIdx={setActivePredictCardIdx}
             onSelectOption={handleSelectPredictOption}
             scrollToElement={scrollToElement}
-            onContinue={handleNextStage}
-            nextStageLabel={nextStageLabel}
-          />
-        )}
-
-        {/* ================= WRITE & RUN (only when this lesson uses it) ================= */}
-        {currentStageKey === 'writeRun' && lessonData.writeRun && (
-          <WriteRun
-            data={lessonData.writeRun}
-            topicTitle={lessonData.topicTitle}
-            isDark={isDark}
-            revealStep={writeRunRevealStep}
-            setRevealStep={setWriteRunRevealStep}
-            userCode={userCode}
-            setUserCode={setUserCode}
-            hasRunCode={hasRunCode}
-            setHasRunCode={setHasRunCode}
-            actualOutput={actualOutput}
-            setActualOutput={setActualOutput}
-            onRunCode={handleRunCode}
             onContinue={handleNextStage}
             nextStageLabel={nextStageLabel}
           />
