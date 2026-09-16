@@ -4,6 +4,7 @@ import { soundFX } from '../utils/audio';
 import { FunctionAnimatedExplainer } from './FunctionAnimatedExplainer';
 import { WORLD_1_LESSON_VISUALS } from '../data/world1LessonVisuals';
 import { renderKotlinCodeLines } from '../utils/codeHighlighter';
+import { getDetailedTutorial } from '../data/detailedTutorialsData';
 
 interface LearnStageProps {
   data: Stage1LearnData;
@@ -18,6 +19,8 @@ interface LearnStageProps {
   nextStageLabel?: string;
   lessonId?: string;
   topicTitle?: string;
+  onOpenTutorial?: () => void;
+  hasTutorial?: boolean;
 }
 
 // Reveal stages:
@@ -37,7 +40,12 @@ export const Learn: React.FC<LearnStageProps> = ({
   nextStageLabel = 'Explore',
   lessonId,
   topicTitle,
+  onOpenTutorial,
+  hasTutorial,
 }) => {
+  const detailedTutorial = getDetailedTutorial(lessonId) || getDetailedTutorial(topicTitle);
+  const canShowTutorial = (hasTutorial || !!detailedTutorial) && !!onOpenTutorial;
+
   // Total steps = 2 (subtitle + example) + data.keyIdeas.length + 1 (key takeaway)
   const totalKeyIdeas = data.keyIdeas.length;
   const maxRevealStep = 2 + totalKeyIdeas + 1;
@@ -121,12 +129,88 @@ export const Learn: React.FC<LearnStageProps> = ({
       {/* 1: Concept Subtitle & Brief (Revealed on tap 1 or if tapToReveal is disabled) */}
       {(!tapToRevealEnabled || revealStep >= 1) && (
         <p
-          className={`mt-1 text-[15px] leading-relaxed mb-4 transition-all duration-300 animate-fadeIn ${
+          className={`mt-1 text-[15px] leading-relaxed mb-3 transition-all duration-300 animate-fadeIn ${
             isDark ? 'text-[#94a3b8]' : 'text-slate-600'
           }`}
         >
           {data.subtitle}
         </p>
+      )}
+
+      {/* Detailed Tutorial Deep Dive Banner (Available for World 1 Lessons 1, 2, 3) */}
+      {canShowTutorial && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.stopPropagation();
+            soundFX.playClick();
+            onOpenTutorial?.();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.stopPropagation();
+              soundFX.playClick();
+              onOpenTutorial?.();
+            }
+          }}
+          className={`mb-4 p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer active:scale-[0.99] group shadow-sm flex items-center justify-between animate-fadeIn ${
+            isDark
+              ? 'bg-gradient-to-r from-[#151c2f] via-[#1a233b] to-[#141b2c] border-indigo-500/30 hover:border-indigo-400/60 shadow-indigo-950/20'
+              : 'bg-gradient-to-r from-indigo-50/90 via-purple-50/50 to-indigo-50/80 border-indigo-200 hover:border-indigo-300 shadow-indigo-100/50'
+          }`}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 shadow-xs ${
+                isDark
+                  ? 'bg-indigo-950/80 border border-indigo-700/50 text-indigo-400'
+                  : 'bg-white border border-indigo-100 text-indigo-600 shadow-sm'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[22px]">auto_stories</span>
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`font-['Outfit'] font-bold text-xs uppercase tracking-wider ${
+                    isDark ? 'text-indigo-400' : 'text-indigo-700'
+                  }`}
+                >
+                  Detailed Tutorial
+                </span>
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                    isDark
+                      ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+                      : 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                  }`}
+                >
+                  Deep Dive
+                </span>
+              </div>
+              <p
+                className={`text-xs mt-0.5 truncate ${
+                  isDark ? 'text-slate-300' : 'text-slate-600'
+                }`}
+              >
+                Comprehensive guide, code deep dive & cheatsheet
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 pl-2 shrink-0">
+            <span
+              className={`hidden sm:inline font-['Outfit'] text-[11px] font-bold ${
+                isDark ? 'text-indigo-400' : 'text-indigo-600'
+              }`}
+            >
+              Read Guide
+            </span>
+            <span className="material-symbols-outlined text-indigo-500 text-[20px] group-hover:translate-x-1 transition-transform">
+              arrow_forward
+            </span>
+          </div>
+        </div>
       )}
 
       {/* 1.5: Interactive Mental Model / Visual for World 1 lessons in Step 1 */}
@@ -152,14 +236,14 @@ export const Learn: React.FC<LearnStageProps> = ({
       {/* 2: Simple Concept Example Card (Revealed on tap 2 or if tapToReveal is disabled) */}
       {(!tapToRevealEnabled || revealStep >= 2) && (
         <section
-          className={`mt-1 mb-5 rounded-2xl p-4 transition-all duration-300 animate-fadeIn ${
+          className={`mt-1 mb-4 rounded-2xl p-3.5 sm:p-4 transition-all duration-300 animate-fadeIn ${
             isDark
               ? 'bg-[#171b26] border border-[#262c3d] shadow-sm'
               : 'silk-surface'
           }`}
         >
           {/* Header with clean example title */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2.5">
             <h2
               className={`font-['Outfit'] text-sm font-semibold tracking-tight ${
                 isDark ? 'text-[#f8fafc]' : 'text-slate-800'
@@ -171,7 +255,7 @@ export const Learn: React.FC<LearnStageProps> = ({
 
           {/* Code Block */}
           <div
-            className={`rounded-xl p-3.5 font-mono text-[13px] leading-relaxed overflow-x-auto ${
+            className={`rounded-xl p-3 sm:p-3.5 font-mono text-[13px] leading-relaxed overflow-x-auto ${
               isDark
                 ? 'bg-[#0a0e18] border border-[#1e2438] text-slate-200'
                 : 'silk-inset text-slate-800'
@@ -186,7 +270,7 @@ export const Learn: React.FC<LearnStageProps> = ({
 
           {/* Explanation text */}
           <div
-            className={`mt-3 flex items-start gap-2 text-xs leading-relaxed ${
+            className={`mt-2.5 flex items-start gap-2 text-xs leading-relaxed ${
               isDark ? 'text-[#94a3b8]' : 'text-slate-600'
             }`}
           >
@@ -204,15 +288,15 @@ export const Learn: React.FC<LearnStageProps> = ({
 
       {/* 3: Key Ideas Section (Revealed one by one on subsequent taps or immediately if tapToReveal is disabled) */}
       {(!tapToRevealEnabled || revealStep >= 3) && (
-        <section className="mb-5 transition-all duration-300 animate-fadeIn">
+        <section className="mb-4 transition-all duration-300 animate-fadeIn">
           <h2
-            className={`font-['Outfit'] text-xs font-bold tracking-wider uppercase mb-3 px-1 ${
+            className={`font-['Outfit'] text-xs font-bold tracking-wider uppercase mb-2.5 px-1 ${
               isDark ? 'text-slate-400' : 'text-slate-400'
             }`}
           >
             KEY IDEAS
           </h2>
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {data.keyIdeas.map((idea, index) => {
               // Idea 0 is shown at revealStep >= 3
               // Idea 1 is shown at revealStep >= 4
@@ -223,7 +307,7 @@ export const Learn: React.FC<LearnStageProps> = ({
               return (
                 <div
                   key={idea.number}
-                  className={`rounded-xl p-3.5 flex items-start gap-3.5 border transition-all duration-300 animate-fadeIn ${
+                  className={`rounded-xl p-3 sm:p-3.5 flex items-start gap-3 border transition-all duration-300 animate-fadeIn ${
                     isDark
                       ? 'bg-[#171b26] border-[#262c3d]'
                       : 'silk-surface'
@@ -264,7 +348,7 @@ export const Learn: React.FC<LearnStageProps> = ({
       {/* Final Section: Key Takeaway Card (Revealed after all key ideas or immediately if tapToReveal is disabled) */}
       {(!tapToRevealEnabled || revealStep >= 3 + totalKeyIdeas) && (
         <section
-          className={`rounded-xl p-3.5 flex items-center gap-3 mb-6 border transition-all duration-300 animate-fadeIn ${
+          className={`rounded-xl p-3 sm:p-3.5 flex items-center gap-3 mb-5 border transition-all duration-300 animate-fadeIn ${
             isDark
               ? 'bg-gradient-to-r from-indigo-950/40 via-purple-950/40 to-indigo-950/20 border-indigo-500/30'
               : 'bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-indigo-500/5 border-indigo-200/80'
@@ -289,7 +373,7 @@ export const Learn: React.FC<LearnStageProps> = ({
             </span>
             <p
               className={`text-xs font-semibold leading-snug ${
-                isDark ? 'text-slate-100' : 'text-slate-800'
+                isDark ? 'text-slate-200' : 'text-slate-800'
               }`}
             >
               {data.keyTakeaway}
@@ -311,7 +395,7 @@ export const Learn: React.FC<LearnStageProps> = ({
             : 'bg-gradient-to-t from-[#f1f4f9] via-[#f1f4f9]/95 to-transparent'
         }`}
       >
-      <div className="max-w-md mx-auto px-4">
+      <div className="max-w-2xl mx-auto px-2 sm:px-4">
         {!isFullyRevealed ? (
           /* Subtle Minimalist Tap Hint (Finger icon + short text) positioned nicely above the bottom edge.
               The wrapper (not just the pill) carries the click handler and extra vertical padding so

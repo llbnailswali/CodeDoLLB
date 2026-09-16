@@ -7,6 +7,7 @@ import { KotlinOverviewVisual } from '../components/visuals/KotlinOverviewVisual
 import { PrintCompareVisual } from '../components/visuals/PrintCompareVisual';
 import { ValVarVisual } from '../components/visuals/ValVarVisual';
 import { ProfileProgramVisual } from '../components/visuals/ProfileProgramVisual';
+import { AnimatedFlowChart } from '../components/visuals/AnimatedFlowChart';
 
 export interface World1VisualEntry {
   lessonId: string;
@@ -147,5 +148,50 @@ export const WORLD_1_LESSON_VISUALS: World1VisualEntry[] = [
     title: 'Personal Profile Program',
     idea: 'Combine variables, string templates, and print() to create your profile.',
     render: (isDark) => <ProfileProgramVisual isDark={isDark} />,
+  },
+  // World 3 - Conditional Flow Charts (applied specifically where decision branching is taught)
+  {
+    lessonId: 'world-3-if-else',
+    title: 'if-else',
+    idea: 'A true condition branches to the if block; a false condition branches to the else block.',
+    render: (isDark) => (
+      <AnimatedFlowChart
+        isDark={isDark}
+        variant="if-else"
+        title="if-else Execution Flow"
+        subtitle="Follow the signal path as Kotlin routes execution based on the condition."
+        conditionText="Condition"
+        trueLabel="if condition is true"
+        falseLabel="if condition is false"
+        ifBlockText="if block"
+        elseBlockText="else block"
+        sampleCode={{
+          condition: 'age >= 18',
+          ifBody: 'println("You can vote")',
+          elseBody: 'println("Not old enough yet")',
+        }}
+      />
+    ),
+  },
+  {
+    lessonId: 'world-3-if',
+    title: 'if',
+    idea: 'When true, the if block runs. When false, execution bypasses the block completely.',
+    render: (isDark) => (
+      <AnimatedFlowChart
+        isDark={isDark}
+        variant="if-only"
+        title="if Statement Flow"
+        subtitle="Without an else branch, false conditions simply skip past the block."
+        conditionText="Condition"
+        trueLabel="if condition is true"
+        falseLabel="if condition is false"
+        ifBlockText="if block"
+        sampleCode={{
+          condition: 'temperature > 30',
+          ifBody: 'println("It\'s hot today")',
+        }}
+      />
+    ),
   },
 ];

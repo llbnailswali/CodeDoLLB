@@ -552,7 +552,7 @@ export const Debug: React.FC<DebugStageProps> = ({
             : 'bg-gradient-to-t from-[#f1f4f9] via-[#f1f4f9]/95 to-transparent'
         }`}
       >
-      <div className="max-w-md mx-auto px-4">
+      <div className="max-w-2xl mx-auto px-2 sm:px-4">
         {!isFullyRevealed ? (
           /* Subtle Minimalist Tap Hint (Finger icon + short text) positioned nicely above bottom edge.
               The wrapper (not just the pill) carries the click handler and extra vertical padding so

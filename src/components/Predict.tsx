@@ -426,7 +426,7 @@ export const Predict: React.FC<PredictStageProps> = ({
                   e.stopPropagation();
                   handleCardClick(qIdx);
                 }}
-                className={`w-full rounded-2xl p-5 border flex flex-col gap-4 transition-all duration-300 animate-fadeIn ${
+                className={`w-full rounded-2xl p-3.5 sm:p-5 border flex flex-col gap-3.5 transition-all duration-300 animate-fadeIn ${
                   activePredictCardIdx === qIdx
                     ? isDark
                       ? 'bg-[#171b26] border-indigo-500/40 shadow-lg'
@@ -622,7 +622,7 @@ export const Predict: React.FC<PredictStageProps> = ({
             : 'bg-gradient-to-t from-[#f1f4f9] via-[#f1f4f9]/95 to-transparent'
         }`}
       >
-      <div className="max-w-md mx-auto px-4">
+      <div className="max-w-2xl mx-auto px-2 sm:px-4">
         {!isFullyRevealed ? (
           /* Minimalist Tap Hint positioned nicely above bottom edge. The wrapper (not just the
               pill) also carries the click handler and extra vertical padding so taps slightly

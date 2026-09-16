@@ -2,6 +2,8 @@ import React, { forwardRef, useState, useEffect, useImperativeHandle } from 'rea
 import { AppTheme, UserStats } from '../types';
 import { FiveStageLesson, AVAILABLE_FIVE_STAGE_LESSONS } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
+import { DetailedTutorialView } from './DetailedTutorialView';
+import { getDetailedTutorial } from '../data/detailedTutorialsData';
 
 // 6 Lesson Stage Components (1: Learn, 2: Explore, 3: Predict, 4: Write & Run, 5: Debug, 6: Mastered)
 import { Learn } from './Learn';
@@ -96,6 +98,13 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   const [hasRunCode, setHasRunCode] = useState<boolean>(false);
   const [actualOutput, setActualOutput] = useState<string>('');
 
+  // Detailed Tutorial state (available for World 1 Lessons 1, 2, 3)
+  const [showDetailedTutorial, setShowDetailedTutorial] = useState<boolean>(false);
+  const detailedTutorial =
+    getDetailedTutorial(lessonData.id) ||
+    getDetailedTutorial(currentLessonKey) ||
+    getDetailedTutorial(lessonData.topicTitle);
+
   useEffect(() => {
     setUserCode(lessonData.writeRun?.initialCode ?? '');
     setHasRunCode(false);
@@ -161,6 +170,10 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
 
   const handlePreviousStage = () => {
     soundFX.playClick();
+    if (showDetailedTutorial) {
+      setShowDetailedTutorial(false);
+      return;
+    }
     if (currentStageIndex > 0) {
       setCurrentStageKey(activeStages[currentStageIndex - 1]);
       scrollToTop();
@@ -172,7 +185,13 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   // Exposed so the app-wide hardware back-button handler (App.tsx) can step
   // back through lesson stages the same way the in-screen back arrow does.
   useImperativeHandle(ref, () => ({
-    goBack: handlePreviousStage,
+    goBack: () => {
+      if (showDetailedTutorial) {
+        setShowDetailedTutorial(false);
+        return;
+      }
+      handlePreviousStage();
+    },
   }));
 
   const handleJumpToStage = (key: StageKey) => {
@@ -213,10 +232,22 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
 
   const isDark = theme === 'dark';
 
+  // If detailed tutorial is requested, show full tutorial screen
+  if (showDetailedTutorial && detailedTutorial) {
+    return (
+      <DetailedTutorialView
+        tutorial={detailedTutorial}
+        isDark={isDark}
+        onBack={() => setShowDetailedTutorial(false)}
+        onToggleTheme={onToggleTheme}
+      />
+    );
+  }
+
   if (currentStageKey === 'writeRun' && lessonData.writeRun) {
     return (
       <div
-        className={`fixed inset-0 z-40 w-full h-full h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col items-center justify-center p-0 md:p-3 select-none ${
+        className={`fixed inset-0 z-40 w-full h-full h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col items-center justify-center p-0 select-none ${
           isDark ? 'bg-[#06080e]' : 'bg-[#0f141f]'
         }`}
       >
@@ -255,7 +286,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
             : 'bg-white/95 backdrop-blur-md border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)]'
         }`}
       >
-        <div className="w-full max-w-md mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="w-full max-w-2xl mx-auto px-2 sm:px-4 h-14 flex items-center justify-between">
           {/* Back button -- matches the shared Header's back button used on Listing */}
           <button
             aria-label="Go back"
@@ -379,10 +410,10 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
       </header>
 
       {/* Main Content Area */}
-      <div className="w-full max-w-md px-4 pt-3 flex flex-col">
+      <div className="w-full max-w-2xl mx-auto px-1.5 sm:px-3 pt-2 flex flex-col">
         {/* ================= PROGRESS STRIP (SHOWS LESSON NAME + STEP PROGRESS) ================= */}
         <section
-          className={`mb-4 flex items-center justify-between px-4 py-2.5 rounded-2xl border transition-all ${
+          className={`mb-3 flex items-center justify-between px-3 py-2 rounded-xl border transition-all ${
             isDark
               ? 'bg-[#171b26] border-[#262c3d] shadow-sm'
               : 'bg-white/90 backdrop-blur-sm border-slate-200/80 shadow-sm'
@@ -397,6 +428,24 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
             >
               {lessonData.topicTitle}
             </span>
+            {detailedTutorial && (
+              <button
+                type="button"
+                onClick={() => {
+                  soundFX.playClick();
+                  setShowDetailedTutorial(true);
+                }}
+                className={`ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-['Outfit'] font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95 shrink-0 ${
+                  isDark
+                    ? 'bg-indigo-950/80 text-indigo-300 hover:bg-indigo-900 border border-indigo-700/50'
+                    : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
+                }`}
+                title="Open Detailed Tutorial"
+              >
+                <span className="material-symbols-outlined text-[12px]">auto_stories</span>
+                <span className="hidden sm:inline">Tutorial</span>
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             {activeStages.map((key, idx) => {
@@ -435,6 +484,8 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
             tapToRevealEnabled={tapToRevealEnabled}
             lessonId={lessonData.id}
             topicTitle={lessonData.topicTitle}
+            onOpenTutorial={() => setShowDetailedTutorial(true)}
+            hasTutorial={!!detailedTutorial}
           />
         )}
 

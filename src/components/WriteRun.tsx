@@ -361,7 +361,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
   };
 
   return (
-    <main className="w-full max-w-[412px] h-full h-[100dvh] max-h-[100dvh] bg-[#090d16] flex flex-col justify-between relative overflow-hidden shadow-2xl border-x-0 md:border md:border-slate-800/80 md:rounded-[36px] text-slate-100 select-none">
+    <main className="w-full max-w-2xl h-full h-[100dvh] max-h-[100dvh] bg-[#090d16] flex flex-col justify-between relative overflow-hidden shadow-2xl border-x-0 md:border md:border-slate-800/80 md:rounded-2xl text-slate-100 select-none">
       {/* ================= BEGIN: Minimal Top Toolbar (Sticky Top) ================= */}
       <header className="sticky top-0 z-30 w-full bg-[#0d121d] border-b border-ide-border px-3 h-10 flex items-center justify-between shrink-0 select-none pt-[env(safe-area-inset-top,0px)]">
         {/* Left: Back button & Problem Details Trigger */}

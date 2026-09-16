@@ -91,7 +91,7 @@ export const Mastered: React.FC<MasteredStageProps> = ({
           {data.topicTitle}
         </h1>
         <p
-          className={`text-xs max-w-[320px] leading-relaxed ${
+          className={`text-xs max-w-md leading-relaxed ${
             isDark ? 'text-slate-400' : 'text-slate-600'
           }`}
         >
@@ -101,7 +101,7 @@ export const Mastered: React.FC<MasteredStageProps> = ({
 
       {/* Mastery Verification Card */}
       <div
-        className={`w-full rounded-xl p-5 mb-5 flex flex-col gap-4 border transition-all ${
+        className={`w-full rounded-xl p-3.5 sm:p-5 mb-5 flex flex-col gap-4 border transition-all ${
           isDark
             ? 'bg-[#171b26] border-[#262c3d]'
             : 'bg-background neo-raised border-slate-200/80'
