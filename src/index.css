@@ -61,6 +61,76 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* CodeDo IDE Theme & Syntax Tokens */
+:root {
+  --ide-bg: #0a0d14;
+  --ide-surface: #0f141f;
+  --ide-editor: #0d111a;
+  --ide-active-line: rgba(99, 102, 241, 0.08);
+  --ide-gutter: #1e2433;
+  --ide-line-num: #475569;
+  --ide-border: #1b2234;
+  --ide-accent: #6366f1;
+  --syntax-keyword: #c084fc;
+  --syntax-func: #38bdf8;
+  --syntax-param: #f8fafc;
+  --syntax-type: #fbbf24;
+  --syntax-op: #f43f5e;
+  --syntax-punct: #94a3b8;
+  --syntax-comment: #64748b;
+}
+
+.border-ide-border {
+  border-color: #1b2234;
+}
+.bg-ide-editor {
+  background-color: #0d111a;
+}
+.bg-ide-bg {
+  background-color: #0a0d14;
+}
+.bg-ide-surface {
+  background-color: #0f141f;
+}
+.text-syntax-keyword {
+  color: #c084fc;
+}
+.text-syntax-func {
+  color: #38bdf8;
+}
+.text-syntax-param {
+  color: #f8fafc;
+}
+.text-syntax-type {
+  color: #fbbf24;
+}
+.text-syntax-op {
+  color: #f43f5e;
+}
+.text-syntax-punct {
+  color: #94a3b8;
+}
+.text-syntax-comment {
+  color: #64748b;
+}
+
+@keyframes cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.blinking-cursor {
+  animation: cursor-blink 1s infinite;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .icon-filled,
 .material-symbols-outlined.filled {
   font-variation-settings: 'FILL' 1;

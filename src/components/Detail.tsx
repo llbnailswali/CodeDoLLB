@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useImperativeHandle } from 'react';
+import React, { forwardRef, useState, useEffect, useImperativeHandle } from 'react';
 import { AppTheme, UserStats } from '../types';
 import { FiveStageLesson, AVAILABLE_FIVE_STAGE_LESSONS } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
@@ -11,9 +11,12 @@ import { WriteRun } from './WriteRun';
 import { Debug } from './Debug';
 import { Mastered } from './Mastered';
 
+export type StageKey = 'learn' | 'explore' | 'predict' | 'writeRun' | 'debug' | 'mastered';
+
 interface DetailProps {
   theme: AppTheme;
   initialLessonKey?: string;
+  initialStageKey?: StageKey;
   userStats: UserStats;
   onExit: () => void;
   onCompleteLesson: (earnedXP: number, worldId?: string) => void;
@@ -35,7 +38,6 @@ export interface DetailHandle {
 // provides that stage's data, per CODEDO_MASTER_PLAN.md's "topic-aware
 // activity selection" (e.g. a purely conceptual topic may only need
 // Learn -> Predict-as-MCQ -> Mastered).
-type StageKey = 'learn' | 'explore' | 'predict' | 'writeRun' | 'debug' | 'mastered';
 
 const STAGE_LABELS: Record<StageKey, string> = {
   learn: 'LEARN',
@@ -61,6 +63,7 @@ const STAGE_CONTINUE_LABELS: Record<StageKey, string> = {
 export const Detail = forwardRef<DetailHandle, DetailProps>(({
   theme,
   initialLessonKey = 'functions',
+  initialStageKey,
   userStats,
   onExit,
   onCompleteLesson,
@@ -91,7 +94,13 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
     AVAILABLE_FIVE_STAGE_LESSONS.variables;
   const [userCode, setUserCode] = useState<string>(lessonData.writeRun?.initialCode ?? '');
   const [hasRunCode, setHasRunCode] = useState<boolean>(false);
-  const [actualOutput, setActualOutput] = useState<string>(lessonData.writeRun?.expectedOutput ?? '');
+  const [actualOutput, setActualOutput] = useState<string>('');
+
+  useEffect(() => {
+    setUserCode(lessonData.writeRun?.initialCode ?? '');
+    setHasRunCode(false);
+    setActualOutput('');
+  }, [currentLessonKey]);
 
   // Which stages this specific lesson actually uses, in order. Learn and
   // Mastered always run; explore/predict/writeRun/debug only run when the
@@ -104,7 +113,9 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
     ...(lessonData.debug ? (['debug'] as const) : []),
     'mastered',
   ];
-  const [currentStageKey, setCurrentStageKey] = useState<StageKey>(activeStages[0]);
+  const [currentStageKey, setCurrentStageKey] = useState<StageKey>(
+    initialStageKey && activeStages.includes(initialStageKey) ? initialStageKey : activeStages[0]
+  );
   const currentStageIndex = activeStages.indexOf(currentStageKey);
   const nextStageKey = activeStages[currentStageIndex + 1];
   const nextStageLabel = nextStageKey ? STAGE_CONTINUE_LABELS[nextStageKey] : undefined;
@@ -201,6 +212,34 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   };
 
   const isDark = theme === 'dark';
+
+  if (currentStageKey === 'writeRun' && lessonData.writeRun) {
+    return (
+      <div
+        className={`min-h-screen w-full flex flex-col items-center justify-center p-0 md:p-3 select-none ${
+          isDark ? 'bg-[#06080e]' : 'bg-[#0f141f]'
+        }`}
+      >
+        <WriteRun
+          data={lessonData.writeRun}
+          topicTitle={lessonData.topicTitle}
+          isDark={isDark}
+          revealStep={writeRunRevealStep}
+          setRevealStep={setWriteRunRevealStep}
+          userCode={userCode}
+          setUserCode={setUserCode}
+          hasRunCode={hasRunCode}
+          setHasRunCode={setHasRunCode}
+          actualOutput={actualOutput}
+          setActualOutput={setActualOutput}
+          onRunCode={handleRunCode}
+          onContinue={handleNextStage}
+          onBack={handlePreviousStage}
+          nextStageLabel={nextStageLabel}
+        />
+      </div>
+    );
+  }
 
   return (
     <div

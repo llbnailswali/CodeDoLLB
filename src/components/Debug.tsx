@@ -298,9 +298,9 @@ export const Debug: React.FC<DebugStageProps> = ({
           className="p-4 overflow-x-auto cursor-text bg-slate-950"
           onClick={() => textareaRef.current?.focus()}
         >
-          <div className="flex gap-3 min-w-full w-max">
+          <div className="flex gap-1.5 min-w-full w-max">
             <div
-              className="font-mono text-xs text-slate-600 select-none text-right flex flex-col leading-[1.625rem] shrink-0 min-w-[1.5rem]"
+              className="font-mono text-[10px] tracking-tighter text-slate-600 select-none text-center flex flex-col leading-[1.625rem] shrink-0 min-w-[14px] px-0.5 border-r border-slate-800/80 pr-1"
               aria-hidden="true"
             >
               {code.split('\n').map((_, i) => (

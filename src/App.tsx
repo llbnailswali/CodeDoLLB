@@ -26,7 +26,7 @@ import { ActiveLessonView } from './components/ActiveLessonView';
 import { PracticeView, DrillType } from './components/PracticeView';
 import { LeaderboardView } from './components/LeaderboardView';
 import { ProfileView } from './components/ProfileView';
-import { Detail, DetailHandle } from './components/Detail';
+import { Detail, DetailHandle, StageKey } from './components/Detail';
 import { World1VisualsShowcase } from './components/World1VisualsShowcase';
 
 export default function App() {
@@ -34,6 +34,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('learn');
   const [isLessonActive, setIsLessonActive] = useState<boolean>(false);
   const [fiveStageLessonKey, setFiveStageLessonKey] = useState<string | null>(null);
+  const [fiveStageInitialStage, setFiveStageInitialStage] = useState<StageKey | undefined>(undefined);
   const [activeQuestionPool, setActiveQuestionPool] = useState<LessonQuestion[]>(LESSON_QUESTIONS);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(1); // Question 2 (Step 2 of 5: val x = 10, val y = 20)
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => StorageManager.getSoundEnabled());
@@ -272,11 +273,16 @@ export default function App() {
               ref={detailRef}
               theme={theme}
               initialLessonKey={fiveStageLessonKey}
+              initialStageKey={fiveStageInitialStage}
               userStats={userStats}
-              onExit={() => setFiveStageLessonKey(null)}
+              onExit={() => {
+                setFiveStageLessonKey(null);
+                setFiveStageInitialStage(undefined);
+              }}
               onCompleteLesson={(earnedXP, worldId) => {
                 handleLessonComplete(earnedXP, worldId);
                 setFiveStageLessonKey(null);
+                setFiveStageInitialStage(undefined);
               }}
               onToggleTheme={toggleTheme}
             />
@@ -296,14 +302,20 @@ export default function App() {
               initialWorldId={curriculumWorldId}
               userStats={userStats}
               onJumpToToday={() => setActiveTab('learn')}
-              onStartLesson={(topic) => setFiveStageLessonKey(topic || 'variables')}
+              onStartLesson={(topic) => {
+                setFiveStageLessonKey(topic || 'variables');
+                setFiveStageInitialStage(undefined);
+              }}
             />
           ) : activeTab === 'learn' ? (
             /* Main Learning Odyssey Path: Worlds-only landing page */
             <Home
               theme={theme}
               userStats={userStats}
-              onStartLesson={() => setFiveStageLessonKey('variables')}
+              onStartLesson={() => {
+                setFiveStageLessonKey('variables');
+                setFiveStageInitialStage(undefined);
+              }}
               onOpenCurriculum={handleOpenCurriculum}
               onSelectWorld={handleOpenCurriculum}
             />
@@ -312,6 +324,10 @@ export default function App() {
             <PracticeView
               theme={theme}
               onStartDrill={handleStartDrill}
+              onOpenCodingChallenge={(lessonKey) => {
+                setFiveStageLessonKey(lessonKey || 'functions');
+                setFiveStageInitialStage('writeRun');
+              }}
             />
           ) : activeTab === 'leaderboard' ? (
             /* Rankings & Leaderboard */

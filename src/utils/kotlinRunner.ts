@@ -1350,7 +1350,7 @@ export async function compileAndRunKotlin(
         try {
           __lastResult = ${options.testCase.call};
         } catch(e) {
-          // If function name differed or call failed, keep existing result
+          throw new Error('Test case execution failed (' + ${JSON.stringify(options.testCase.call)} + '): ' + (e && e.message ? e.message : String(e)));
         }
       `;
     }
@@ -1430,6 +1430,31 @@ export async function compileAndRunKotlin(
   const elapsed = Math.max(1, Math.round(performance.now() - startTime));
   const finalOutput = stdout.length > 0 ? stdout.join('\n') : returnValue !== undefined ? String(returnValue) : '';
 
+  // Validate output against expected output if defined
+  const expectedTarget = options?.expectedOutput ?? options?.testCase?.expected;
+  if (expectedTarget !== undefined && expectedTarget !== '') {
+    const normActual = finalOutput.trim().replace(/\r\n/g, '\n');
+    const normExpected = expectedTarget.trim().replace(/\r\n/g, '\n');
+
+    if (normActual !== normExpected) {
+      return {
+        success: false,
+        output: finalOutput,
+        logs: stdout,
+        returnValue,
+        error: {
+          message: normActual === ''
+            ? `No output generated. Expected: '${expectedTarget}'`
+            : `Output mismatch: expected '${expectedTarget}', but got '${finalOutput}'`,
+          line: 1,
+          type: 'runtime_error',
+        },
+        executionTimeMs: elapsed,
+        exitCode: 1,
+      };
+    }
+  }
+
   return {
     success: true,
     output: finalOutput,
@@ -1438,4 +1463,15 @@ export async function compileAndRunKotlin(
     executionTimeMs: elapsed,
     exitCode: 0,
   };
+}
+
+export async function runKotlinCode(
+  code: string,
+  expectedOutput?: string,
+  testCase?: { call?: string; expected?: string }
+): Promise<KotlinExecutionResult> {
+  return compileAndRunKotlin(code, {
+    expectedOutput,
+    testCase,
+  });
 }

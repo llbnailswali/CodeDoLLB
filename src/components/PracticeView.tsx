@@ -8,9 +8,10 @@ export type DrillType = 'sprint' | 'battle' | 'inference' | 'conditionals' | 'lo
 interface PracticeViewProps {
   theme: AppTheme;
   onStartDrill: (drillType?: DrillType) => void;
+  onOpenCodingChallenge?: (lessonKey: string) => void;
 }
 
-export const PracticeView: React.FC<PracticeViewProps> = ({ theme, onStartDrill }) => {
+export const PracticeView: React.FC<PracticeViewProps> = ({ theme, onStartDrill, onOpenCodingChallenge }) => {
   const [activeTab, setActiveTab] = useState<'challenges' | 'sandbox'>('challenges');
   const [sandboxCode, setSandboxCode] = useState<string>(
     'fun main() {\n    val greeting = "Hello, Android!"\n    val number = 42\n    println("$greeting The answer is $number")\n}'
@@ -126,6 +127,49 @@ export const PracticeView: React.FC<PracticeViewProps> = ({ theme, onStartDrill 
 
       {activeTab === 'challenges' ? (
         <div className="flex flex-col gap-4">
+          {/* Featured Challenge: Mobile Coding IDE Section */}
+          <div
+            className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${
+              theme === 'dark'
+                ? 'bg-gradient-to-r from-indigo-950/60 to-purple-950/40 border-indigo-500/40 shadow-lg'
+                : 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 shadow-sm'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shrink-0">
+                <span className="material-symbols-outlined text-[24px]">terminal</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 font-mono text-[10px] font-bold">
+                    NEW CODING SECTION
+                  </span>
+                  <span className="font-mono text-[11px] font-bold text-amber-400">+10 XP</span>
+                </div>
+                <h4 className="font-['Outfit'] text-sm font-bold text-inherit mt-0.5">
+                  Multiply Two Numbers
+                </h4>
+                <p className="font-['Outfit'] text-xs text-slate-400">
+                  Precision Kotlin IDE with syntax highlighting &amp; mobile keyboard
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                soundFX.playClick();
+                if (onOpenCodingChallenge) {
+                  onOpenCodingChallenge('functions');
+                }
+              }}
+              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-['Outfit'] text-xs font-bold flex items-center gap-1 shadow-md active:scale-95 transition-transform shrink-0 cursor-pointer"
+            >
+              <span>Code</span>
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </button>
+          </div>
+
           {/* Header & Arena Timer */}
           <div className="flex items-center justify-between">
             <div>

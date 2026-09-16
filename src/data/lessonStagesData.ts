@@ -446,12 +446,34 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
       returns: 'Int'
     },
     fileName: 'solution.kt',
-    initialCode: `// 1. Declare function multiply that receives (a: Int, b: Int) and returns Int:
+    initialCode: `
+// Kotlin Basics · Function Definition
+
+
+
 fun multiply(a: Int, b: Int): Int {
-    // 2. Write code to return the product of a and b:
-    
-}`,
-    solutionCode: 'fun multiply(a: Int, b: Int): Int {\n    return a * b\n}',
+
+    // Return the product of a and b:
+
+}
+
+
+
+// Output: multiply(4, 5) -> 20`,
+    solutionCode: `
+// Kotlin Basics · Function Definition
+
+
+
+fun multiply(a: Int, b: Int): Int {
+
+    return a * b
+
+}
+
+
+
+// Output: multiply(4, 5) -> 20`,
     sampleInput: 'multiply(4, 5)',
     expectedOutput: '20',
     testCase: {
