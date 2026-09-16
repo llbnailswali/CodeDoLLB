@@ -506,17 +506,113 @@ function transformNonNullAssertion(line: string): string {
 }
 
 /**
- * Converts a single-line, brace-free Kotlin if-expression
- * (`val x = if (cond) a else b`) into a JS ternary. Kotlin's block-bodied
- * if-expression form (`if (cond) { ...; a } else { ...; b }`) is NOT
- * supported -- lesson content authored against this engine sticks to the
- * single-line form for anything that needs if-as-an-expression.
+ * Recursively converts a Kotlin if-expression (including chained `else if`)
+ * into nested JS ternaries.
+ */
+function convertIfExpr(expr: string): string {
+  const m = expr.match(/^\s*if\s*\((.+?)\)\s+([^\n]+?)\s+else\s+([^\n]+)$/);
+  if (!m) return expr;
+  const [, cond, thenBranch, elseBranch] = m;
+  return `((${cond}) ? (${thenBranch.trim()}) : (${convertIfExpr(elseBranch.trim())}))`;
+}
+
+/**
+ * Converts Kotlin if-expressions (single-line or chained else-if)
+ * into JS ternaries.
  */
 function transformIfExpression(line: string): string {
-  return line.replace(
-    /=\s*if\s*\((.+?)\)\s*([^\n]+?)\s+else\s+([^\n]+)$/,
-    (_m, cond, a, b) => `= (${cond}) ? (${a.trim()}) : (${b.trim()})`
-  );
+  const match = line.match(/(=\s*|\breturn\s+)(if\s*\(.+?\)\s+.+?\s+else\s+.+)$/);
+  if (!match || match.index === undefined) return line;
+  const prefix = match[1];
+  const ifExpr = match[2];
+  return line.slice(0, match.index) + prefix + convertIfExpr(ifExpr);
+}
+
+/**
+ * Rewrites multiline if-expressions with braces:
+ *   val x = if (cond) { ... } else { ... }
+ * or
+ *   return if (cond) { ... } else { ... }
+ * into an IIFE:
+ *   val x = (() => { if (cond) { ... } else { ... } })()
+ */
+function transpileMultilineIfExpressions(code: string): string {
+  const ifRe = /(=\s*|\breturn\s+)if\s*\(([^)]+)\)\s*\{/g;
+  let result = '';
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = ifRe.exec(code)) !== null) {
+    const prefix = match[1];
+    const condition = match[2].trim();
+    const ifStart = match.index;
+    const thenBraceStart = match.index + match[0].length - 1;
+
+    let depth = 1;
+    let i = thenBraceStart + 1;
+    for (; i < code.length && depth > 0; i++) {
+      if (code[i] === '{') depth++;
+      else if (code[i] === '}') depth--;
+    }
+    if (depth !== 0) {
+      ifRe.lastIndex = thenBraceStart + 1;
+      continue;
+    }
+    const thenBody = code.slice(thenBraceStart + 1, i - 1).trim();
+
+    const remaining = code.slice(i);
+    const elseMatch = remaining.match(/^\s*else\s*\{/);
+    if (!elseMatch) {
+      ifRe.lastIndex = i;
+      continue;
+    }
+    const elseBraceStart = i + elseMatch[0].length - 1;
+    depth = 1;
+    let j = elseBraceStart + 1;
+    for (; j < code.length && depth > 0; j++) {
+      if (code[j] === '{') depth++;
+      else if (code[j] === '}') depth--;
+    }
+    if (depth !== 0) {
+      ifRe.lastIndex = elseBraceStart + 1;
+      continue;
+    }
+    const elseBody = code.slice(elseBraceStart + 1, j - 1).trim();
+    const blockEnd = j;
+
+    const thenReturn = thenBody.startsWith('return ') ? thenBody : `return (${thenBody})`;
+    const elseReturn = elseBody.startsWith('return ') ? elseBody : `return (${elseBody})`;
+
+    const rewritten = `${prefix}(() => { if (${condition}) { ${thenReturn}; } else { ${elseReturn}; } })()`;
+    result += code.slice(cursor, ifStart) + rewritten;
+    cursor = blockEnd;
+    ifRe.lastIndex = blockEnd;
+  }
+  result += code.slice(cursor);
+  return result;
+}
+
+/**
+ * Strips Kotlin generic type parameters from collection helper calls:
+ * e.g. mutableListOf<Int>() -> mutableListOf()
+ */
+function stripCollectionGenerics(code: string): string {
+  return code.replace(/\b(listOf|mutableListOf|arrayOf|setOf|mutableSetOf|mapOf|mutableMapOf)<[a-zA-Z0-9_?,<>\s]+>\s*\(/g, '$1(');
+}
+
+/**
+ * Transforms mapOf / mutableMapOf calls across single or multiple lines,
+ * translating `key to value` pairs into `[key, value]` arrays.
+ */
+function transpileMapDeclarations(code: string): string {
+  return code.replace(/\b(mapOf|mutableMapOf)\s*\(([\s\S]*?)\)/g, (_whole, factory, inner) => {
+    const entries = splitTopLevelCommas(inner);
+    const pairs = entries.map((entry) => {
+      const parts = entry.trim().split(/\s+to\s+/);
+      return parts.length === 2 ? `[${parts[0]}, ${parts[1]}]` : entry;
+    });
+    return `${factory === 'mutableMapOf' ? '__kt_mutableMapOf' : '__kt_mapOf'}(${pairs.join(', ')})`;
+  });
 }
 
 /**
@@ -528,7 +624,7 @@ function transformIfExpression(line: string): string {
  * (`{ ... }`-bodied) branches are not supported, matching
  * `transformIfExpression`'s single-line-only scope above.
  */
-function parseWhenBranches(body: string, subject: string): Array<{ condition: string | null; result: string }> {
+function parseWhenBranches(body: string, subject: string | null): Array<{ condition: string | null; result: string }> {
   const branches: Array<{ condition: string | null; result: string }> = [];
   for (const rawLine of body.split('\n')) {
     const line = rawLine.trim();
@@ -540,6 +636,12 @@ function parseWhenBranches(body: string, subject: string): Array<{ condition: st
 
     if (rawCond === 'else') {
       branches.push({ condition: null, result });
+      continue;
+    }
+
+    if (!subject) {
+      // Subject-less when branch: rawCond is already the boolean expression
+      branches.push({ condition: rawCond, result });
       continue;
     }
 
@@ -559,16 +661,13 @@ function parseWhenBranches(body: string, subject: string): Array<{ condition: st
 }
 
 /**
- * Rewrites every `when (subject) { ... }` block (statement or expression
- * form) into equivalent JS, since JS has no `when`/`switch`-expression
- * equivalent that matches Kotlin's semantics. Runs once over the whole
- * source, before the per-line pass, because a `when` block spans multiple
- * lines and needs balanced-brace scanning to find its extent. Subject-less
- * `when { ... }` is not supported -- every branch condition here is
- * derived from comparing a required subject.
+ * Rewrites every `when (subject) { ... }` or subject-less `when { ... }`
+ * block (statement or expression form) into equivalent JS. Runs once over
+ * the whole source, before the per-line pass, because a `when` block spans
+ * multiple lines and needs balanced-brace scanning to find its extent.
  */
 function transpileWhenBlocks(code: string): string {
-  const whenRe = /\bwhen\s*\(([^)]*)\)\s*\{/g;
+  const whenRe = /\bwhen(?:\s*\(([^)]*)\))?\s*\{/g;
   let result = '';
   let cursor = 0;
   let match: RegExpExecArray | null;
@@ -576,7 +675,7 @@ function transpileWhenBlocks(code: string): string {
   while ((match = whenRe.exec(code)) !== null) {
     const blockStart = match.index;
     const openBraceIdx = match.index + match[0].length - 1;
-    const subject = match[1].trim();
+    const subject = match[1] ? match[1].trim() : null;
 
     let depth = 1;
     let i = openBraceIdx + 1;
@@ -651,7 +750,7 @@ function cleanKotlinParams(params: string): string {
 function inferMapVars(code: string): Set<string> {
   const mapVars = new Set<string>();
   for (const line of code.split('\n')) {
-    const match = line.match(/\b(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)[^=]*=\s*(?:mapOf|mutableMapOf)\s*\(/);
+    const match = line.match(/\b(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)[^=]*=\s*(?:__kt_)?(?:mapOf|mutableMapOf)\s*\(/);
     if (match) mapVars.add(match[1]);
   }
   return mapVars;
@@ -743,7 +842,48 @@ function renderCtorParams(params: { name: string; default?: string }[]): string 
  *   a JS method, appended to `methodLines`. Single-expression form is
  *   single-line only, matching the same limitation as top-level functions.
  */
-function transpileClassMember(rawMemberLines: string[]): { ctorLines: string[]; methodLines: string[] } {
+function splitCodeAndStrings(line: string): Array<{ text: string; isString: boolean }> {
+  const chunks: Array<{ text: string; isString: boolean }> = [];
+  const strRe = /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|`([^`\\]|\\.)*`/g;
+  let lastIdx = 0;
+  let match: RegExpExecArray | null;
+  while ((match = strRe.exec(line)) !== null) {
+    if (match.index > lastIdx) {
+      chunks.push({ text: line.slice(lastIdx, match.index), isString: false });
+    }
+    chunks.push({ text: match[0], isString: true });
+    lastIdx = match.index + match[0].length;
+  }
+  if (lastIdx < line.length) {
+    chunks.push({ text: line.slice(lastIdx), isString: false });
+  }
+  return chunks;
+}
+
+function rewriteClassPropertyAccess(lines: string[], classProps: Set<string>, paramNames: Set<string>): string[] {
+  const localVars = new Set<string>();
+  return lines.map((line) => {
+    const declMatch = line.match(/\b(?:val|var)\s+([a-zA-Z0-9_]+)/);
+    if (declMatch) {
+      localVars.add(declMatch[1]);
+    }
+    const chunks = splitCodeAndStrings(line);
+    for (const chunk of chunks) {
+      if (chunk.isString) continue;
+      for (const prop of classProps) {
+        if (paramNames.has(prop) || localVars.has(prop)) continue;
+        chunk.text = chunk.text.replace(new RegExp(`(?<![.\\w])(${prop})(?![\\w])`, 'g'), (m, name, offset, str) => {
+          const before = str.slice(0, offset).trimEnd();
+          if (before.endsWith('.') || /(?:val|var)$/.test(before)) return m;
+          return `this.${name}`;
+        });
+      }
+    }
+    return chunks.map((c) => c.text).join('');
+  });
+}
+
+function transpileClassMember(rawMemberLines: string[], classProps: Set<string> = new Set()): { ctorLines: string[]; methodLines: string[] } {
   // Trailing blank lines are an artifact of how `splitClassMembers` divides
   // the body text (a blank line right before the class's own closing brace
   // gets attached to the last member) -- strip them so a genuinely
@@ -774,14 +914,28 @@ function transpileClassMember(rawMemberLines: string[]): { ctorLines: string[]; 
   const singleExprFun = header.match(/^fun\s+([a-zA-Z0-9_]+)\s*\((.*?)\)(?:\s*:\s*[a-zA-Z0-9_<>?,\s]+)?\s*=\s*(.+)$/);
   if (singleExprFun && memberLines.length === 1) {
     const [, name, params, expr] = singleExprFun;
-    return { ctorLines: [], methodLines: [`  ${name}(${cleanKotlinParams(params)}) { return ${expr}; }`] };
+    const paramNames = new Set(
+      params
+        .split(',')
+        .map((p) => p.trim().split(/[\s=:]/)[0])
+        .filter(Boolean)
+    );
+    const rewrittenExpr = rewriteClassPropertyAccess([expr], classProps, paramNames)[0];
+    return { ctorLines: [], methodLines: [`  ${name}(${cleanKotlinParams(params)}) { return ${rewrittenExpr}; }`] };
   }
 
   const blockFunHeader = header.match(/^fun\s+([a-zA-Z0-9_]+)\s*\((.*?)\)(?:\s*:\s*[a-zA-Z0-9_<>?,\s]+)?\s*\{\s*$/);
   if (blockFunHeader) {
     const [, name, params] = blockFunHeader;
     const inner = memberLines.slice(1, -1);
-    return { ctorLines: [], methodLines: [`  ${name}(${cleanKotlinParams(params)}) {`, ...inner, '  }'] };
+    const paramNames = new Set(
+      params
+        .split(',')
+        .map((p) => p.trim().split(/[\s=:]/)[0])
+        .filter(Boolean)
+    );
+    const rewrittenInner = rewriteClassPropertyAccess(inner, classProps, paramNames);
+    return { ctorLines: [], methodLines: [`  ${name}(${cleanKotlinParams(params)}) {`, ...rewrittenInner, '  }'] };
   }
 
   // Unrecognized member shape -- pass through verbatim rather than losing
@@ -915,12 +1069,17 @@ function transpileClassDeclarations(code: string, classNamesOut: Set<string>): s
 
     const ctorParams = ctorParamsRaw ? parseConstructorParams(ctorParamsRaw) : [];
     const propertyAssignments = ctorParams.filter((p) => p.isProperty).map((p) => `    this.${p.name} = ${p.name};`);
+    const classProps = new Set(ctorParams.filter((p) => p.isProperty).map((p) => p.name));
+    for (const line of bodyLines) {
+      const pm = line.trim().match(/^(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)/);
+      if (pm) classProps.add(pm[1]);
+    }
 
     const members = splitClassMembers(bodyLines);
     const ctorExtraLines: string[] = [];
     const methodLines: string[] = [];
     for (const member of members) {
-      const { ctorLines, methodLines: mLines } = transpileClassMember(member);
+      const { ctorLines, methodLines: mLines } = transpileClassMember(member, classProps);
       ctorExtraLines.push(...ctorLines.map((l) => `    ${l}`));
       methodLines.push(...mLines);
     }
@@ -1062,8 +1221,11 @@ function transpileOOPDeclarations(code: string): string {
  * Transpiles Kotlin code into an isolated JavaScript execution function.
  */
 function transpileKotlinToJS(kotlinCode: string): string {
+  kotlinCode = stripCollectionGenerics(kotlinCode);
+  kotlinCode = transpileMapDeclarations(kotlinCode);
   kotlinCode = transpileOOPDeclarations(kotlinCode);
   kotlinCode = transpileWhenBlocks(kotlinCode);
+  kotlinCode = transpileMultilineIfExpressions(kotlinCode);
   const lines = kotlinCode.split('\n');
   const jsLines: string[] = [];
   const intVars = inferIntTypedVars(kotlinCode);
@@ -1092,6 +1254,10 @@ function transpileKotlinToJS(kotlinCode: string): string {
     // Range-based for loops (`for (i in 1..10) { ... }`) -- must run
     // before the is/in transforms below, see `transformForLoops` above.
     line = transformForLoops(line);
+
+    // Guard loops against infinite execution in the browser
+    line = line.replace(/\b((?:while|for)\s*\([^)]*\))\s*\{/, '$1 { __kt_check_loop();');
+    line = line.replace(/\bdo\s*\{/, 'do { __kt_check_loop();');
 
     // Truncate Int/Int division the way real Kotlin does (see
     // `wrapIntDivision` above) -- must run after suffix-stripping so a
@@ -1265,6 +1431,44 @@ export async function compileAndRunKotlin(
     if (value instanceof Map) return `{${[...value.entries()].map(([k, v]) => `${formatKotlinValue(k)}=${formatKotlinValue(v)}`).join(', ')}}`;
     return String(value);
   };
+
+  // Standard Kotlin String and Collection utility prototypes
+  if (typeof (String.prototype as any).reversed !== 'function') {
+    (String.prototype as any).reversed = function () {
+      return this.split('').reverse().join('');
+    };
+  }
+  if (typeof (String.prototype as any).lowercase !== 'function') {
+    (String.prototype as any).lowercase = function () {
+      return this.toLowerCase();
+    };
+  }
+  if (typeof (String.prototype as any).uppercase !== 'function') {
+    (String.prototype as any).uppercase = function () {
+      return this.toUpperCase();
+    };
+  }
+  if (typeof (String.prototype as any).toInt !== 'function') {
+    (String.prototype as any).toInt = function () {
+      return parseInt(this, 10);
+    };
+  }
+  if (typeof (String.prototype as any).toDouble !== 'function') {
+    (String.prototype as any).toDouble = function () {
+      return parseFloat(this);
+    };
+  }
+  if (typeof (Array.prototype as any).joinToString !== 'function') {
+    (Array.prototype as any).joinToString = function (separator = ', ') {
+      return this.map(formatKotlinValue).join(separator);
+    };
+  }
+  if (typeof (Array.prototype as any).reversed !== 'function') {
+    (Array.prototype as any).reversed = function () {
+      return [...this].reverse();
+    };
+  }
+
   const customPrintln = (...args: any[]) => {
     const text = args.map(formatKotlinValue).join(' ');
     appendOutput(text);
@@ -1284,6 +1488,9 @@ export async function compileAndRunKotlin(
     (list as any).last = () => list[list.length - 1];
     (list as any).sorted = () => [...list].sort((a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0));
     (list as any).get = (index: number) => list[index];
+    (list as any).joinToString = (separator: string = ', ') => list.map(formatKotlinValue).join(separator);
+    (list as any).reversed = () => [...list].reverse();
+    (list as any).count = () => list.length;
     return list;
   };
   const withSetContains = (set: Set<any>) => {
@@ -1337,6 +1544,14 @@ export async function compileAndRunKotlin(
     // If the code contains `fun main()`, call `main()`.
     // If a testCase call is provided (e.g. `calculatePlayerInventory("Alex", 25)`), evaluate that too.
     let runnerScript = `
+      let __kt_loop_start = Date.now();
+      let __kt_loop_iter = 0;
+      const __kt_check_loop = () => {
+        if (++__kt_loop_iter > 250000 || Date.now() - __kt_loop_start > ${timeoutMs}) {
+          throw new Error('Execution timed out (possible infinite loop)');
+        }
+      };
+
       ${transpiledJS}
 
       let __lastResult = undefined;

@@ -7,15 +7,21 @@ interface CodingAccessoryToolbarProps {
 }
 
 const DEFAULT_KEYWORDS = [
-  { text: 'return', color: 'text-indigo-300 border-indigo-500/40 bg-indigo-950/40 hover:bg-indigo-900/50' },
-  { text: 'a', color: 'text-emerald-300 border-emerald-500/40 bg-emerald-950/30 hover:bg-emerald-900/40' },
-  { text: 'b', color: 'text-emerald-300 border-emerald-500/40 bg-emerald-950/30 hover:bg-emerald-900/40' },
-  { text: 'a * b', color: 'text-indigo-200 border-indigo-400/50 bg-indigo-900/40 hover:bg-indigo-800/50 font-bold' },
-  { text: 'Int', color: 'text-amber-300 border-amber-500/40 bg-amber-950/30 hover:bg-amber-900/40' },
-  { text: 'multiply', color: 'text-sky-300 border-sky-500/40 bg-sky-950/30 hover:bg-sky-900/40' },
+  { text: 'println', color: 'text-amber-300 border-amber-500/40 bg-amber-950/30 hover:bg-amber-900/40 font-semibold' },
   { text: 'val', color: 'text-purple-300 border-purple-500/40 bg-purple-950/30 hover:bg-purple-900/40' },
   { text: 'var', color: 'text-purple-300 border-purple-500/40 bg-purple-950/30 hover:bg-purple-900/40' },
   { text: 'fun', color: 'text-purple-300 border-purple-500/40 bg-purple-950/30 hover:bg-purple-900/40' },
+  { text: 'return', color: 'text-indigo-300 border-indigo-500/40 bg-indigo-950/40 hover:bg-indigo-900/50' },
+  { text: 'if', color: 'text-sky-300 border-sky-500/40 bg-sky-950/30 hover:bg-sky-900/40' },
+  { text: 'else', color: 'text-sky-300 border-sky-500/40 bg-sky-950/30 hover:bg-sky-900/40' },
+  { text: 'when', color: 'text-sky-300 border-sky-500/40 bg-sky-950/30 hover:bg-sky-900/40' },
+  { text: 'for', color: 'text-emerald-300 border-emerald-500/40 bg-emerald-950/30 hover:bg-emerald-900/40' },
+  { text: 'in', color: 'text-emerald-300 border-emerald-500/40 bg-emerald-950/30 hover:bg-emerald-900/40' },
+  { text: 'listOf', color: 'text-teal-300 border-teal-500/40 bg-teal-950/30 hover:bg-teal-900/40' },
+  { text: 'mapOf', color: 'text-teal-300 border-teal-500/40 bg-teal-950/30 hover:bg-teal-900/40' },
+  { text: 'Int', color: 'text-amber-200 border-amber-500/40 bg-amber-950/30 hover:bg-amber-900/40' },
+  { text: 'String', color: 'text-amber-200 border-amber-500/40 bg-amber-950/30 hover:bg-amber-900/40' },
+  { text: 'Boolean', color: 'text-amber-200 border-amber-500/40 bg-amber-950/30 hover:bg-amber-900/40' },
 ];
 
 const PROGRAMMING_SYMBOLS = [
@@ -49,7 +55,19 @@ export const CodingAccessoryToolbar: React.FC<CodingAccessoryToolbarProps> = ({
     >
       {/* Row 1: Contextual Kotlin suggestions row */}
       <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 px-0.5">
-        {DEFAULT_KEYWORDS.map((item) => (
+        {/* Custom lesson tokens shown first with high priority styling */}
+        {customTokens.map((token) => (
+          <button
+            key={`custom-${token}`}
+            type="button"
+            onClick={() => onInsertToken(token)}
+            className="font-mono text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-900/60 text-indigo-200 border border-indigo-400/50 shrink-0 hover:bg-indigo-800/80 active:scale-95 transition-all cursor-pointer whitespace-nowrap shadow-xs"
+          >
+            {token}
+          </button>
+        ))}
+
+        {DEFAULT_KEYWORDS.filter((item) => !customTokens.includes(item.text)).map((item) => (
           <button
             key={item.text}
             type="button"
@@ -57,17 +75,6 @@ export const CodingAccessoryToolbar: React.FC<CodingAccessoryToolbarProps> = ({
             className={`font-mono text-[11px] px-2.5 py-0.5 rounded-full border shrink-0 active:scale-95 transition-all cursor-pointer whitespace-nowrap ${item.color}`}
           >
             {item.text}
-          </button>
-        ))}
-
-        {customTokens.filter(t => !DEFAULT_KEYWORDS.some(k => k.text === t)).map((token) => (
-          <button
-            key={token}
-            type="button"
-            onClick={() => onInsertToken(token)}
-            className="font-mono text-[11px] px-2.5 py-0.5 rounded-full bg-slate-800/90 text-sky-300 border border-sky-500/30 shrink-0 hover:bg-sky-500/20 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-          >
-            {token}
           </button>
         ))}
       </div>

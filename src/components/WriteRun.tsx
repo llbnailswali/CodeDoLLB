@@ -111,6 +111,16 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
     const start = textarea ? textarea.selectionStart : cursorPosition;
     const end = textarea ? textarea.selectionEnd : cursorPosition;
 
+    // Overtype / step-over if next character matches the closing bracket/quote being typed
+    if (
+      start === end &&
+      (textToInsert === ')' || textToInsert === '}' || textToInsert === ']' || textToInsert === '"') &&
+      userCode[start] === textToInsert
+    ) {
+      updateCodeWithHistory(userCode, start + 1);
+      return;
+    }
+
     let insert = textToInsert;
     let cursorOffset = textToInsert.length;
 
@@ -262,24 +272,54 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
     soundFX.playSuccess();
     if (data.solutionCode) {
       updateCodeWithHistory(data.solutionCode, data.solutionCode.length);
-    } else {
-      handleInsertToken('return a * b');
     }
   };
+
+  // Derive lesson-relevant accessory tokens dynamically
+  const accessoryTokens = React.useMemo(() => {
+    const tokens = new Set<string>();
+    if (data.requirements?.name) tokens.add(data.requirements.name);
+    if (data.requirements?.params) {
+      const parts = data.requirements.params.split(',');
+      for (const p of parts) {
+        const clean = p.trim().split(':')[0].trim();
+        if (clean) tokens.add(clean);
+      }
+    }
+    if (data.testCase?.call) {
+      const fnName = data.testCase.call.split('(')[0].trim();
+      if (fnName) tokens.add(fnName);
+    }
+    return Array.from(tokens);
+  }, [data.requirements, data.testCase]);
+
+  // Calculate lines and active line index
+  const lines = userCode.split('\n');
+  const displayLineCount = Math.max(14, lines.length + 1);
+
+  // Compute line index for cursor
+  let currentLineIndex = 0;
+  let charCount = 0;
+  for (let i = 0; i < lines.length; i++) {
+    charCount += lines[i].length + 1;
+    if (cursorPosition < charCount) {
+      currentLineIndex = i;
+      break;
+    }
+    if (i === lines.length - 1) {
+      currentLineIndex = i;
+    }
+  }
 
   // Desktop physical keyboard listener - allows typing without focusing a native mobile input
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       // Ignore if a modal is open
-      if (showTaskModal || showOutputPanel) return;
+      if (showTaskModal || showOutputPanel || showSolutionModal) return;
 
       if (e.key === 'Tab') {
         e.preventDefault();
-        if (!userCode.includes('return a * b')) {
-          handleAcceptSuggestion();
-        } else {
-          handleInsertToken('    ');
-        }
+        handleInsertToken('    ');
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         handleExecute();
@@ -299,41 +339,87 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
       } else if (e.key === 'Backspace') {
         e.preventDefault();
         handleSmartBackspace();
+      } else if (e.key === 'Delete') {
+        e.preventDefault();
+        if (cursorPosition < userCode.length) {
+          const before = userCode.slice(0, cursorPosition);
+          const after = userCode.slice(cursorPosition + 1);
+          updateCodeWithHistory(before + after, cursorPosition);
+        }
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         setCursorPosition((prev) => Math.max(0, prev - 1));
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
         setCursorPosition((prev) => Math.min(userCode.length, prev + 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const lineOffsets: number[] = [];
+        let off = 0;
+        for (let i = 0; i < lines.length; i++) {
+          lineOffsets.push(off);
+          off += lines[i].length + 1;
+        }
+        if (currentLineIndex > 0) {
+          const targetLine = currentLineIndex - 1;
+          const colInCurrentLine = cursorPosition - lineOffsets[currentLineIndex];
+          const targetOffset = lineOffsets[targetLine] + Math.min(colInCurrentLine, lines[targetLine].length);
+          setCursorPosition(targetOffset);
+        } else {
+          setCursorPosition(0);
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const lineOffsets: number[] = [];
+        let off = 0;
+        for (let i = 0; i < lines.length; i++) {
+          lineOffsets.push(off);
+          off += lines[i].length + 1;
+        }
+        if (currentLineIndex < lines.length - 1) {
+          const targetLine = currentLineIndex + 1;
+          const colInCurrentLine = cursorPosition - lineOffsets[currentLineIndex];
+          const targetOffset = lineOffsets[targetLine] + Math.min(colInCurrentLine, lines[targetLine].length);
+          setCursorPosition(targetOffset);
+        } else {
+          setCursorPosition(userCode.length);
+        }
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        let off = 0;
+        for (let i = 0; i < currentLineIndex; i++) {
+          off += lines[i].length + 1;
+        }
+        setCursorPosition(off);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        let off = 0;
+        for (let i = 0; i < currentLineIndex; i++) {
+          off += lines[i].length + 1;
+        }
+        setCursorPosition(off + lines[currentLineIndex].length);
       } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         handleInsertToken(e.key);
       }
     };
 
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      if (showTaskModal || showOutputPanel || showSolutionModal) return;
+      const text = e.clipboardData?.getData('text');
+      if (text) {
+        e.preventDefault();
+        handleInsertToken(text);
+      }
+    };
+
     window.addEventListener('keydown', handleGlobalKeyDown);
+    window.addEventListener('paste', handleGlobalPaste);
     return () => {
       window.removeEventListener('keydown', handleGlobalKeyDown);
+      window.removeEventListener('paste', handleGlobalPaste);
     };
-  }, [userCode, cursorPosition, historyIndex, showTaskModal, showOutputPanel]);
-
-  // Calculate lines and active line index
-  const lines = userCode.split('\n');
-  const displayLineCount = Math.max(14, lines.length + 1);
-
-  // Compute line index for cursor
-  let currentLineIndex = 0;
-  let charCount = 0;
-  for (let i = 0; i < lines.length; i++) {
-    charCount += lines[i].length + 1;
-    if (cursorPosition < charCount) {
-      currentLineIndex = i;
-      break;
-    }
-    if (i === lines.length - 1) {
-      currentLineIndex = i;
-    }
-  }
+  }, [userCode, cursorPosition, historyIndex, showTaskModal, showOutputPanel, showSolutionModal, lines, currentLineIndex]);
 
   // Tap directly on a line to move cursor without opening device keyboard
   const handleLineClick = (lineIdx: number, e?: React.MouseEvent) => {
@@ -610,19 +696,29 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             {lines.map((lineStr, lineIdx) => {
               const isActive = lineIdx === currentLineIndex;
 
+              // Calculate character offset for this line to position the cursor at the exact column
+              let lineStartOffset = 0;
+              for (let i = 0; i < lineIdx; i++) {
+                lineStartOffset += lines[i].length + 1;
+              }
+              const colInLine = Math.max(0, Math.min(lineStr.length, cursorPosition - lineStartOffset));
+
               return (
                 <div
                   key={lineIdx}
                   onClick={(e) => handleLineClick(lineIdx, e)}
-                  className={`leading-[24px] transition-colors relative cursor-pointer ${
+                  className={`leading-[24px] transition-colors relative cursor-pointer font-mono ${
                     isActive ? '-mx-1.5 px-1.5 bg-[#13192c] rounded-xs' : 'hover:bg-slate-800/30'
                   }`}
                 >
-                  {renderHighlightedLine(lineStr || ' ', `line-${lineIdx}`)}
-
-                  {/* Clear Blinking Cursor */}
-                  {isActive && (
-                    <span className="inline-block w-[2px] h-[17px] bg-indigo-400 align-middle ml-0.5 blinking-cursor shadow-[0_0_8px_rgba(129,140,248,0.9)]" />
+                  {isActive ? (
+                    <>
+                      {renderHighlightedLine(lineStr.slice(0, colInLine), `line-${lineIdx}-before`)}
+                      <span className="inline-block w-[2px] h-[17px] bg-indigo-400 align-middle blinking-cursor shadow-[0_0_8px_rgba(129,140,248,0.9)] mx-[0.5px]" />
+                      {renderHighlightedLine(lineStr.slice(colInLine), `line-${lineIdx}-after`)}
+                    </>
+                  ) : (
+                    renderHighlightedLine(lineStr || ' ', `line-${lineIdx}`)
                   )}
                 </div>
               );
@@ -640,7 +736,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
         <CodingAccessoryToolbar
           onInsertToken={handleInsertToken}
           onInsertSymbol={handleInsertToken}
-          customTokens={['a', 'b', 'a * b']}
+          customTokens={accessoryTokens}
         />
 
         {showVirtualKeyboard && (
@@ -672,7 +768,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                 </span>
                 <span className="text-slate-500 text-xs">·</span>
                 <span className="font-mono text-xs text-slate-400 font-medium">
-                  {data.fileName || 'SplitLoot.kt'}
+                  {data.fileName || `${(topicTitle || 'Main').replace(/[^a-zA-Z0-9]/g, '')}.kt`}
                 </span>
               </div>
               <button
@@ -689,7 +785,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
 
             <div className="my-3.5">
               <h3 className="font-bold text-base text-slate-100 mb-1.5">
-                {data.title || 'Multiply Two Numbers'}
+                {data.title || topicTitle || 'Kotlin Code Task'}
               </h3>
               <p className="text-xs text-slate-300 leading-relaxed">
                 {data.description}
