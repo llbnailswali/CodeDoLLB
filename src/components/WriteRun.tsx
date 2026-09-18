@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Stage4WriteRunData } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
 import { runKotlinCode, KotlinExecutionResult } from '../utils/kotlinRunner';
-import { renderHighlightedLine } from '../utils/ideSyntaxHighlighter';
-import { CodingAccessoryToolbar } from './ide/CodingAccessoryToolbar';
-import { MobileCodingKeyboard } from './ide/MobileCodingKeyboard';
+import { KotlinCodeEditor, KotlinCodeEditorHandle } from './ide/KotlinCodeEditor';
 
 interface WriteRunStageProps {
   data: Stage4WriteRunData;
@@ -27,6 +25,7 @@ interface WriteRunStageProps {
 export const WriteRun: React.FC<WriteRunStageProps> = ({
   data,
   topicTitle = 'Kotlin Basics',
+  isDark,
   userCode,
   setUserCode,
   setHasRunCode,
@@ -39,186 +38,18 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
   const [showOutputPanel, setShowOutputPanel] = useState<boolean>(false);
   const [showSolutionModal, setShowSolutionModal] = useState<boolean>(false);
   const [showOverflowMenu, setShowOverflowMenu] = useState<boolean>(false);
-  const [showVirtualKeyboard, setShowVirtualKeyboard] = useState<boolean>(true);
   const [showTaskModal, setShowTaskModal] = useState<boolean>(false);
+  const [cursorArrowsVisible, setCursorArrowsVisible] = useState<boolean>(false);
+  const [horizontalScrollEnabled, setHorizontalScrollEnabled] = useState<boolean>(false);
 
-  // Undo / Redo History Stack
-  const [history, setHistory] = useState<string[]>([userCode]);
-  const [historyIndex, setHistoryIndex] = useState<number>(0);
+  const editorRef = useRef<KotlinCodeEditorHandle>(null);
 
-  // Cursor and Selection tracking
-  const [cursorPosition, setCursorPosition] = useState<number>(() => {
-    const idx = userCode.indexOf('return');
-    return idx !== -1 ? idx + 'return'.length : userCode.length;
-  });
-
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const editorScrollRef = useRef<HTMLDivElement>(null);
-
-  // Sync initial code if userCode changes externally
-  useEffect(() => {
-    if (history[historyIndex] !== userCode) {
-      setHistory((prev) => [...prev.slice(0, historyIndex + 1), userCode]);
-      setHistoryIndex((prev) => prev + 1);
-    }
-  }, [userCode]);
-
-  const updateCodeWithHistory = (newCode: string, newCursorPos?: number) => {
+  // Any edit to the code should dismiss a currently-shown run result, since
+  // it no longer describes what's in the editor.
+  const handleCodeChange = (newCode: string) => {
     setUserCode(newCode);
     setExecutionResult(null);
     setShowOutputPanel(false);
-    setHistory((prev) => {
-      const next = [...prev.slice(0, historyIndex + 1), newCode];
-      return next.slice(-40);
-    });
-    setHistoryIndex((prev) => Math.min(prev + 1, 39));
-
-    if (newCursorPos !== undefined) {
-      setCursorPosition(newCursorPos);
-      if (textareaRef.current) {
-        textareaRef.current.selectionStart = newCursorPos;
-        textareaRef.current.selectionEnd = newCursorPos;
-      }
-    }
-  };
-
-  const handleUndo = () => {
-    if (historyIndex > 0) {
-      soundFX.playClick();
-      const nextIdx = historyIndex - 1;
-      setHistoryIndex(nextIdx);
-      const prevCode = history[nextIdx];
-      setUserCode(prevCode);
-      setCursorPosition(prevCode.length);
-    }
-  };
-
-  const handleRedo = () => {
-    if (historyIndex < history.length - 1) {
-      soundFX.playClick();
-      const nextIdx = historyIndex + 1;
-      setHistoryIndex(nextIdx);
-      const nextCode = history[nextIdx];
-      setUserCode(nextCode);
-      setCursorPosition(nextCode.length);
-    }
-  };
-
-  // Insert token or text with auto-closing brackets support
-  const handleInsertToken = (textToInsert: string) => {
-    soundFX.playClick();
-    const textarea = textareaRef.current;
-    const start = textarea ? textarea.selectionStart : cursorPosition;
-    const end = textarea ? textarea.selectionEnd : cursorPosition;
-
-    // Overtype / step-over if next character matches the closing bracket/quote being typed
-    if (
-      start === end &&
-      (textToInsert === ')' || textToInsert === '}' || textToInsert === ']' || textToInsert === '"') &&
-      userCode[start] === textToInsert
-    ) {
-      updateCodeWithHistory(userCode, start + 1);
-      return;
-    }
-
-    let insert = textToInsert;
-    let cursorOffset = textToInsert.length;
-
-    // Auto-closing brackets
-    if (textToInsert === '{') {
-      insert = '{}';
-      cursorOffset = 1;
-    } else if (textToInsert === '(') {
-      insert = '()';
-      cursorOffset = 1;
-    } else if (textToInsert === '[') {
-      insert = '[]';
-      cursorOffset = 1;
-    } else if (textToInsert === '"') {
-      insert = '""';
-      cursorOffset = 1;
-    }
-
-    const before = userCode.slice(0, start);
-    const after = userCode.slice(end);
-    const newCode = before + insert + after;
-    const newPos = start + cursorOffset;
-
-    updateCodeWithHistory(newCode, newPos);
-  };
-
-  // Smart Backspace: deletes matching bracket pair if empty
-  const handleSmartBackspace = () => {
-    soundFX.playClick();
-    const textarea = textareaRef.current;
-    const start = textarea ? textarea.selectionStart : cursorPosition;
-    const end = textarea ? textarea.selectionEnd : cursorPosition;
-
-    if (start === end && start > 0) {
-      const charBefore = userCode[start - 1];
-      const charAfter = userCode[start];
-
-      const isPair =
-        (charBefore === '{' && charAfter === '}') ||
-        (charBefore === '(' && charAfter === ')') ||
-        (charBefore === '[' && charAfter === ']') ||
-        (charBefore === '"' && charAfter === '"');
-
-      if (isPair) {
-        const before = userCode.slice(0, start - 1);
-        const after = userCode.slice(start + 1);
-        updateCodeWithHistory(before + after, start - 1);
-        return;
-      }
-
-      const before = userCode.slice(0, start - 1);
-      const after = userCode.slice(start);
-      updateCodeWithHistory(before + after, start - 1);
-    } else if (start !== end) {
-      const before = userCode.slice(0, start);
-      const after = userCode.slice(end);
-      updateCodeWithHistory(before + after, start);
-    }
-  };
-
-  // Smart Indentation on Enter / Return
-  const handleSmartReturn = () => {
-    soundFX.playClick();
-    const textarea = textareaRef.current;
-    const pos = textarea ? textarea.selectionStart : cursorPosition;
-
-    const textBefore = userCode.slice(0, pos);
-    const textAfter = userCode.slice(pos);
-    const currentLineMatch = textBefore.match(/(?:^|\n)([^\n]*)$/);
-    const currentLine = currentLineMatch ? currentLineMatch[1] : '';
-
-    const indentMatch = currentLine.match(/^(\s*)/);
-    const currentIndent = indentMatch ? indentMatch[1] : '';
-
-    const trimmedLine = currentLine.trim();
-    const endsWithOpenBrace = trimmedLine.endsWith('{');
-    const nextCharIsCloseBrace = textAfter.startsWith('}');
-
-    let insert = '\n' + currentIndent;
-    let cursorOffset = insert.length;
-
-    if (endsWithOpenBrace) {
-      if (nextCharIsCloseBrace) {
-        insert = '\n' + currentIndent + '    \n' + currentIndent;
-        cursorOffset = 1 + currentIndent.length + 4;
-      } else {
-        insert = '\n' + currentIndent + '    ';
-        cursorOffset = insert.length;
-      }
-    }
-
-    const newCode = textBefore + insert + textAfter;
-    updateCodeWithHistory(newCode, pos + cursorOffset);
-  };
-
-  const handleSpace = () => {
-    soundFX.playClick();
-    handleInsertToken(' ');
   };
 
   // Execute Kotlin Code
@@ -271,7 +102,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
   const handleAcceptSuggestion = () => {
     soundFX.playSuccess();
     if (data.solutionCode) {
-      updateCodeWithHistory(data.solutionCode, data.solutionCode.length);
+      editorRef.current?.resetTo(data.solutionCode, data.solutionCode.length);
     }
   };
 
@@ -293,170 +124,35 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
     return Array.from(tokens);
   }, [data.requirements, data.testCase]);
 
-  // Calculate lines and active line index
-  const lines = userCode.split('\n');
-  const displayLineCount = Math.max(14, lines.length + 1);
-
-  // Compute line index for cursor
-  let currentLineIndex = 0;
-  let charCount = 0;
-  for (let i = 0; i < lines.length; i++) {
-    charCount += lines[i].length + 1;
-    if (cursorPosition < charCount) {
-      currentLineIndex = i;
-      break;
-    }
-    if (i === lines.length - 1) {
-      currentLineIndex = i;
-    }
-  }
-
-  // Desktop physical keyboard listener - allows typing without focusing a native mobile input
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Ignore if a modal is open
-      if (showTaskModal || showOutputPanel || showSolutionModal) return;
-
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        handleInsertToken('    ');
-      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        handleExecute();
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        if (e.shiftKey) {
-          handleRedo();
-        } else {
-          handleUndo();
-        }
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-        e.preventDefault();
-        handleRedo();
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        handleSmartReturn();
-      } else if (e.key === 'Backspace') {
-        e.preventDefault();
-        handleSmartBackspace();
-      } else if (e.key === 'Delete') {
-        e.preventDefault();
-        if (cursorPosition < userCode.length) {
-          const before = userCode.slice(0, cursorPosition);
-          const after = userCode.slice(cursorPosition + 1);
-          updateCodeWithHistory(before + after, cursorPosition);
-        }
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        setCursorPosition((prev) => Math.max(0, prev - 1));
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        setCursorPosition((prev) => Math.min(userCode.length, prev + 1));
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        const lineOffsets: number[] = [];
-        let off = 0;
-        for (let i = 0; i < lines.length; i++) {
-          lineOffsets.push(off);
-          off += lines[i].length + 1;
-        }
-        if (currentLineIndex > 0) {
-          const targetLine = currentLineIndex - 1;
-          const colInCurrentLine = cursorPosition - lineOffsets[currentLineIndex];
-          const targetOffset = lineOffsets[targetLine] + Math.min(colInCurrentLine, lines[targetLine].length);
-          setCursorPosition(targetOffset);
-        } else {
-          setCursorPosition(0);
-        }
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        const lineOffsets: number[] = [];
-        let off = 0;
-        for (let i = 0; i < lines.length; i++) {
-          lineOffsets.push(off);
-          off += lines[i].length + 1;
-        }
-        if (currentLineIndex < lines.length - 1) {
-          const targetLine = currentLineIndex + 1;
-          const colInCurrentLine = cursorPosition - lineOffsets[currentLineIndex];
-          const targetOffset = lineOffsets[targetLine] + Math.min(colInCurrentLine, lines[targetLine].length);
-          setCursorPosition(targetOffset);
-        } else {
-          setCursorPosition(userCode.length);
-        }
-      } else if (e.key === 'Home') {
-        e.preventDefault();
-        let off = 0;
-        for (let i = 0; i < currentLineIndex; i++) {
-          off += lines[i].length + 1;
-        }
-        setCursorPosition(off);
-      } else if (e.key === 'End') {
-        e.preventDefault();
-        let off = 0;
-        for (let i = 0; i < currentLineIndex; i++) {
-          off += lines[i].length + 1;
-        }
-        setCursorPosition(off + lines[currentLineIndex].length);
-      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        e.preventDefault();
-        handleInsertToken(e.key);
-      }
-    };
-
-    const handleGlobalPaste = (e: ClipboardEvent) => {
-      if (showTaskModal || showOutputPanel || showSolutionModal) return;
-      const text = e.clipboardData?.getData('text');
-      if (text) {
-        e.preventDefault();
-        handleInsertToken(text);
-      }
-    };
-
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    window.addEventListener('paste', handleGlobalPaste);
-    return () => {
-      window.removeEventListener('keydown', handleGlobalKeyDown);
-      window.removeEventListener('paste', handleGlobalPaste);
-    };
-  }, [userCode, cursorPosition, historyIndex, showTaskModal, showOutputPanel, showSolutionModal, lines, currentLineIndex]);
-
-  // Tap directly on a line to move cursor without opening device keyboard
-  const handleLineClick = (lineIdx: number, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    let offset = 0;
-    for (let i = 0; i < lineIdx && i < lines.length; i++) {
-      offset += lines[i].length + 1;
-    }
-    const targetLine = lines[lineIdx] ?? '';
-    const newPos = Math.min(offset + targetLine.length, userCode.length);
-    setCursorPosition(newPos);
-    if (textareaRef.current) {
-      textareaRef.current.selectionStart = newPos;
-      textareaRef.current.selectionEnd = newPos;
-    }
-  };
-
-  // Tap empty canvas below code to position cursor at end of code
-  const handleCanvasClick = () => {
-    setCursorPosition(userCode.length);
-    if (textareaRef.current) {
-      textareaRef.current.selectionStart = userCode.length;
-      textareaRef.current.selectionEnd = userCode.length;
-    }
-  };
-
   return (
-    <main className="w-full max-w-2xl h-full h-[100dvh] max-h-[100dvh] bg-[#090d16] flex flex-col justify-between relative overflow-hidden shadow-2xl border-x-0 md:border md:border-slate-800/80 md:rounded-2xl text-slate-100 select-none">
+    <main
+      className={`w-full max-w-2xl h-full h-[100dvh] max-h-[100dvh] flex flex-col justify-between relative overflow-hidden shadow-2xl border-x-0 md:border md:rounded-2xl select-none ${
+        isDark ? 'bg-[#090d16] md:border-slate-800/80 text-slate-100' : 'bg-white md:border-slate-300 text-slate-900'
+      }`}
+    >
       {/* ================= BEGIN: Minimal Top Toolbar (Sticky Top) ================= */}
-      <header className="sticky top-0 z-30 w-full bg-[#0d121d] border-b border-ide-border px-3 h-10 flex items-center justify-between shrink-0 select-none pt-[env(safe-area-inset-top,0px)]">
+      {/* Safe-area padding lives on this OUTER element with no fixed height,
+          so it adds to the header's total height instead of eating into a
+          fixed h-10 box (which squished/clipped the button row on devices
+          with a real status-bar inset -- invisible in browser preview,
+          where the inset is always 0). */}
+      <header
+        className={`sticky top-0 z-30 w-full border-b shrink-0 select-none pt-[env(safe-area-inset-top,0px)] ${
+          isDark ? 'bg-[#0d121d] border-ide-border' : 'bg-[#e8eaf0] border-slate-300'
+        }`}
+      >
+      <div className="px-3 h-10 flex items-center justify-between">
         {/* Left: Back button & Problem Details Trigger */}
         <div className="flex items-center gap-2">
           <button
             type="button"
             aria-label="Go Back"
             onClick={onBack || onContinue}
-            className="w-7 h-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-center text-slate-300 active:scale-95 transition-transform cursor-pointer shrink-0"
+            className={`w-7 h-7 rounded-lg border flex items-center justify-center active:scale-95 transition-transform cursor-pointer shrink-0 ${
+              isDark
+                ? 'bg-slate-800/80 hover:bg-slate-700 border-slate-700/60 text-slate-300'
+                : 'bg-white hover:bg-slate-100 border-slate-300 text-slate-600'
+            }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path d="M15.75 19.5L8.25 12l7.5-7.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -474,7 +170,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium active:scale-95 transition-all cursor-pointer ${
               showTaskModal
                 ? 'bg-indigo-600/25 border-indigo-500/70 text-indigo-200 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
-                : 'bg-[#131826] hover:bg-[#1c2438] border-slate-700/80 text-slate-200'
+                : isDark
+                ? 'bg-[#131826] hover:bg-[#1c2438] border-slate-700/80 text-slate-200'
+                : 'bg-white hover:bg-slate-100 border-slate-300 text-slate-700'
             }`}
             aria-label="Toggle Task"
             title="Click to view Task"
@@ -494,44 +192,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
           </button>
         </div>
 
-        {/* Right: Undo / Redo, Moved Run button, and Overflow Menu */}
+        {/* Right: Run button and Overflow Menu (Undo/Redo now live above the
+            keyboard, right-aligned, within easy thumb reach while typing) */}
         <div className="flex items-center gap-1.5 relative">
-          {/* Undo / Redo controls */}
-          <div className="flex items-center gap-0.5 text-slate-400 mr-0.5">
-            <button
-              type="button"
-              aria-label="Undo"
-              disabled={historyIndex <= 0}
-              onClick={handleUndo}
-              className={`w-7 h-7 rounded-md flex items-center justify-center hover:text-slate-200 hover:bg-[#1e2538] active:scale-95 transition-transform cursor-pointer ${
-                historyIndex <= 0 ? 'opacity-30 pointer-events-none' : ''
-              }`}
-              title="Undo (Ctrl+Z)"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                <path d="M9 14L4 9l5-5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M20 20v-7a4 4 0 00-4-4H4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              aria-label="Redo"
-              disabled={historyIndex >= history.length - 1}
-              onClick={handleRedo}
-              className={`w-7 h-7 rounded-md flex items-center justify-center hover:text-slate-200 hover:bg-[#1e2538] active:scale-95 transition-transform cursor-pointer ${
-                historyIndex >= history.length - 1 ? 'opacity-30 pointer-events-none' : ''
-              }`}
-              title="Redo (Ctrl+Y)"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                <path d="M15 14l5-5-5-5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M4 20v-7a4 4 0 014-4h12" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Primary Run Action moved to Toolbar */}
           <button
             type="button"
             aria-label="Execute code"
@@ -549,7 +212,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             type="button"
             aria-label="More options"
             onClick={() => setShowOverflowMenu((prev) => !prev)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-200 cursor-pointer transition-colors"
+            className={`w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
+              isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800'
+            }`}
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <circle cx="12" cy="5" r="1.75" />
@@ -560,14 +225,20 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
 
           {/* Overflow Dropdown */}
           {showOverflowMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl bg-[#141926] border border-slate-700/80 shadow-2xl p-1.5 z-50 text-xs animate-fadeIn">
+            <div
+              className={`absolute right-0 top-full mt-2 w-48 rounded-xl border shadow-2xl p-1.5 z-50 text-xs animate-fadeIn ${
+                isDark ? 'bg-[#141926] border-slate-700/80' : 'bg-white border-slate-300'
+              }`}
+            >
               <button
                 type="button"
                 onClick={() => {
                   setShowOverflowMenu(false);
                   handleExecute();
                 }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center gap-2 cursor-pointer"
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer ${
+                  isDark ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-100 text-slate-700'
+                }`}
               >
                 <svg className="w-3.5 h-3.5 text-indigo-400 fill-current" viewBox="0 0 24 24">
                   <polygon points="5 3 19 12 5 21 5 3" />
@@ -581,22 +252,12 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                   setShowOverflowMenu(false);
                   setShowTaskModal(true);
                 }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center gap-2 cursor-pointer"
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer ${
+                  isDark ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-100 text-slate-700'
+                }`}
               >
                 <span className="material-symbols-outlined text-[15px] text-indigo-400">help_outline</span>
                 <span>View Task</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowOverflowMenu(false);
-                  setShowVirtualKeyboard((prev) => !prev);
-                }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center gap-2 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[15px] text-slate-400">keyboard</span>
-                <span>{showVirtualKeyboard ? 'Hide' : 'Show'} Keyboard</span>
               </button>
 
               {data.solutionCode && (
@@ -606,7 +267,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                     setShowOverflowMenu(false);
                     setShowSolutionModal(true);
                   }}
-                  className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-indigo-300 flex items-center gap-2 cursor-pointer"
+                  className={`w-full text-left px-2.5 py-1.5 rounded-lg text-indigo-300 flex items-center gap-2 cursor-pointer ${
+                    isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-100 text-indigo-600'
+                  }`}
                 >
                   <span className="material-symbols-outlined text-[15px] text-indigo-400">visibility</span>
                   <span>View Solution</span>
@@ -619,22 +282,60 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                   setShowOverflowMenu(false);
                   handleAcceptSuggestion();
                 }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-800 text-amber-300 flex items-center gap-2 cursor-pointer"
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-amber-300 flex items-center gap-2 cursor-pointer ${
+                  isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-100 text-amber-700'
+                }`}
               >
                 <span className="material-symbols-outlined text-[15px] text-amber-400">auto_fix_high</span>
                 <span>Auto-Complete</span>
               </button>
-
-              <div className="h-[1px] bg-slate-800 my-1" />
 
               <button
                 type="button"
                 onClick={() => {
                   setShowOverflowMenu(false);
                   soundFX.playClick();
-                  updateCodeWithHistory(data.initialCode, data.initialCode.length);
+                  editorRef.current?.toggleCursorArrows();
                 }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-rose-950/40 text-rose-300 flex items-center gap-2 cursor-pointer"
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer ${
+                  isDark ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-100 text-slate-700'
+                }`}
+              >
+                <span className={`material-symbols-outlined text-[15px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {cursorArrowsVisible ? 'keyboard_hide' : 'keyboard'}
+                </span>
+                <span>{cursorArrowsVisible ? 'Hide' : 'Show'} Cursor Arrows</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOverflowMenu(false);
+                  soundFX.playClick();
+                  editorRef.current?.toggleHorizontalScroll();
+                }}
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer ${
+                  isDark ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-100 text-slate-700'
+                }`}
+              >
+                <span className={`material-symbols-outlined text-[15px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {horizontalScrollEnabled ? 'wrap_text' : 'unfold_more'}
+                </span>
+                <span>{horizontalScrollEnabled ? 'Disable' : 'Enable'} Horizontal Scroll</span>
+              </button>
+
+              <div className={`h-[1px] my-1 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOverflowMenu(false);
+                  soundFX.playClick();
+                  editorRef.current?.resetTo(data.initialCode);
+                }}
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-rose-300 flex items-center gap-2 cursor-pointer ${
+                  isDark ? 'hover:bg-rose-950/40' : 'hover:bg-rose-50 text-rose-600'
+                }`}
               >
                 <span className="material-symbols-outlined text-[15px]">restart_alt</span>
                 <span>Reset to Starter</span>
@@ -642,132 +343,47 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             </div>
           )}
         </div>
+      </div>
       </header>
       {/* ================= END: Minimal Top Toolbar ================= */}
 
-      {/* ================= BEGIN: Dominant Code Editor Surface ================= */}
-      <section
-        className="flex-1 flex flex-col min-h-0 bg-[#0a0d16] relative overflow-hidden"
-        data-purpose="dominant-ide-surface"
-      >
-        {/* Code Canvas Surface: dominant, clear, comfortable font */}
-        <div
-          ref={editorScrollRef}
-          onClick={handleCanvasClick}
-          className="flex-1 overflow-y-auto overflow-x-auto overscroll-contain relative flex font-mono text-[13.5px] leading-[24px] bg-[#0b0f19] cursor-text"
-        >
-          {/* Gutter: Ultra-thin line numbers to maximize horizontal space for code */}
-          <div className="w-auto min-w-[14px] py-2 flex flex-col items-center px-0.5 text-slate-600 select-none bg-[#090d15]/90 border-r border-ide-border shrink-0 text-[10px] font-mono tracking-tighter">
-            {Array.from({ length: displayLineCount }).map((_, idx) => {
-              const lineNum = idx + 1;
-              const isActive = idx === currentLineIndex;
-              return (
-                <span
-                  key={lineNum}
-                  onClick={(e) => handleLineClick(idx, e)}
-                  className={`h-[24px] leading-[24px] text-center w-full block transition-colors cursor-pointer ${
-                    isActive ? 'text-indigo-400 font-bold' : 'text-slate-600 hover:text-slate-400'
-                  }`}
-                >
-                  {lineNum}
-                </span>
-              );
-            })}
-          </div>
-
-          {/* Code Text Content */}
-          <div className="flex-1 py-2 pl-1.5 pr-2 whitespace-pre relative font-medium min-w-max">
-            {/* Read-only sync textarea with inputMode="none" ensuring native device keyboard is NEVER triggered */}
-            <textarea
-              ref={textareaRef}
-              wrap="off"
-              spellCheck={false}
-              autoCapitalize="off"
-              autoCorrect="off"
-              readOnly
-              inputMode="none"
-              tabIndex={-1}
-              aria-hidden="true"
-              value={userCode}
-              className="absolute inset-0 opacity-0 w-full h-full resize-none p-0 pointer-events-none font-mono text-[13.5px] leading-[24px] -z-10 select-none"
-            />
-
-            {/* Syntax Highlighted Lines */}
-            {lines.map((lineStr, lineIdx) => {
-              const isActive = lineIdx === currentLineIndex;
-
-              // Calculate character offset for this line to position the cursor at the exact column
-              let lineStartOffset = 0;
-              for (let i = 0; i < lineIdx; i++) {
-                lineStartOffset += lines[i].length + 1;
-              }
-              const colInLine = Math.max(0, Math.min(lineStr.length, cursorPosition - lineStartOffset));
-
-              return (
-                <div
-                  key={lineIdx}
-                  onClick={(e) => handleLineClick(lineIdx, e)}
-                  className={`leading-[24px] transition-colors relative cursor-pointer font-mono ${
-                    isActive ? '-mx-1.5 px-1.5 bg-[#13192c] rounded-xs' : 'hover:bg-slate-800/30'
-                  }`}
-                >
-                  {isActive ? (
-                    <>
-                      {renderHighlightedLine(lineStr.slice(0, colInLine), `line-${lineIdx}-before`)}
-                      <span className="inline-block w-[2px] h-[17px] bg-indigo-400 align-middle blinking-cursor shadow-[0_0_8px_rgba(129,140,248,0.9)] mx-[0.5px]" />
-                      {renderHighlightedLine(lineStr.slice(colInLine), `line-${lineIdx}-after`)}
-                    </>
-                  ) : (
-                    renderHighlightedLine(lineStr || ' ', `line-${lineIdx}`)
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-      {/* ================= END: Dominant Code Editor Surface ================= */}
-
-      {/* ================= BEGIN: Sticky Bottom Keyboard & Accessories ================= */}
-      <div
-        className="sticky bottom-0 z-30 w-full shrink-0 mt-auto bg-[#121622] pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_20px_rgba(0,0,0,0.5)] border-t border-slate-800/80"
-        data-purpose="sticky-bottom-keyboard-panel"
-      >
-        <CodingAccessoryToolbar
-          onInsertToken={handleInsertToken}
-          onInsertSymbol={handleInsertToken}
-          customTokens={accessoryTokens}
-        />
-
-        {showVirtualKeyboard && (
-          <MobileCodingKeyboard
-            onInsertChar={handleInsertToken}
-            onBackspace={handleSmartBackspace}
-            onReturn={handleSmartReturn}
-            onSpace={handleSpace}
-          />
-        )}
-      </div>
-      {/* ================= END: Sticky Bottom Keyboard & Accessories ================= */}
+      <KotlinCodeEditor
+        ref={editorRef}
+        code={userCode}
+        onCodeChange={handleCodeChange}
+        onCursorArrowsVisibilityChange={setCursorArrowsVisible}
+        onHorizontalScrollChange={setHorizontalScrollEnabled}
+        onRunRequested={handleExecute}
+        customTokens={accessoryTokens}
+        isDark={isDark}
+      />
 
       {/* ================= BEGIN: Task Details Modal ================= */}
       {showTaskModal && (
-        <div 
+        <div
           className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
           onClick={() => setShowTaskModal(false)}
         >
-          <div 
-            className="w-full max-w-[372px] mx-auto rounded-2xl border border-slate-700/80 bg-[#121622] p-5 text-slate-100 shadow-2xl animate-scaleUp max-h-[82vh] overflow-y-auto"
+          <div
+            className={`w-full max-w-[372px] mx-auto rounded-2xl border p-5 shadow-2xl animate-scaleUp max-h-[82vh] overflow-y-auto ${
+              isDark ? 'border-slate-700/80 bg-[#121622] text-slate-100' : 'border-slate-300 bg-white text-slate-900'
+            }`}
             onClick={(e) => e.stopPropagation()}
             id="task-details-modal"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-md bg-indigo-950/90 text-indigo-300 font-mono text-[10.5px] font-bold border border-indigo-700/50">
+                <span
+                  className={`px-2 py-0.5 rounded-md font-mono text-[10.5px] font-bold border ${
+                    isDark
+                      ? 'bg-indigo-950/90 text-indigo-300 border-indigo-700/50'
+                      : 'bg-indigo-100 text-indigo-700 border-indigo-300'
+                  }`}
+                >
                   TASK
                 </span>
                 <span className="text-slate-500 text-xs">·</span>
-                <span className="font-mono text-xs text-slate-400 font-medium">
+                <span className={`font-mono text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   {data.fileName || `${(topicTitle || 'Main').replace(/[^a-zA-Z0-9]/g, '')}.kt`}
                 </span>
               </div>
@@ -775,7 +391,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                 type="button"
                 aria-label="Close task details"
                 onClick={() => setShowTaskModal(false)}
-                className="text-slate-400 hover:text-slate-200 cursor-pointer p-1 rounded-lg hover:bg-slate-800 transition-colors"
+                className={`cursor-pointer p-1 rounded-lg transition-colors ${
+                  isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+                }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
@@ -784,49 +402,57 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             </div>
 
             <div className="my-3.5">
-              <h3 className="font-bold text-base text-slate-100 mb-1.5">
+              <h3 className={`font-bold text-base mb-1.5 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                 {data.title || topicTitle || 'Kotlin Code Task'}
               </h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                 {data.description}
               </p>
             </div>
 
             {/* Specifications Card */}
-            <div className="space-y-2 p-3.5 rounded-xl bg-[#090d16] border border-slate-800 text-xs font-mono my-3">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 font-sans">
+            <div
+              className={`space-y-2 p-3.5 rounded-xl border text-xs font-mono my-3 ${
+                isDark ? 'bg-[#090d16] border-slate-800' : 'bg-slate-50 border-slate-200'
+              }`}
+            >
+              <div className={`text-[11px] font-bold uppercase tracking-wider mb-1 font-sans ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 Signature & Types
               </div>
-              <div className="flex justify-between items-center text-slate-400">
+              <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 <span>Function:</span>
-                <span className="text-indigo-300 font-semibold">{data.requirements.name}</span>
+                <span className={isDark ? 'text-indigo-300 font-semibold' : 'text-indigo-600 font-semibold'}>{data.requirements.name}</span>
               </div>
-              <div className="flex justify-between items-center text-slate-400">
+              <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 <span>Parameters:</span>
-                <span className="text-amber-300">{data.requirements.params}</span>
+                <span className={isDark ? 'text-amber-300' : 'text-amber-700'}>{data.requirements.params}</span>
               </div>
-              <div className="flex justify-between items-center text-slate-400">
+              <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                 <span>Returns:</span>
-                <span className="text-emerald-300">{data.requirements.returns}</span>
+                <span className={isDark ? 'text-emerald-300' : 'text-emerald-700'}>{data.requirements.returns}</span>
               </div>
             </div>
 
             {/* Sample Input / Output */}
             {(data.sampleInput || data.expectedOutput) && (
-              <div className="p-3.5 rounded-xl bg-[#090d16] border border-slate-800 text-xs font-mono my-3">
-                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 font-sans">
+              <div
+                className={`p-3.5 rounded-xl border text-xs font-mono my-3 ${
+                  isDark ? 'bg-[#090d16] border-slate-800' : 'bg-slate-50 border-slate-200'
+                }`}
+              >
+                <div className={`text-[11px] font-bold uppercase tracking-wider mb-1.5 font-sans ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   Example Case
                 </div>
                 {data.sampleInput && (
-                  <div className="flex justify-between items-center text-slate-400 mb-1">
+                  <div className={`flex justify-between items-center mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     <span>Call:</span>
-                    <span className="text-sky-300">{data.sampleInput}</span>
+                    <span className={isDark ? 'text-sky-300' : 'text-sky-700'}>{data.sampleInput}</span>
                   </div>
                 )}
                 {data.expectedOutput && (
-                  <div className="flex justify-between items-center text-slate-400">
+                  <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                     <span>Output:</span>
-                    <span className="text-emerald-400 font-bold">{data.expectedOutput}</span>
+                    <span className={isDark ? 'text-emerald-400 font-bold' : 'text-emerald-700 font-bold'}>{data.expectedOutput}</span>
                   </div>
                 )}
               </div>
@@ -853,22 +479,34 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
           onClick={() => setShowOutputPanel(false)}
         >
           <div
-            className="w-full max-w-[372px] mx-auto rounded-2xl border border-slate-700/80 bg-[#121622] p-5 text-slate-100 shadow-2xl animate-scaleUp max-h-[85vh] overflow-y-auto"
+            className={`w-full max-w-[372px] mx-auto rounded-2xl border p-5 shadow-2xl animate-scaleUp max-h-[85vh] overflow-y-auto ${
+              isDark ? 'border-slate-700/80 bg-[#121622] text-slate-100' : 'border-slate-300 bg-white text-slate-900'
+            }`}
             onClick={(e) => e.stopPropagation()}
             id="run-result-modal"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
               <div className="flex items-center gap-2">
                 {executionResult.success ? (
-                  <span className="px-2 py-0.5 rounded-md bg-emerald-950/90 text-emerald-300 font-mono text-[10.5px] font-bold border border-emerald-700/50 flex items-center gap-1">
+                  <span
+                    className={`px-2 py-0.5 rounded-md font-mono text-[10.5px] font-bold border flex items-center gap-1 ${
+                      isDark
+                        ? 'bg-emerald-950/90 text-emerald-300 border-emerald-700/50'
+                        : 'bg-emerald-100 text-emerald-700 border-emerald-300'
+                    }`}
+                  >
                     <svg className="w-3 h-3 stroke-current" fill="none" strokeWidth="2.5" viewBox="0 0 24 24">
                       <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <span>TEST PASSED</span>
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded-md bg-rose-950/90 text-rose-300 font-mono text-[10.5px] font-bold border border-rose-700/50 flex items-center gap-1">
+                  <span
+                    className={`px-2 py-0.5 rounded-md font-mono text-[10.5px] font-bold border flex items-center gap-1 ${
+                      isDark ? 'bg-rose-950/90 text-rose-300 border-rose-700/50' : 'bg-rose-100 text-rose-700 border-rose-300'
+                    }`}
+                  >
                     <svg className="w-3 h-3 stroke-current" fill="none" strokeWidth="2.5" viewBox="0 0 24 24">
                       <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
@@ -876,7 +514,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                   </span>
                 )}
                 <span className="text-slate-500 text-xs">·</span>
-                <span className="font-mono text-xs text-slate-400 font-medium">
+                <span className={`font-mono text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   {executionResult.executionTimeMs || 12}ms
                 </span>
               </div>
@@ -885,7 +523,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                 type="button"
                 aria-label="Close run result"
                 onClick={() => setShowOutputPanel(false)}
-                className="text-slate-400 hover:text-slate-200 cursor-pointer p-1 rounded-lg hover:bg-slate-800 transition-colors"
+                className={`cursor-pointer p-1 rounded-lg transition-colors ${
+                  isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+                }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
@@ -897,55 +537,71 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             <div className="my-3.5">
               {executionResult.success ? (
                 <>
-                  <h3 className="font-bold text-base text-slate-100 mb-1 flex items-center gap-1.5">
+                  <h3 className={`font-bold text-base mb-1 flex items-center gap-1.5 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                     <span>All Tests Passed!</span>
                     <span className="text-emerald-400">🎉</span>
                   </h3>
-                  <p className="text-xs text-slate-300 leading-relaxed">
+                  <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                     Your code compiled and executed smoothly with the expected output.
                   </p>
 
-                  <div className="my-3.5 p-3.5 rounded-xl bg-[#090d16] border border-emerald-500/30 font-mono text-xs space-y-2">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 font-sans">
+                  <div
+                    className={`my-3.5 p-3.5 rounded-xl border font-mono text-xs space-y-2 ${
+                      isDark ? 'bg-[#090d16] border-emerald-500/30' : 'bg-slate-50 border-emerald-400/50'
+                    }`}
+                  >
+                    <div className={`text-[11px] font-bold uppercase tracking-wider mb-1 font-sans ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                       Output Verification
                     </div>
-                    <div className="flex justify-between items-center text-slate-300">
-                      <span className="text-slate-400">Output:</span>
-                      <span className="text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30">
+                    <div className={`flex justify-between items-center ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Output:</span>
+                      <span
+                        className={`font-bold px-2 py-0.5 rounded border ${
+                          isDark ? 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30' : 'text-emerald-700 bg-emerald-100 border-emerald-300'
+                        }`}
+                      >
                         {executionResult.output || '(no output)'}
                       </span>
                     </div>
                     {data.expectedOutput && (
-                      <div className="flex justify-between items-center text-slate-400">
+                      <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                         <span>Expected:</span>
-                        <span className="text-slate-300 font-medium">{data.expectedOutput}</span>
+                        <span className={isDark ? 'text-slate-300 font-medium' : 'text-slate-700 font-medium'}>{data.expectedOutput}</span>
                       </div>
                     )}
                   </div>
                 </>
               ) : (
                 <>
-                  <h3 className="font-bold text-base text-slate-100 mb-1">
+                  <h3 className={`font-bold text-base mb-1 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                     Execution Error
                   </h3>
-                  <p className="text-xs text-slate-300 leading-relaxed">
+                  <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                     {executionResult.error?.message || 'The code produced an unexpected output or failed to compile.'}
                   </p>
 
-                  <div className="my-3.5 p-3.5 rounded-xl bg-[#090d16] border border-rose-500/30 font-mono text-xs space-y-2">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 font-sans">
+                  <div
+                    className={`my-3.5 p-3.5 rounded-xl border font-mono text-xs space-y-2 ${
+                      isDark ? 'bg-[#090d16] border-rose-500/30' : 'bg-slate-50 border-rose-400/50'
+                    }`}
+                  >
+                    <div className={`text-[11px] font-bold uppercase tracking-wider mb-1 font-sans ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                       Output Details
                     </div>
-                    <div className="flex justify-between items-center text-slate-300">
-                      <span className="text-slate-400">Your Output:</span>
-                      <span className="text-rose-400 font-bold px-2 py-0.5 rounded bg-rose-500/15 border border-rose-500/30">
+                    <div className={`flex justify-between items-center ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Your Output:</span>
+                      <span
+                        className={`font-bold px-2 py-0.5 rounded border ${
+                          isDark ? 'text-rose-400 bg-rose-500/15 border-rose-500/30' : 'text-rose-700 bg-rose-100 border-rose-300'
+                        }`}
+                      >
                         {executionResult.output || '(no output)'}
                       </span>
                     </div>
                     {data.expectedOutput && (
-                      <div className="flex justify-between items-center text-slate-400">
+                      <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                         <span>Expected:</span>
-                        <span className="text-emerald-400 font-medium">{data.expectedOutput}</span>
+                        <span className={isDark ? 'text-emerald-400 font-medium' : 'text-emerald-700 font-medium'}>{data.expectedOutput}</span>
                       </div>
                     )}
                   </div>
@@ -954,11 +610,13 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+            <div className={`flex items-center justify-end gap-2.5 pt-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
               <button
                 type="button"
                 onClick={() => setShowOutputPanel(false)}
-                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium active:scale-95 transition-all cursor-pointer"
+                className={`px-3.5 py-2 rounded-xl text-xs font-medium active:scale-95 transition-all cursor-pointer ${
+                  isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                }`}
               >
                 {executionResult.success ? 'Keep Editing' : 'Back to Code'}
               </button>
@@ -1002,13 +660,17 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
       {/* Reference Solution Modal (accessible via overflow menu) */}
       {showSolutionModal && data.solutionCode && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-          <div className="w-full max-w-sm rounded-2xl border border-slate-700/80 bg-[#121622] p-4 text-slate-100 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="font-bold text-sm text-slate-100">Reference Solution</h3>
+          <div
+            className={`w-full max-w-sm rounded-2xl border p-4 shadow-2xl ${
+              isDark ? 'border-slate-700/80 bg-[#121622] text-slate-100' : 'border-slate-300 bg-white text-slate-900'
+            }`}
+          >
+            <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+              <h3 className={`font-bold text-sm ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>Reference Solution</h3>
               <button
                 type="button"
                 onClick={() => setShowSolutionModal(false)}
-                className="text-slate-400 hover:text-slate-200 cursor-pointer p-1"
+                className={`cursor-pointer p-1 ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800'}`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
@@ -1016,7 +678,11 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
               </button>
             </div>
 
-            <div className="my-3 p-3 rounded-xl bg-[#090d16] border border-slate-800 font-mono text-xs text-indigo-300 whitespace-pre overflow-x-auto">
+            <div
+              className={`my-3 p-3 rounded-xl border font-mono text-xs whitespace-pre overflow-x-auto ${
+                isDark ? 'bg-[#090d16] border-slate-800 text-indigo-300' : 'bg-slate-50 border-slate-200 text-indigo-700'
+              }`}
+            >
               {data.solutionCode}
             </div>
 
@@ -1024,7 +690,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
               <button
                 type="button"
                 onClick={() => setShowSolutionModal(false)}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium cursor-pointer"
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer ${
+                  isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                }`}
               >
                 Close
               </button>

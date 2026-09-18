@@ -280,7 +280,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
     >
       {/* ================= STICKY ELEVATED TOOLBAR (NATIVE ANDROID STYLE) ================= */}
       <header
-        className={`sticky top-0 z-50 w-full transition-colors duration-200 border-b ${
+        className={`sticky top-0 z-50 w-full pt-safe transition-colors duration-200 border-b ${
           isDark
             ? 'bg-[#0f131d]/95 backdrop-blur-md border-[#262c3d] shadow-[0_4px_16px_rgba(0,0,0,0.6)]'
             : 'bg-white/95 backdrop-blur-md border-slate-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)]'

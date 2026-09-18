@@ -89,8 +89,18 @@ const BUILTIN_CALLS = ['println', 'print', 'listOf', 'mutableListOf'];
 // "raw string" styling (that would need cross-line state tracking, like
 // `renderKotlinCodeLines`'s block-comment handling), but it guarantees no
 // character is ever silently dropped from the render.
+//
+// `&` and `|` were missing from the punctuation class entirely -- neither
+// character is punctuation, an operator elsewhere in this regex, or an
+// identifier char, so Kotlin's `&&`/`||` logical operators silently vanished
+// from every rendered line that used them (this was a live, shipped bug:
+// World 2's whole Logical Operators lesson, plus World 1/5 debug content,
+// renders `&&`/`||` in Explore/Predict/Debug/Learn views). `\` is included
+// for the same reason -- string escape sequences like `\n`/`\"` outside a
+// quoted-string token would otherwise drop the backslash and leave a bare
+// letter, exactly like the unmatched-`'`/digit-suffix bugs described above.
 const TOKEN_REGEX =
-  /(\/\/.*$|"[^"]*"|'(?:\\.|[^'\\])*'|_____|\b(?:val|var|fun|class|when|if|else|for|in|downTo|step|until|return|null|true|false|is)\b|\b(?:Int|String|Boolean|Double|Unit|Float|List|Set|Map)\b|\b(?:println|print|listOf|mutableListOf)\b|\d[\d_]*(?:\.[\d_]+)?[fFdDL]?|[{}()+\-*\/=?:.,!<>"]+|[A-Za-z_][A-Za-z0-9_]*|\s+)/g;
+  /(\/\/.*$|"[^"]*"|'(?:\\.|[^'\\])*'|_____|\b(?:val|var|fun|class|when|if|else|for|in|downTo|step|until|return|null|true|false|is)\b|\b(?:Int|String|Boolean|Double|Unit|Float|List|Set|Map)\b|\b(?:println|print|listOf|mutableListOf)\b|\d[\d_]*(?:\.[\d_]+)?[fFdDL]?|[{}()+\-*\/=?:.,!<>"&|\\]+|[A-Za-z_][A-Za-z0-9_]*|\s+)/g;
 
 interface ColorClasses {
   commentClass: string;
@@ -204,7 +214,7 @@ function renderCodeFragment(
         </span>
       );
     }
-    if (/^[{}()+\-*\/=?:.,!<>"]+$/.test(token)) {
+    if (/^[{}()+\-*\/=?:.,!<>"&|\\]+$/.test(token)) {
       return (
         <span key={key} className={classes.punctuationClass}>
           {token}

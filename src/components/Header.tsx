@@ -25,7 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header
-      className={`sticky top-0 w-full z-40 backdrop-blur-xl transition-colors duration-200 border-b ${
+      className={`sticky top-0 w-full z-40 pt-safe backdrop-blur-xl transition-colors duration-200 border-b ${
         isDark
           ? 'bg-[#0b0f19]/90 border-white/5 text-[#dfe2f1] shadow-[0_4px_20px_rgba(0,0,0,0.5)]'
           : 'bg-[#e8eaf0]/90 border-white/40 text-[#1e2433] shadow-[0_4px_20px_rgba(0,0,0,0.03)]'

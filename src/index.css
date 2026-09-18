@@ -44,6 +44,16 @@
   }
 }
 
+/* Safe-area insets (status bar / notch / gesture nav / home indicator).
+   `pb-safe` is referenced by Navigation.tsx; keep these two in sync with
+   any other component that needs to sit clear of the system bars. */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* Material Symbols configuration */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';

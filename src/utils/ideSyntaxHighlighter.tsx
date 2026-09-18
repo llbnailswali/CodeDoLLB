@@ -131,32 +131,60 @@ export function tokenizeKotlinLine(line: string): SyntaxToken[] {
   return tokens;
 }
 
-export function renderHighlightedLine(line: string, keyPrefix: string = 'token'): React.ReactNode[] {
+export function renderHighlightedLine(line: string, keyPrefix: string = 'token', isDark: boolean = true): React.ReactNode[] {
   const tokens = tokenizeKotlinLine(line);
   return tokens.map((t, idx) => {
     const key = `${keyPrefix}-${idx}`;
     switch (t.type) {
       case 'keyword':
-        return <span key={key} className="text-[#c084fc] font-semibold">{t.text}</span>;
+        return (
+          <span key={key} className={isDark ? 'text-[#c084fc] font-semibold' : 'text-[#7c3aed] font-semibold'}>
+            {t.text}
+          </span>
+        );
       case 'func':
-        return <span key={key} className="text-[#38bdf8] font-semibold">{t.text}</span>;
+        return (
+          <span key={key} className={isDark ? 'text-[#38bdf8] font-semibold' : 'text-[#0284c7] font-semibold'}>
+            {t.text}
+          </span>
+        );
       case 'type':
-        return <span key={key} className="text-[#fbbf24] font-medium">{t.text}</span>;
+        return (
+          <span key={key} className={isDark ? 'text-[#fbbf24] font-medium' : 'text-[#b45309] font-medium'}>
+            {t.text}
+          </span>
+        );
       case 'op':
-        return <span key={key} className="text-[#f43f5e] font-bold">{t.text}</span>;
+        return (
+          <span key={key} className={isDark ? 'text-[#f43f5e] font-bold' : 'text-[#e11d48] font-bold'}>
+            {t.text}
+          </span>
+        );
       case 'punct':
-        return <span key={key} className="text-[#94a3b8]">{t.text}</span>;
+        return <span key={key} className={isDark ? 'text-[#94a3b8]' : 'text-[#64748b]'}>{t.text}</span>;
       case 'comment':
-        return <span key={key} className="text-[#64748b] italic text-[11px]">{t.text}</span>;
+        return (
+          <span key={key} className={isDark ? 'text-[#64748b] italic text-[11px]' : 'text-[#94a3b8] italic text-[11px]'}>
+            {t.text}
+          </span>
+        );
       case 'string':
-        return <span key={key} className="text-[#34d399] font-medium">{t.text}</span>;
+        return (
+          <span key={key} className={isDark ? 'text-[#34d399] font-medium' : 'text-[#059669] font-medium'}>
+            {t.text}
+          </span>
+        );
       case 'number':
-        return <span key={key} className="text-[#fb923c] font-medium">{t.text}</span>;
+        return (
+          <span key={key} className={isDark ? 'text-[#fb923c] font-medium' : 'text-[#c2410c] font-medium'}>
+            {t.text}
+          </span>
+        );
       case 'whitespace':
         return <span key={key}>{t.text}</span>;
       case 'param':
       default:
-        return <span key={key} className="text-slate-100">{t.text}</span>;
+        return <span key={key} className={isDark ? 'text-slate-100' : 'text-slate-800'}>{t.text}</span>;
     }
   });
 }

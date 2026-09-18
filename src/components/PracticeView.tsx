@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { AppTheme } from '../types';
 import { soundFX } from '../utils/audio';
 import { StorageManager } from '../utils/storage';
+import { runKotlinCode, KotlinExecutionResult } from '../utils/kotlinRunner';
+import { renderVisibleWhitespace } from '../utils/outputDisplay';
+import { KotlinCodeEditor } from './ide/KotlinCodeEditor';
 
 export type DrillType = 'sprint' | 'battle' | 'inference' | 'conditionals' | 'loops' | 'mistakes';
 
@@ -16,8 +19,36 @@ export const PracticeView: React.FC<PracticeViewProps> = ({ theme, onStartDrill,
   const [sandboxCode, setSandboxCode] = useState<string>(
     'fun main() {\n    val greeting = "Hello, Android!"\n    val number = 42\n    println("$greeting The answer is $number")\n}'
   );
-  const [terminalOutput, setTerminalOutput] = useState<string>('Hello, Android! The answer is 42');
   const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [lastResult, setLastResult] = useState<KotlinExecutionResult | null>(null);
+  const [showResultModal, setShowResultModal] = useState<boolean>(false);
+
+  // Stretch the scratchpad editor down to the bottom of the visible screen
+  // (clearing the fixed bottom Navigation bar) instead of using a fixed
+  // pixel height, so its own sticky keyboard sits at the true screen bottom.
+  const sandboxWrapperRef = useRef<HTMLDivElement>(null);
+  const [sandboxHeight, setSandboxHeight] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (activeTab !== 'sandbox') return;
+
+    const NAV_CLEARANCE_PX = 64; // Navigation bar's h-16
+
+    const recompute = () => {
+      const el = sandboxWrapperRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top;
+      setSandboxHeight(Math.max(240, window.innerHeight - top - NAV_CLEARANCE_PX));
+    };
+
+    recompute();
+    window.addEventListener('resize', recompute);
+    window.addEventListener('orientationchange', recompute);
+    return () => {
+      window.removeEventListener('resize', recompute);
+      window.removeEventListener('orientationchange', recompute);
+    };
+  }, [activeTab]);
 
   const mistakes = StorageManager.getMistakes();
 
@@ -83,20 +114,28 @@ export const PracticeView: React.FC<PracticeViewProps> = ({ theme, onStartDrill,
     },
   ];
 
-  const handleRunCode = () => {
+  const handleRunCode = async () => {
     soundFX.playClick();
     setIsRunning(true);
-    setTimeout(() => {
-      setIsRunning(false);
+    const result = await runKotlinCode(sandboxCode);
+    setIsRunning(false);
+    setLastResult(result);
+    setShowResultModal(true);
+    if (result.success) {
       soundFX.playSuccess();
-      setTerminalOutput('Hello, Android! The answer is 42\n[Program executed with exit code 0]');
-    }, 400);
+    } else {
+      soundFX.playError();
+    }
   };
 
   return (
-    <div className="flex flex-col w-full max-w-md mx-auto px-4 pb-28 pt-2 select-none">
+    <div
+      className={`flex flex-col w-full max-w-md mx-auto pt-2 select-none ${
+        activeTab === 'sandbox' ? 'pb-0' : 'pb-28'
+      }`}
+    >
       {/* Tab switch */}
-      <div className="flex items-center gap-2 mb-4 p-1 rounded-full bg-slate-500/10">
+      <div className="flex items-center gap-2 mb-4 p-1 rounded-full bg-slate-500/10 mx-4">
         <button
           onClick={() => {
             soundFX.playClick();
@@ -126,7 +165,7 @@ export const PracticeView: React.FC<PracticeViewProps> = ({ theme, onStartDrill,
       </div>
 
       {activeTab === 'challenges' ? (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 px-4">
           {/* Featured Challenge: Mobile Coding IDE Section */}
           <div
             className={`p-4 rounded-2xl border flex items-center justify-between transition-all ${
@@ -278,43 +317,99 @@ export const PracticeView: React.FC<PracticeViewProps> = ({ theme, onStartDrill,
         </div>
       ) : (
         /* Kotlin Scratchpad Playground */
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-['Outfit'] text-lg font-bold text-inherit">Live Interactive Kotlin IDE</h3>
-            <button
-              onClick={handleRunCode}
-              disabled={isRunning}
-              className="px-4 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-['Outfit'] text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95"
-            >
-              <span className="material-symbols-outlined text-[16px]">
-                {isRunning ? 'sync' : 'play_arrow'}
-              </span>
-              <span>{isRunning ? 'Running...' : 'Run Snippet'}</span>
-            </button>
-          </div>
-
-          <div className="w-full rounded-2xl bg-[#0D1322] border border-slate-800 p-3 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+        <div ref={sandboxWrapperRef} className="flex flex-col" style={{ height: sandboxHeight ?? undefined }}>
+          <div
+            className="w-full flex-1 min-h-0 rounded-2xl bg-[#0D1322] border border-slate-800 shadow-xl overflow-hidden flex flex-col"
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 px-3 py-2 shrink-0">
               <span className="text-xs font-['JetBrains_Mono'] text-slate-400">Scratchpad.kt</span>
-              <span className="text-[10px] text-indigo-300 font-['JetBrains_Mono']">Kotlin 1.9.20</span>
+              <button
+                onClick={handleRunCode}
+                disabled={isRunning}
+                className="px-3 py-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-['Outfit'] text-xs font-bold flex items-center gap-1 shadow-md active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[14px]">
+                  {isRunning ? 'sync' : 'play_arrow'}
+                </span>
+                <span>{isRunning ? 'Running...' : 'Run'}</span>
+              </button>
             </div>
-            <textarea
-              value={sandboxCode}
-              onChange={(e) => setSandboxCode(e.target.value)}
-              rows={6}
-              className="w-full bg-transparent font-['JetBrains_Mono'] text-xs text-sky-200 outline-none resize-none leading-relaxed"
-              spellCheck={false}
-            />
+            <div className="flex-1 min-h-0 flex flex-col">
+              <KotlinCodeEditor
+                code={sandboxCode}
+                onCodeChange={setSandboxCode}
+                onRunRequested={handleRunCode}
+                isDark={theme === 'dark'}
+              />
+            </div>
           </div>
+        </div>
+      )}
 
-          <div className="w-full rounded-2xl bg-[#070A12] border border-slate-800/80 p-3 shadow-inner">
-            <div className="flex items-center gap-2 mb-1.5 text-slate-400 text-[11px] font-['JetBrains_Mono']">
-              <span className="material-symbols-outlined text-[14px]">terminal</span>
-              <span>Standard Output</span>
+      {/* Scratchpad Run Result Modal (freeform: no expected-output grading, just what it printed) */}
+      {showResultModal && lastResult && (
+        <div
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
+          onClick={() => setShowResultModal(false)}
+        >
+          <div
+            className="w-full max-w-[372px] mx-auto rounded-2xl border border-slate-700/80 bg-[#121622] p-5 text-slate-100 shadow-2xl animate-scaleUp max-h-[82vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                {lastResult.success ? (
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-950/90 text-emerald-300 font-mono text-[10.5px] font-bold border border-emerald-700/50 flex items-center gap-1">
+                    <svg className="w-3 h-3 stroke-current" fill="none" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span>RAN SUCCESSFULLY</span>
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-md bg-rose-950/90 text-rose-300 font-mono text-[10.5px] font-bold border border-rose-700/50 flex items-center gap-1">
+                    <svg className="w-3 h-3 stroke-current" fill="none" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span>RUN FAILED</span>
+                  </span>
+                )}
+                <span className="text-slate-500 text-xs">·</span>
+                <span className="font-mono text-xs text-slate-400 font-medium">{lastResult.executionTimeMs || 12}ms</span>
+              </div>
+              <button
+                type="button"
+                aria-label="Close run result"
+                onClick={() => setShowResultModal(false)}
+                className="text-slate-400 hover:text-slate-200 cursor-pointer p-1 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
             </div>
-            <pre className="font-['JetBrains_Mono'] text-xs text-emerald-400 whitespace-pre-wrap leading-relaxed">
-              {terminalOutput}
-            </pre>
+
+            <div className="my-3.5">
+              <div className="flex items-center gap-2 mb-1.5 text-slate-400 text-[11px] font-['JetBrains_Mono']">
+                <span className="material-symbols-outlined text-[14px]">terminal</span>
+                <span>Standard Output</span>
+              </div>
+              <pre className="p-3 rounded-xl bg-[#090d16] border border-slate-800 font-['JetBrains_Mono'] text-xs text-emerald-400 whitespace-nowrap overflow-x-auto">
+                {lastResult.output ? renderVisibleWhitespace(lastResult.output) : '(no output)'}
+              </pre>
+              {!lastResult.success && lastResult.error && (
+                <p className="mt-2 text-xs text-rose-300 leading-relaxed">{lastResult.error.message}</p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowResultModal(false)}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium active:scale-95 transition-all cursor-pointer"
+              >
+                Back to Code
+              </button>
+            </div>
           </div>
         </div>
       )}

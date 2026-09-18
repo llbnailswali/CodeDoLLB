@@ -80,7 +80,7 @@ export const LessonSuccessModal: React.FC<LessonSuccessModalProps> = ({
 
       {/* Neumorphic / Obsidian Pop-up Modal Sheet */}
       <div
-        className={`w-full max-w-md mx-auto rounded-t-[32px] p-5 pt-12 pb-6 relative z-20 flex flex-col items-center text-center backdrop-blur-xl animate-in fade-in slide-in-from-bottom duration-300 ${
+        className={`w-full max-w-md mx-auto rounded-t-[32px] p-5 pt-12 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] relative z-20 flex flex-col items-center text-center backdrop-blur-xl animate-in fade-in slide-in-from-bottom duration-300 ${
           theme === 'dark'
             ? 'bg-[#131D33] border-t border-emerald-500/25 shadow-[0_-8px_32px_rgba(16,185,129,0.18),0_20px_45px_rgba(0,0,0,0.85)] text-white'
             : 'bg-[#f8f9fb] shadow-[-6px_-6px_20px_#ffffff,8px_16px_32px_rgba(163,177,198,0.55)] text-[#191c1e]'
