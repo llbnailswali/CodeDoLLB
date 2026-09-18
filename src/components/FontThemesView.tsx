@@ -63,6 +63,10 @@ function renderFormattedProse(
   });
 }
 
+function getShortFontName(fontFamilyStr: string): string {
+  return fontFamilyStr.replace(/\s*\([^)]*\)/, '').trim();
+}
+
 export const FontThemesView: React.FC<FontThemesViewProps> = ({
   theme,
   onBack,
@@ -600,108 +604,121 @@ export const FontThemesView: React.FC<FontThemesViewProps> = ({
               className="w-full min-w-full flex-shrink-0 snap-start snap-always h-full overflow-y-auto px-3 sm:px-6 py-4 pb-28"
             >
               <div className="max-w-3xl mx-auto w-full space-y-4">
-                {/* 1. Combo Specification & Apply Banner Card */}
+                {/* 1. Combo Specification & Apply Banner Card (Height-locked to 132px for identical vertical content alignment across all screens) */}
                 <div
-                  className={`p-3.5 sm:p-4 rounded-2xl border transition-all ${
+                  className={`h-[132px] min-h-[132px] max-h-[132px] p-3 sm:p-3.5 rounded-2xl border flex flex-col justify-between transition-all overflow-hidden shrink-0 ${
                     isDark
                       ? 'bg-gradient-to-r from-indigo-950/40 via-purple-950/30 to-slate-900/60 border-indigo-500/30'
-                      : 'bg-gradient-to-r from-indigo-50/90 via-purple-50/60 to-white border-indigo-200'
+                      : 'bg-gradient-to-r from-indigo-50/90 via-purple-50/60 to-white border-indigo-200 shadow-xs'
                   }`}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span
-                          style={{ fontFamily: combo.displayFont }}
-                          className="text-base sm:text-lg font-bold tracking-tight"
-                        >
-                          {combo.name}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 font-mono text-[10px] font-bold">
-                          {combo.formula}
-                        </span>
-                        {combo.isDefault && (
-                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9px] font-bold">
-                            DEFAULT
-                          </span>
-                        )}
-                      </div>
-                      <p
-                        style={{ fontFamily: combo.tutorialFont }}
-                        className="text-xs text-slate-400 leading-snug"
+                  {/* Top Row: Name, Formula, Badges and Action Button */}
+                  <div className="flex items-center justify-between gap-2 h-8 min-w-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                      <span
+                        style={{ fontFamily: combo.displayFont }}
+                        className="text-sm sm:text-base font-bold tracking-tight truncate"
+                        title={combo.name}
                       >
-                        {combo.tagline}
-                      </p>
+                        {combo.name}
+                      </span>
+                      <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 font-mono text-[9px] sm:text-[10px] font-bold shrink-0">
+                        {combo.formula}
+                      </span>
+                      {combo.isDefault && (
+                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[8.5px] sm:text-[9px] font-bold shrink-0">
+                          DEFAULT
+                        </span>
+                      )}
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleSelectCombo(combo)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0 shadow-md ${
+                      className={`h-7 sm:h-8 px-2.5 sm:px-3 rounded-lg sm:rounded-xl text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer shrink-0 shadow-xs ${
                         isSelected
-                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white ring-2 ring-emerald-400/30'
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white ring-1 sm:ring-2 ring-emerald-400/30'
                           : isDark
                           ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
                           : 'bg-indigo-600 hover:bg-indigo-700 text-white'
                       }`}
                     >
-                      <span className="material-symbols-outlined text-[16px]">
+                      <span className="material-symbols-outlined text-[15px] sm:text-[16px]">
                         {isSelected ? 'check_circle' : 'palette'}
                       </span>
-                      <span>
+                      <span className="hidden sm:inline whitespace-nowrap">
                         {isSelected ? 'Active • View on Home' : 'Apply & View on Home'}
                       </span>
-                      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                      <span className="inline sm:hidden whitespace-nowrap">
+                        {isSelected ? 'Active' : 'Apply'}
+                      </span>
+                      <span className="material-symbols-outlined text-[13px] sm:text-[14px]">arrow_forward</span>
                     </button>
                   </div>
 
-                  {/* 4 Typography Assignments Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2.5 border-t border-slate-200/40 dark:border-white/10 text-[11px]">
-                    <div className="flex flex-col">
-                      <span className="text-[9.5px] font-mono uppercase text-indigo-400 font-bold">
-                        Display Headings
+                  {/* Middle Row: Tagline in single line */}
+                  <p
+                    style={{ fontFamily: combo.tutorialFont }}
+                    className="text-[11px] sm:text-xs text-slate-400 truncate h-4 leading-4"
+                    title={combo.tagline}
+                  >
+                    {combo.tagline}
+                  </p>
+
+                  {/* Divider */}
+                  <div className="border-t border-slate-200/40 dark:border-white/10" />
+
+                  {/* Bottom Row: 4 Typography Assignments Grid (Guaranteed 1 single row) */}
+                  <div className="grid grid-cols-4 gap-1.5 sm:gap-2 text-[11px]">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[9px] sm:text-[9.5px] font-mono uppercase text-indigo-400 font-bold truncate">
+                        Display
                       </span>
                       <span
                         style={{ fontFamily: combo.displayFont }}
-                        className="font-bold text-xs truncate"
+                        className="font-bold text-[11px] sm:text-xs truncate"
+                        title={combo.roles.display.fontFamily}
                       >
-                        {combo.roles.display.fontFamily}
+                        {getShortFontName(combo.roles.display.fontFamily)}
                       </span>
                     </div>
 
-                    <div className="flex flex-col">
-                      <span className="text-[9.5px] font-mono uppercase text-emerald-400 font-bold">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[9px] sm:text-[9.5px] font-mono uppercase text-emerald-400 font-bold truncate">
                         UI &amp; Quizzes
                       </span>
                       <span
                         style={{ fontFamily: combo.bodyFont }}
-                        className="font-medium text-xs truncate"
+                        className="font-medium text-[11px] sm:text-xs truncate"
+                        title={combo.roles.ui.fontFamily}
                       >
-                        {combo.roles.ui.fontFamily}
+                        {getShortFontName(combo.roles.ui.fontFamily)}
                       </span>
                     </div>
 
-                    <div className="flex flex-col">
-                      <span className="text-[9.5px] font-mono uppercase text-cyan-400 font-bold">
-                        Tutorial Reading
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[9px] sm:text-[9.5px] font-mono uppercase text-cyan-400 font-bold truncate">
+                        Reading
                       </span>
                       <span
                         style={{ fontFamily: combo.tutorialFont }}
-                        className="font-medium text-xs truncate"
+                        className="font-medium text-[11px] sm:text-xs truncate"
+                        title={combo.roles.tutorial.fontFamily}
                       >
-                        {combo.roles.tutorial.fontFamily}
+                        {getShortFontName(combo.roles.tutorial.fontFamily)}
                       </span>
                     </div>
 
-                    <div className="flex flex-col">
-                      <span className="text-[9.5px] font-mono uppercase text-amber-400 font-bold">
-                        Code &amp; Tokens
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[9px] sm:text-[9.5px] font-mono uppercase text-amber-400 font-bold truncate">
+                        Code
                       </span>
                       <span
                         style={{ fontFamily: combo.codeFont }}
-                        className="font-mono text-[11px] truncate text-emerald-400"
+                        className="font-mono text-[10.5px] sm:text-[11px] truncate text-emerald-400"
+                        title={combo.roles.code.fontFamily}
                       >
-                        {combo.roles.code.fontFamily}
+                        {getShortFontName(combo.roles.code.fontFamily)}
                       </span>
                     </div>
                   </div>
