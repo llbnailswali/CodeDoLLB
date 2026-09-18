@@ -612,11 +612,12 @@ export const Debug: React.FC<DebugStageProps> = ({
       {showSolutionModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
           <div
-            className={`w-full max-w-md rounded-2xl border p-5 shadow-2xl transition-colors ${
+            className={`w-full max-w-md rounded-2xl border shadow-2xl max-h-[85vh] flex flex-col overflow-hidden transition-colors ${
               isDark ? 'bg-[#151b28] border-white/10 text-slate-200' : 'bg-white border-slate-200 text-slate-800'
             }`}
           >
-            <div className="flex items-center justify-between mb-3">
+            {/* Sticky Header */}
+            <div className={`sticky top-0 z-10 flex items-center justify-between px-5 py-3.5 border-b shrink-0 ${isDark ? 'border-slate-800 bg-[#151b28]' : 'border-slate-200 bg-white'}`}>
               <h3 className="font-bold text-base font-['Outfit'] flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px] text-indigo-500">
                   check_circle
@@ -625,30 +626,35 @@ export const Debug: React.FC<DebugStageProps> = ({
               </h3>
               <button
                 type="button"
+                aria-label="Close solution dialog"
                 onClick={() => setShowSolutionModal(false)}
-                className="text-slate-400 hover:text-slate-200"
+                className="text-slate-400 hover:text-slate-200 p-1 rounded-lg transition-colors cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 
-            <p className="text-xs text-slate-400 mb-3">
-              Here is the corrected code that resolves the defect:
-            </p>
+            {/* Scrollable Body */}
+            <div className="overflow-y-auto px-5 py-3.5 flex-1 overscroll-contain">
+              <p className="text-xs text-slate-400 mb-3">
+                Here is the corrected code that resolves the defect:
+              </p>
 
-            <div
-              className={`p-3 rounded-xl font-mono text-xs overflow-x-auto mb-4 ${
-                isDark ? 'bg-[#090d16] text-slate-200' : 'bg-slate-100 text-slate-900'
-              }`}
-            >
-              <pre>{data.fixedCode}</pre>
+              <div
+                className={`p-3 rounded-xl font-mono text-xs overflow-x-auto ${
+                  isDark ? 'bg-[#090d16] text-slate-200' : 'bg-slate-100 text-slate-900'
+                }`}
+              >
+                <pre>{data.fixedCode}</pre>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* Sticky Footer */}
+            <div className={`flex items-center gap-3 px-5 py-3 border-t shrink-0 ${isDark ? 'border-slate-800 bg-[#151b28]' : 'border-slate-200 bg-white'}`}>
               <button
                 type="button"
                 onClick={() => setShowSolutionModal(false)}
-                className={`flex-1 py-2.5 rounded-xl border text-xs font-bold ${
+                className={`flex-1 py-2.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer ${
                   isDark ? 'border-white/10 hover:bg-white/5' : 'border-slate-200 hover:bg-slate-50'
                 }`}
               >
@@ -657,7 +663,7 @@ export const Debug: React.FC<DebugStageProps> = ({
               <button
                 type="button"
                 onClick={handleApplySolution}
-                className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold"
+                className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors cursor-pointer shadow-[0_0_14px_rgba(99,102,241,0.4)]"
               >
                 Apply to Editor
               </button>

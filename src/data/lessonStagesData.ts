@@ -439,27 +439,20 @@ export const FUNCTIONS_LESSON: FiveStageLesson = {
     totalChallenges: 5,
     xpReward: 10,
     title: 'Multiply Two Numbers',
-    description: 'Write a function called multiply that receives two Int values and returns their product.',
+    description:
+      'Write a function that calculates the product of two integers.\n\n' +
+      '1. Return the product of a and b using the multiplication operator (*).',
     requirements: {
       name: 'multiply',
       params: 'a: Int, b: Int',
       returns: 'Int'
     },
     fileName: 'solution.kt',
-    initialCode: `
-// Kotlin Basics · Function Definition
-
-
+    initialCode: `// Kotlin Basics · Function Definition
 
 fun multiply(a: Int, b: Int): Int {
-
-    // Return the product of a and b:
-
-}
-
-
-
-// Output: multiply(4, 5) -> 20`,
+    // 1. Return the product of a and b:
+}`,
     solutionCode: `
 // Kotlin Basics · Function Definition
 
@@ -819,7 +812,12 @@ export const LOOPS_LESSON: FiveStageLesson = {
     totalChallenges: 5,
     xpReward: 10,
     title: 'Sum of Numbers in Range',
-    description: 'Write a function called sumRange that receives a max value and returns the sum of all integers from 1 up to max.',
+    description:
+      'Write a function called sumRange that sums numbers from 1 to max.\n\n' +
+      '1. Declare a mutable accumulator variable sum starting at 0.\n\n' +
+      '2. Write a for-loop for numbers from 1 up to max (1..max).\n\n' +
+      '3. Add each number i to sum (sum += i).\n\n' +
+      '4. Return the calculated sum.',
     requirements: {
       name: 'sumRange',
       params: 'max: Int',
@@ -1198,7 +1196,11 @@ export const VARIABLES_LESSON: FiveStageLesson = {
     xpReward: 50,
     title: 'Player Inventory Summary',
     description:
-      'Declare a read-only player name with val, and a mutable coin count with var. Increment coins by 15 and print the summary.',
+      'Declare variables and track an inventory count.\n\n' +
+      '1. Declare immutable player name "Alex" using val.\n\n' +
+      '2. Declare mutable coins starting at 25 using var.\n\n' +
+      '3. Add 15 coins to the inventory (coins += 15).\n\n' +
+      '4. Print the formatted inventory: "Player $player holds $coins coins".',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -1612,7 +1614,9 @@ export const KOTLIN_SYNTAX_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 10,
     title: 'Print a Welcome Message',
-    description: 'Write the main() function so it prints the exact message "Welcome to Kotlin!" to the console.',
+    description:
+      'Write your first console output program.\n\n' +
+      '1. Inside the main() function, use println() to print the exact message "Welcome to Kotlin!".',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -1620,7 +1624,7 @@ export const KOTLIN_SYNTAX_LESSON: FiveStageLesson = {
     },
     fileName: 'solution.kt',
     initialCode: `fun main() {
-    // TODO: print "Welcome to Kotlin!" using println
+    // 1. Print "Welcome to Kotlin!" using println:
 }`,
     solutionCode: 'fun main() {\n    println("Welcome to Kotlin!")\n}',
     sampleInput: 'main()',

@@ -31,7 +31,23 @@ export const ARRAYS_LESSON: FiveStageLesson = {
       { id: 'arrays-predict-3', questionNumber: 3, totalQuestions: 3, title: 'Use Array Size', topicMeta: 'Array size', language: 'Kotlin', code: ['fun main() {', '    val pets = arrayOf("Cat", "Dog")', '    println(pets.size)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '2', isCorrect: true }, { id: 'B', label: '1', isCorrect: false }, { id: 'C', label: 'Dog', isCorrect: false }, { id: 'D', label: '3', isCorrect: false }], explanation: { codeRef: 'pets.size', detail: 'The array contains two elements, so its size is 2.' } },
     ],
   },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Update a Player Score', description: 'Create `scores` with `arrayOf(10, 15, 20)`. Replace the second score with 18, then print the full array.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Scores.kt', initialCode: 'fun main() {\n    val scores = arrayOf(10, 15, 20)\n    // TODO: replace the second score with 18\n}', solutionCode: 'fun main() {\n    val scores = arrayOf(10, 15, 20)\n    scores[1] = 18\n    println(scores)\n}', sampleInput: 'main()', expectedOutput: '[10, 18, 20]', testCase: { call: '', expected: '[10, 18, 20]' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Update a Player Score',
+    description:
+      'Update an existing element in an array.\n\n' +
+      '1. Replace the second score in scores (index 1) with 18.\n\n' +
+      '2. Print the full scores array.',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Scores.kt',
+    initialCode: 'fun main() {\n    val scores = arrayOf(10, 15, 20)\n    // 1. Replace the second score (index 1) with 18:\n\n    // 2. Print the scores array:\n}',
+    solutionCode: 'fun main() {\n    val scores = arrayOf(10, 15, 20)\n    scores[1] = 18\n    println(scores)\n}',
+    sampleInput: 'main()',
+    expectedOutput: '[10, 18, 20]',
+    testCase: { call: '', expected: '[10, 18, 20]' }
+  },
   debug: { title: 'Fix the Array Position', subtitle: 'The program should replace the second score, but it updates the wrong position.', challengeNumber: 1, totalChallenges: 1, difficulty: 'easy', bugType: 'logic', bugLabel: 'Logic Bug: Wrong Array Index', brokenCode: 'fun main() {\n    val scores = arrayOf(10, 15, 20)\n    scores[0] = 18\n    println(scores)\n}', fixedCode: 'fun main() {\n    val scores = arrayOf(10, 15, 20)\n    scores[1] = 18\n    println(scores)\n}', expectedOutput: '[10, 18, 20]', hints: ['The score value is correct, but the wrong slot changes.', 'Indexes start at 0. Which index identifies the second element?', 'Change scores[0] to scores[1].'], explanation: 'scores[0] is the first element. The second element is at scores[1], so that index must be replaced.' },
   mastered: { topicTitle: 'Arrays', summary: 'You have mastered arrays: creating ordered values, reading zero-based indexes, updating an element, and using size.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'Arrays preserve order and use zero-based indexes' }, { title: 'Examples explored', subtitle: '3 array patterns: creation, access, and update' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 array update test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a wrong-index logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -49,7 +65,23 @@ export const LISTS_LESSON: FiveStageLesson = {
     { id: 'lists-predict-2', questionNumber: 2, totalQuestions: 3, title: 'List Size', topicMeta: 'List size', language: 'Kotlin', code: ['fun main() {', '    val levels = listOf(1, 2, 3, 4)', '    println(levels.size)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '4', isCorrect: true }, { id: 'B', label: '3', isCorrect: false }, { id: 'C', label: '1', isCorrect: false }, { id: 'D', label: '[1, 2, 3, 4]', isCorrect: false }], explanation: { codeRef: 'levels.size', detail: 'There are four elements in levels.' } },
     { id: 'lists-predict-3', questionNumber: 3, totalQuestions: 3, title: 'Ordered List Output', topicMeta: 'List order', language: 'Kotlin', code: ['fun main() {', '    val letters = listOf("B", "A", "C")', '    println(letters)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '[B, A, C]', isCorrect: true }, { id: 'B', label: '[A, B, C]', isCorrect: false }, { id: 'C', label: 'B', isCorrect: false }, { id: 'D', label: '3', isCorrect: false }], explanation: { codeRef: 'listOf("B", "A", "C")', detail: 'A List preserves creation order; it does not sort values automatically.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Show the Final Task', description: 'Create a read-only List named `tasks` containing "Plan", "Build", and "Test". Print its final item using an index.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Tasks.kt', initialCode: 'fun main() {\n    val tasks = listOf("Plan", "Build", "Test")\n    // TODO: print the final task\n}', solutionCode: 'fun main() {\n    val tasks = listOf("Plan", "Build", "Test")\n    println(tasks[2])\n}', sampleInput: 'main()', expectedOutput: 'Test', testCase: { call: '', expected: 'Test' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Show the Final Task',
+    description:
+      'Read the last element of a read-only List.\n\n' +
+      '1. Access the final item in tasks ("Test") using its zero-based index.\n\n' +
+      '2. Print the item using println().',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Tasks.kt',
+    initialCode: 'fun main() {\n    val tasks = listOf("Plan", "Build", "Test")\n    // 1. Access and print the final item using its index:\n}',
+    solutionCode: 'fun main() {\n    val tasks = listOf("Plan", "Build", "Test")\n    println(tasks[2])\n}',
+    sampleInput: 'main()',
+    expectedOutput: 'Test',
+    testCase: { call: '', expected: 'Test' }
+  },
   debug: { title: 'Find the Final Task', subtitle: 'The program should print the final list item, but it uses the wrong index.', challengeNumber: 1, totalChallenges: 1, difficulty: 'easy', bugType: 'logic', bugLabel: 'Logic Bug: Wrong List Index', brokenCode: 'fun main() {\n    val tasks = listOf("Plan", "Build", "Test")\n    println(tasks[1])\n}', fixedCode: 'fun main() {\n    val tasks = listOf("Plan", "Build", "Test")\n    println(tasks[2])\n}', expectedOutput: 'Test', hints: ['The List is ordered correctly; inspect the position being read.', 'Which zero-based index belongs to the third item?', 'Change tasks[1] to tasks[2].'], explanation: 'tasks[1] is the second item, Build. The final third item has index 2, so tasks[2] prints Test.' },
   mastered: { topicTitle: 'Lists', summary: 'You have mastered Lists: creating an ordered read-only List, accessing positions, checking size, and fixing an index bug.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'List values are ordered and read using zero-based indexes' }, { title: 'Examples explored', subtitle: '3 List patterns: creation, access, and size' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 List access test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a wrong-index logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -67,7 +99,23 @@ export const SETS_LESSON: FiveStageLesson = {
     { id: 'sets-predict-2', questionNumber: 2, totalQuestions: 3, title: 'Missing Value', topicMeta: 'Set membership', language: 'Kotlin', code: ['fun main() {', '    val fruits = setOf("Apple", "Mango")', '    println(fruits.contains("Banana"))', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'false', isCorrect: true }, { id: 'B', label: 'true', isCorrect: false }, { id: 'C', label: 'Banana', isCorrect: false }, { id: 'D', label: 'An error', isCorrect: false }], explanation: { codeRef: 'fruits.contains("Banana")', detail: '"Banana" was never added to the Set, so contains returns false.' } },
     { id: 'sets-predict-3', questionNumber: 3, totalQuestions: 3, title: 'Adding a Duplicate', topicMeta: 'Set add is a no-op for duplicates', language: 'Kotlin', code: ['fun main() {', '    val letters = mutableSetOf("A", "B")', '    letters.add("A")', '    println(letters.size)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '2', isCorrect: true }, { id: 'B', label: '3', isCorrect: false }, { id: 'C', label: '1', isCorrect: false }, { id: 'D', label: '0', isCorrect: false }], explanation: { codeRef: 'letters.add("A")', detail: '"A" is already in the Set, so adding it again does not increase the size.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Award a New Badge', description: 'Create a mutable Set named `badges` containing "Bronze" and "Silver". Add "Gold" to it, then print the full Set.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Badges.kt', initialCode: 'fun main() {\n    val badges = mutableSetOf("Bronze", "Silver")\n    // TODO: add "Gold" and print the set\n}', solutionCode: 'fun main() {\n    val badges = mutableSetOf("Bronze", "Silver")\n    badges.add("Gold")\n    println(badges)\n}', sampleInput: 'main()', expectedOutput: '[Bronze, Silver, Gold]', testCase: { call: '', expected: '[Bronze, Silver, Gold]' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Award a New Badge',
+    description:
+      'Work with a mutable Set of unique badges.\n\n' +
+      '1. Given the mutable Set badges, add "Gold" to it using .add().\n\n' +
+      '2. Print the full badges set using println().',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Badges.kt',
+    initialCode: 'fun main() {\n    val badges = mutableSetOf("Bronze", "Silver")\n    // 1. Add "Gold" to badges:\n\n    // 2. Print the badges set:\n}',
+    solutionCode: 'fun main() {\n    val badges = mutableSetOf("Bronze", "Silver")\n    badges.add("Gold")\n    println(badges)\n}',
+    sampleInput: 'main()',
+    expectedOutput: '[Bronze, Silver, Gold]',
+    testCase: { call: '', expected: '[Bronze, Silver, Gold]' }
+  },
   debug: { title: 'Fix the Missing Badge', subtitle: 'The program should award a new "Gold" badge, but it adds a badge the learner already has.', challengeNumber: 1, totalChallenges: 1, difficulty: 'easy', bugType: 'logic', bugLabel: 'Logic Bug: Adding a Duplicate Value', brokenCode: 'fun main() {\n    val badges = mutableSetOf("Bronze", "Silver")\n    badges.add("Bronze")\n    println(badges)\n}', fixedCode: 'fun main() {\n    val badges = mutableSetOf("Bronze", "Silver")\n    badges.add("Gold")\n    println(badges)\n}', expectedOutput: '[Bronze, Silver, Gold]', hints: ['The Set already contains one of the two starting badges — check which value is being added.', '"Bronze" is already in the Set, so adding it again changes nothing.', 'Change badges.add("Bronze") to badges.add("Gold").'], explanation: 'badges.add("Bronze") has no effect because "Bronze" is already in the Set. Adding "Gold" instead introduces a genuinely new value.' },
   mastered: { topicTitle: 'Sets', summary: 'You have mastered Sets: automatic deduplication, checking membership with contains, and adding unique values to a mutable Set.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'Sets store only unique values' }, { title: 'Examples explored', subtitle: '3 Set patterns: deduplication, membership, and mutation' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 Set mutation test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a duplicate-add logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -85,7 +133,23 @@ export const MAPS_LESSON: FiveStageLesson = {
     { id: 'maps-predict-2', questionNumber: 2, totalQuestions: 3, title: 'Map Size', topicMeta: 'Map size', language: 'Kotlin', code: ['fun main() {', '    val stock = mapOf("Pen" to 10, "Book" to 5, "Bag" to 2)', '    println(stock.size)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '3', isCorrect: true }, { id: 'B', label: '2', isCorrect: false }, { id: 'C', label: '17', isCorrect: false }, { id: 'D', label: '6', isCorrect: false }], explanation: { codeRef: 'stock.size', detail: 'size counts the number of key-value pairs, not the sum of values. There are three pairs.' } },
     { id: 'maps-predict-3', questionNumber: 3, totalQuestions: 3, title: 'Missing Key', topicMeta: 'containsKey on an absent key', language: 'Kotlin', code: ['fun main() {', '    val scores = mapOf("A" to 90, "B" to 80)', '    println(scores.containsKey("C"))', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'false', isCorrect: true }, { id: 'B', label: 'true', isCorrect: false }, { id: 'C', label: 'null', isCorrect: false }, { id: 'D', label: 'An error', isCorrect: false }], explanation: { codeRef: 'scores.containsKey("C")', detail: '"C" was never added as a key, so containsKey returns false.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Update Stock Count', description: 'Create a mutable Map named `stock` with "Pen" to 10 and "Book" to 5. Update "Pen" to 15, then print the full Map.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Stock.kt', initialCode: 'fun main() {\n    val stock = mutableMapOf("Pen" to 10, "Book" to 5)\n    // TODO: update "Pen" to 15 and print the map\n}', solutionCode: 'fun main() {\n    val stock = mutableMapOf("Pen" to 10, "Book" to 5)\n    stock["Pen"] = 15\n    println(stock)\n}', sampleInput: 'main()', expectedOutput: '{Pen=15, Book=5}', testCase: { call: '', expected: '{Pen=15, Book=5}' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Update Stock Count',
+    description:
+      'Update a key-value entry in a mutable Map.\n\n' +
+      '1. Update the value for key "Pen" in stock to 15.\n\n' +
+      '2. Print the full stock Map using println().',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Stock.kt',
+    initialCode: 'fun main() {\n    val stock = mutableMapOf("Pen" to 10, "Book" to 5)\n    // 1. Update "Pen" to 15 in stock:\n\n    // 2. Print the stock map:\n}',
+    solutionCode: 'fun main() {\n    val stock = mutableMapOf("Pen" to 10, "Book" to 5)\n    stock["Pen"] = 15\n    println(stock)\n}',
+    sampleInput: 'main()',
+    expectedOutput: '{Pen=15, Book=5}',
+    testCase: { call: '', expected: '{Pen=15, Book=5}' }
+  },
   debug: { title: 'Fix the Stock Update', subtitle: 'The program should update "Pen", but it updates the wrong key instead.', challengeNumber: 1, totalChallenges: 1, difficulty: 'easy', bugType: 'logic', bugLabel: 'Logic Bug: Wrong Map Key', brokenCode: 'fun main() {\n    val stock = mutableMapOf("Pen" to 10, "Book" to 5)\n    stock["Book"] = 15\n    println(stock)\n}', fixedCode: 'fun main() {\n    val stock = mutableMapOf("Pen" to 10, "Book" to 5)\n    stock["Pen"] = 15\n    println(stock)\n}', expectedOutput: '{Pen=15, Book=5}', hints: ['The Map has the right new value, 15, but it is stored under the wrong key.', 'The task asks to update "Pen", not "Book".', 'Change stock["Book"] = 15 to stock["Pen"] = 15.'], explanation: 'stock["Book"] = 15 updates the wrong key. The task requires "Pen" to become 15, leaving "Book" unchanged at 5.' },
   mastered: { topicTitle: 'Maps', summary: 'You have mastered Maps: pairing keys with values, looking up by key, checking key presence, and updating a mutable Map.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'Maps associate values with meaningful keys' }, { title: 'Examples explored', subtitle: '3 Map patterns: creation, lookup, and key checking' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 Map update test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a wrong-key logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -103,7 +167,23 @@ export const MUTABLE_VS_READONLY_LESSON: FiveStageLesson = {
     { id: 'mutability-predict-2', questionNumber: 2, totalQuestions: 3, title: 'Growing a Mutable List', topicMeta: 'mutableListOf allows add', language: 'Kotlin', code: ['fun main() {', '    val tools = mutableListOf("Hammer")', '    tools.add("Wrench")', '    println(tools)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '[Hammer, Wrench]', isCorrect: true }, { id: 'B', label: '[Hammer]', isCorrect: false }, { id: 'C', label: '[Wrench]', isCorrect: false }, { id: 'D', label: 'An error', isCorrect: false }], explanation: { codeRef: 'tools.add("Wrench")', detail: 'mutableListOf allows adding elements, so "Wrench" is appended successfully.' } },
     { id: 'mutability-predict-3', questionNumber: 3, totalQuestions: 3, title: 'val With a Mutable Collection', topicMeta: 'val restricts reassignment only', language: 'Kotlin', code: ['fun main() {', '    val ids = mutableListOf(1, 2)', '    ids.add(3)', '    println(ids.size)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '3', isCorrect: true }, { id: 'B', label: '2', isCorrect: false }, { id: 'C', label: 'An error, since ids is a val', isCorrect: false }, { id: 'D', label: '1', isCorrect: false }], explanation: { codeRef: 'ids.add(3)', detail: 'val only prevents reassigning ids to a new list. The mutable list’s own contents can still grow, giving a size of 3.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Add a New Volunteer', description: 'Create a mutable List named `volunteers` containing "Riya" and "Omar". Add "Zeke" to it, then print the full list.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Volunteers.kt', initialCode: 'fun main() {\n    val volunteers = mutableListOf("Riya", "Omar")\n    // TODO: add "Zeke" and print the list\n}', solutionCode: 'fun main() {\n    val volunteers = mutableListOf("Riya", "Omar")\n    volunteers.add("Zeke")\n    println(volunteers)\n}', sampleInput: 'main()', expectedOutput: '[Riya, Omar, Zeke]', testCase: { call: '', expected: '[Riya, Omar, Zeke]' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Add a New Volunteer',
+    description:
+      'Grow a mutable list by adding an element.\n\n' +
+      '1. Add "Zeke" to the volunteers list using .add().\n\n' +
+      '2. Print the full volunteers list using println().',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Volunteers.kt',
+    initialCode: 'fun main() {\n    val volunteers = mutableListOf("Riya", "Omar")\n    // 1. Add "Zeke" to volunteers:\n\n    // 2. Print the volunteers list:\n}',
+    solutionCode: 'fun main() {\n    val volunteers = mutableListOf("Riya", "Omar")\n    volunteers.add("Zeke")\n    println(volunteers)\n}',
+    sampleInput: 'main()',
+    expectedOutput: '[Riya, Omar, Zeke]',
+    testCase: { call: '', expected: '[Riya, Omar, Zeke]' }
+  },
   debug: { title: 'Fix the Read-Only List', subtitle: 'The program should add a new volunteer, but it starts from a read-only List that has no add() function.', challengeNumber: 1, totalChallenges: 1, difficulty: 'medium', bugType: 'runtime', bugLabel: 'Runtime Bug: Adding to a Read-Only Collection', brokenCode: 'fun main() {\n    val volunteers = listOf("Riya", "Omar")\n    volunteers.add("Zeke")\n    println(volunteers)\n}', fixedCode: 'fun main() {\n    val volunteers = mutableListOf("Riya", "Omar")\n    volunteers.add("Zeke")\n    println(volunteers)\n}', expectedOutput: '[Riya, Omar, Zeke]', hints: ['The program crashes before it can print anything — look at how volunteers was created.', 'listOf creates a read-only List, which has no add() function.', 'Change listOf to mutableListOf.'], explanation: 'listOf creates a read-only List, so calling add() on it fails. Creating volunteers with mutableListOf instead allows add() to work.' },
   mastered: { topicTitle: 'Mutable vs Read-Only Collections', summary: 'You have mastered the distinction between read-only and mutable collections, and how val interacts with each.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'listOf/setOf/mapOf are read-only; mutableListOf/mutableSetOf/mutableMapOf allow changes' }, { title: 'Examples explored', subtitle: '3 patterns: read-only limits, mutable growth, and val vs contents' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 mutable-list creation test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a read-only-collection runtime bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -121,7 +201,23 @@ export const CREATING_ACCESSING_COLLECTIONS_LESSON: FiveStageLesson = {
     { id: 'creating-predict-2', questionNumber: 2, totalQuestions: 3, title: 'get() at Index Zero', topicMeta: 'get() equals []', language: 'Kotlin', code: ['fun main() {', '    val nums = listOf(100, 200, 300)', '    println(nums.get(0))', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '100', isCorrect: true }, { id: 'B', label: '0', isCorrect: false }, { id: 'C', label: '300', isCorrect: false }, { id: 'D', label: '200', isCorrect: false }], explanation: { codeRef: 'nums.get(0)', detail: 'get(0) reads the same value as nums[0]: the first element, 100.' } },
     { id: 'creating-predict-3', questionNumber: 3, totalQuestions: 3, title: 'First Value in a Set', topicMeta: 'first() on a Set', language: 'Kotlin', code: ['fun main() {', '    val letters = setOf("X", "Y", "Z")', '    println(letters.first())', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'X', isCorrect: true }, { id: 'B', label: 'Z', isCorrect: false }, { id: 'C', label: '3', isCorrect: false }, { id: 'D', label: 'An error, Sets have no order', isCorrect: false }], explanation: { codeRef: 'letters.first()', detail: 'A Set created with setOf keeps its creation order, so first() reads the first value supplied, X.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Read the Menu', description: 'Given `val menu = listOf("Tea", "Coffee", "Juice")`, print the first item using first(), then print the third item using get(2).', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Menu.kt', initialCode: 'fun main() {\n    val menu = listOf("Tea", "Coffee", "Juice")\n    // TODO: print the first item, then print the third item using get(2)\n}', solutionCode: 'fun main() {\n    val menu = listOf("Tea", "Coffee", "Juice")\n    println(menu.first())\n    println(menu.get(2))\n}', sampleInput: 'main()', expectedOutput: 'Tea\nJuice', testCase: { call: '', expected: 'Tea\nJuice' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Read the Menu',
+    description:
+      'Access items from a List using built-in methods.\n\n' +
+      '1. Print the first item of menu using menu.first().\n\n' +
+      '2. Print the third item of menu using menu.get(2).',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Menu.kt',
+    initialCode: 'fun main() {\n    val menu = listOf("Tea", "Coffee", "Juice")\n    // 1. Print the first item using first():\n\n    // 2. Print the third item using get(2):\n}',
+    solutionCode: 'fun main() {\n    val menu = listOf("Tea", "Coffee", "Juice")\n    println(menu.first())\n    println(menu.get(2))\n}',
+    sampleInput: 'main()',
+    expectedOutput: 'Tea\nJuice',
+    testCase: { call: '', expected: 'Tea\nJuice' }
+  },
   debug: { title: 'Fix the Wrong Position', subtitle: 'The program should print the third menu item, but it reads the wrong index.', challengeNumber: 1, totalChallenges: 1, difficulty: 'easy', bugType: 'logic', bugLabel: 'Logic Bug: Wrong get() Index', brokenCode: 'fun main() {\n    val menu = listOf("Tea", "Coffee", "Juice")\n    println(menu.first())\n    println(menu.get(1))\n}', fixedCode: 'fun main() {\n    val menu = listOf("Tea", "Coffee", "Juice")\n    println(menu.first())\n    println(menu.get(2))\n}', expectedOutput: 'Tea\nJuice', hints: ['The first line is already correct — check the index passed to get().', 'get(1) reads the second element, Coffee, not the third.', 'Change menu.get(1) to menu.get(2).'], explanation: 'menu.get(1) reads the second element, Coffee. The third element, Juice, is at index 2.' },
   mastered: { topicTitle: 'Creating and Accessing Collections', summary: 'You have mastered creating collections with the *Of factory functions and reading values with [], get(), first(), and last().', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'Every collection type has a creation function and multiple ways to read a value' }, { title: 'Examples explored', subtitle: '3 patterns: array indexing, get(), and first()/last()' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 first()/get() access test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a wrong-index logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -141,7 +237,24 @@ export const ADDING_REMOVING_UPDATING_LESSON: FiveStageLesson = {
     { id: 'mutating-predict-3', questionNumber: 3, totalQuestions: 4, title: 'Removing by Index', topicMeta: 'removeAt(index)', language: 'Kotlin', code: ['fun main() {', '    val nums = mutableListOf(5, 10, 15)', '    nums.removeAt(0)', '    println(nums)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '[10, 15]', isCorrect: true }, { id: 'B', label: '[5, 15]', isCorrect: false }, { id: 'C', label: '[5, 10]', isCorrect: false }, { id: 'D', label: '[0, 5, 10, 15]', isCorrect: false }], explanation: { codeRef: 'nums.removeAt(0)', detail: 'removeAt(0) deletes whatever is at index 0, which is 5, leaving [10, 15].' } },
     { id: 'mutating-predict-4', questionNumber: 4, totalQuestions: 4, title: 'Updating an Index', topicMeta: '[] = replaces a value', language: 'Kotlin', code: ['fun main() {', '    val nums = mutableListOf(5, 10, 15)', '    nums[2] = 99', '    println(nums)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '[5, 10, 99]', isCorrect: true }, { id: 'B', label: '[5, 10, 15, 99]', isCorrect: false }, { id: 'C', label: '[99, 10, 15]', isCorrect: false }, { id: 'D', label: '[5, 99, 15]', isCorrect: false }], explanation: { codeRef: 'nums[2] = 99', detail: 'Index 2 holds 15; replacing it with 99 gives [5, 10, 99] without changing the list’s size.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Update the Shopping Cart', description: 'Create a mutable List named `cart` containing "Milk", "Bread", and "Eggs". Remove "Bread", then add "Butter", then print the final cart.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Cart.kt', initialCode: 'fun main() {\n    val cart = mutableListOf("Milk", "Bread", "Eggs")\n    // TODO: remove "Bread", add "Butter", then print the cart\n}', solutionCode: 'fun main() {\n    val cart = mutableListOf("Milk", "Bread", "Eggs")\n    cart.remove("Bread")\n    cart.add("Butter")\n    println(cart)\n}', sampleInput: 'main()', expectedOutput: '[Milk, Eggs, Butter]', testCase: { call: '', expected: '[Milk, Eggs, Butter]' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Update the Shopping Cart',
+    description:
+      'Modify a mutable List using remove and add operations.\n\n' +
+      '1. Remove "Bread" from cart using .remove("Bread").\n\n' +
+      '2. Add "Butter" to cart using .add("Butter").\n\n' +
+      '3. Print the final cart using println().',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Cart.kt',
+    initialCode: 'fun main() {\n    val cart = mutableListOf("Milk", "Bread", "Eggs")\n    // 1. Remove "Bread" from cart:\n\n    // 2. Add "Butter" to cart:\n\n    // 3. Print the cart:\n}',
+    solutionCode: 'fun main() {\n    val cart = mutableListOf("Milk", "Bread", "Eggs")\n    cart.remove("Bread")\n    cart.add("Butter")\n    println(cart)\n}',
+    sampleInput: 'main()',
+    expectedOutput: '[Milk, Eggs, Butter]',
+    testCase: { call: '', expected: '[Milk, Eggs, Butter]' }
+  },
   debug: { title: 'Fix the Wrong Removal', subtitle: 'The program should remove "Eggs" from the cart, but it removes the wrong position instead.', challengeNumber: 1, totalChallenges: 1, difficulty: 'medium', bugType: 'logic', bugLabel: 'Logic Bug: Wrong removeAt Index', brokenCode: 'fun main() {\n    val cart = mutableListOf("Milk", "Bread", "Eggs")\n    cart.removeAt(1)\n    println(cart)\n}', fixedCode: 'fun main() {\n    val cart = mutableListOf("Milk", "Bread", "Eggs")\n    cart.removeAt(2)\n    println(cart)\n}', expectedOutput: '[Milk, Bread]', hints: ['"Eggs" is meant to be removed, but check which index that actually is.', 'Index 1 holds "Bread", not "Eggs".', 'Change cart.removeAt(1) to cart.removeAt(2).'], explanation: 'cart.removeAt(1) deletes "Bread", the value at index 1. "Eggs" is at index 2, so removeAt(2) is required to remove it, leaving [Milk, Bread].' },
   mastered: { topicTitle: 'Adding, Removing & Updating Mutable Elements', summary: 'You have mastered mutating a List with add, remove(value), removeAt(index), and [] = for in-place updates.', passedCount: '4 / 4 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'add, remove, removeAt, and [] = each change a mutable List differently' }, { title: 'Examples explored', subtitle: '4 patterns: add, remove by value, remove by index, and index update' }, { title: 'Predictions completed', subtitle: '4/4 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 combined remove+add test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a wrong-index removeAt logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -159,7 +272,23 @@ export const ITERATING_COLLECTIONS_LESSON: FiveStageLesson = {
     { id: 'iterating-predict-2', questionNumber: 2, totalQuestions: 3, title: 'Reading Just the Keys', topicMeta: 'Destructuring a Map, using one part', language: 'Kotlin', code: ['fun main() {', '    val scores = mapOf("A" to 90, "B" to 75)', '    for ((name, score) in scores) {', '        println(name)', '    }', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'A\nB', isCorrect: true }, { id: 'B', label: '90\n75', isCorrect: false }, { id: 'C', label: 'A: 90\nB: 75', isCorrect: false }, { id: 'D', label: 'An error, since score is unused', isCorrect: false }], explanation: { codeRef: 'println(name)', detail: 'Each entry is destructured into name and score, but only name is printed — an unused destructured value causes no error.' } },
     { id: 'iterating-predict-3', questionNumber: 3, totalQuestions: 3, title: 'Accumulating a Total', topicMeta: 'A var accumulator inside a loop', language: 'Kotlin', code: ['fun main() {', '    val nums = listOf(2, 4, 6)', '    var total = 0', '    for (n in nums) {', '        total += n', '    }', '    println(total)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '12', isCorrect: true }, { id: 'B', label: '6', isCorrect: false }, { id: 'C', label: '2', isCorrect: false }, { id: 'D', label: '0', isCorrect: false }], explanation: { codeRef: 'total += n', detail: 'total starts at 0 and gains each value in turn: 0+2=2, 2+4=6, 6+6=12.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Total the Cart', description: 'Given `val prices = listOf(20, 45, 15)`, use a loop to add up all the prices into a var named `total`, then print total.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Total.kt', initialCode: 'fun main() {\n    val prices = listOf(20, 45, 15)\n    var total = 0\n    // TODO: loop through prices and add each one to total\n    println(total)\n}', solutionCode: 'fun main() {\n    val prices = listOf(20, 45, 15)\n    var total = 0\n    for (price in prices) {\n        total += price\n    }\n    println(total)\n}', sampleInput: 'main()', expectedOutput: '80', testCase: { call: '', expected: '80' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Total the Cart',
+    description:
+      'Iterate through a List to accumulate a total.\n\n' +
+      '1. Use a for-in loop (for (price in prices)) to add each price to total.\n\n' +
+      '2. Print the total using println().',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Total.kt',
+    initialCode: 'fun main() {\n    val prices = listOf(20, 45, 15)\n    var total = 0\n    // 1. Loop through prices and add each to total:\n\n    // 2. Print total:\n    println(total)\n}',
+    solutionCode: 'fun main() {\n    val prices = listOf(20, 45, 15)\n    var total = 0\n    for (price in prices) {\n        total += price\n    }\n    println(total)\n}',
+    sampleInput: 'main()',
+    expectedOutput: '80',
+    testCase: { call: '', expected: '80' }
+  },
   debug: { title: 'Fix the Missing Total', subtitle: 'The program should add up every price, but it only keeps the most recent one.', challengeNumber: 1, totalChallenges: 1, difficulty: 'medium', bugType: 'logic', bugLabel: 'Logic Bug: Overwriting Instead of Accumulating', brokenCode: 'fun main() {\n    val prices = listOf(20, 45, 15)\n    var total = 0\n    for (price in prices) {\n        total = price\n    }\n    println(total)\n}', fixedCode: 'fun main() {\n    val prices = listOf(20, 45, 15)\n    var total = 0\n    for (price in prices) {\n        total += price\n    }\n    println(total)\n}', expectedOutput: '80', hints: ['Check what happens to total on every loop iteration.', 'total = price replaces the old total instead of adding to it.', 'Change total = price to total += price.'], explanation: 'total = price overwrites total with just the current price each time, so only the final value, 15, survives. total += price adds each price on top of the running total instead.' },
   mastered: { topicTitle: 'Iterating Over Collections', summary: 'You have mastered looping through a List, Set, and Map’s entries, and combining a loop with conditions and an accumulator.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'for (item in collection) and for ((key, value) in map) visit every value/entry' }, { title: 'Examples explored', subtitle: '3 patterns: List, Set, and Map iteration' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 accumulator-loop test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed an overwrite-instead-of-accumulate logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -178,7 +307,23 @@ export const BASIC_COLLECTION_OPERATIONS_LESSON: FiveStageLesson = {
     { id: 'basicops-predict-3', questionNumber: 3, totalQuestions: 4, title: 'Sorting Text', topicMeta: 'sorted() on Strings', language: 'Kotlin', code: ['fun main() {', '    val names = listOf("Charlie", "Alpha", "Bravo")', '    println(names.sorted())', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '[Alpha, Bravo, Charlie]', isCorrect: true }, { id: 'B', label: '[Charlie, Alpha, Bravo]', isCorrect: false }, { id: 'C', label: '[Charlie, Bravo, Alpha]', isCorrect: false }, { id: 'D', label: '3', isCorrect: false }], explanation: { codeRef: 'names.sorted()', detail: 'sorted() orders Strings alphabetically: Alpha, Bravo, then Charlie.' } },
     { id: 'basicops-predict-4', questionNumber: 4, totalQuestions: 4, title: 'Emptied by removeAt', topicMeta: 'isNotEmpty() after removal', language: 'Kotlin', code: ['fun main() {', '    val nums = mutableListOf(5)', '    nums.removeAt(0)', '    println(nums.isNotEmpty())', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'false', isCorrect: true }, { id: 'B', label: 'true', isCorrect: false }, { id: 'C', label: '0', isCorrect: false }, { id: 'D', label: 'An error', isCorrect: false }], explanation: { codeRef: 'nums.isNotEmpty()', detail: 'Removing the only element leaves nums empty, so isNotEmpty() is false.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Locate and Sort Scores', description: 'Given `val scores = listOf(72, 88, 65, 91)`, print the index of 65 using indexOf, then print a sorted copy of scores using sorted().', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Scores.kt', initialCode: 'fun main() {\n    val scores = listOf(72, 88, 65, 91)\n    // TODO: print the index of 65, then print a sorted copy\n}', solutionCode: 'fun main() {\n    val scores = listOf(72, 88, 65, 91)\n    println(scores.indexOf(65))\n    println(scores.sorted())\n}', sampleInput: 'main()', expectedOutput: '2\n[65, 72, 88, 91]', testCase: { call: '', expected: '2\n[65, 72, 88, 91]' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Locate and Sort Scores',
+    description:
+      'Search and sort elements in a List.\n\n' +
+      '1. Print the index of 65 in scores using scores.indexOf(65).\n\n' +
+      '2. Print a sorted copy of scores using scores.sorted().',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Scores.kt',
+    initialCode: 'fun main() {\n    val scores = listOf(72, 88, 65, 91)\n    // 1. Print the index of 65 using indexOf:\n\n    // 2. Print a sorted copy of scores:\n}',
+    solutionCode: 'fun main() {\n    val scores = listOf(72, 88, 65, 91)\n    println(scores.indexOf(65))\n    println(scores.sorted())\n}',
+    sampleInput: 'main()',
+    expectedOutput: '2\n[65, 72, 88, 91]',
+    testCase: { call: '', expected: '2\n[65, 72, 88, 91]' }
+  },
   debug: { title: 'Fix the Missing Sort', subtitle: 'The program should print a sorted copy of scores, but it prints the original, unsorted list instead.', challengeNumber: 1, totalChallenges: 1, difficulty: 'easy', bugType: 'logic', bugLabel: 'Logic Bug: Printing the Original Instead of the Sorted Copy', brokenCode: 'fun main() {\n    val scores = listOf(72, 88, 65, 91)\n    println(scores.indexOf(65))\n    println(scores)\n}', fixedCode: 'fun main() {\n    val scores = listOf(72, 88, 65, 91)\n    println(scores.indexOf(65))\n    println(scores.sorted())\n}', expectedOutput: '2\n[65, 72, 88, 91]', hints: ['The indexOf line is already correct — look at what the second println prints.', 'println(scores) prints the original, unsorted order.', 'Change println(scores) to println(scores.sorted()).'], explanation: 'println(scores) prints the list in its original order. sorted() must be called to get the ascending copy the task asks for.' },
   mastered: { topicTitle: 'Basic Collection Operations', summary: 'You have mastered isEmpty()/isNotEmpty(), indexOf (including the -1 not-found case), and sorted() as a non-mutating copy.', passedCount: '4 / 4 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'isEmpty/isNotEmpty, indexOf, and sorted() are shared across collection types' }, { title: 'Examples explored', subtitle: '3 patterns: emptiness checks, indexOf, and sorted copies' }, { title: 'Predictions completed', subtitle: '4/4 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 indexOf + sorted() test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a missing sorted() logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -218,7 +363,26 @@ export const WORLD_6_BOSS_LESSON: FiveStageLesson = {
     { id: 'boss-predict-2', questionNumber: 2, totalQuestions: 3, title: 'Checking Before Looking Up', topicMeta: 'containsKey on a missing student', language: 'Kotlin', code: ['fun main() {', '    val scores = mapOf("Amy" to 88)', '    println(scores.containsKey("Ben"))', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'false', isCorrect: true }, { id: 'B', label: 'true', isCorrect: false }, { id: 'C', label: 'null', isCorrect: false }, { id: 'D', label: 'An error', isCorrect: false }], explanation: { codeRef: 'scores.containsKey("Ben")', detail: '"Ben" was never added as a key, so containsKey correctly reports false.' } },
     { id: 'boss-predict-3', questionNumber: 3, totalQuestions: 3, title: 'Counting Passing Scores', topicMeta: 'An accumulator inside a filtered loop', language: 'Kotlin', code: ['fun main() {', '    val scores = listOf(45, 82, 91, 38)', '    var passCount = 0', '    for (score in scores) {', '        if (score >= 40) {', '            passCount += 1', '        }', '    }', '    println(passCount)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '3', isCorrect: true }, { id: 'B', label: '4', isCorrect: false }, { id: 'C', label: '1', isCorrect: false }, { id: 'D', label: '38', isCorrect: false }], explanation: { codeRef: 'passCount += 1', detail: 'Three of the four scores (45, 82, 91) are at least 40; only 38 fails the condition.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 40, title: 'Build the Class Roster', description: 'Create a mutable List named `names` with "Riya" and "Tom", and a mutable Map named `scores` pairing "Riya" to 82 and "Tom" to 40. Add "Zara" to `names` and add "Zara" to 68 in `scores`. Then loop through `scores`, printing "name: score" for each entry and counting how many scores are at least 40 into a var named `passCount`. Finally, print "Passed: " followed by passCount.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'StudentRecords.kt', initialCode: 'fun main() {\n    val names = mutableListOf("Riya", "Tom")\n    val scores = mutableMapOf("Riya" to 82, "Tom" to 40)\n    // TODO: add "Zara" to names and to scores (68), then loop through\n    // scores printing "name: score" and counting scores >= 40 into passCount\n}', solutionCode: 'fun main() {\n    val names = mutableListOf("Riya", "Tom")\n    val scores = mutableMapOf("Riya" to 82, "Tom" to 40)\n    names.add("Zara")\n    scores["Zara"] = 68\n    var passCount = 0\n    for ((name, score) in scores) {\n        println(name + ": " + score)\n        if (score >= 40) {\n            passCount += 1\n        }\n    }\n    println("Passed: " + passCount)\n}', sampleInput: 'main()', expectedOutput: 'Riya: 82\nTom: 40\nZara: 68\nPassed: 3', testCase: { call: '', expected: 'Riya: 82\nTom: 40\nZara: 68\nPassed: 3' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 40,
+    title: 'Build the Class Roster',
+    description:
+      'Combine a mutable List, a mutable Map, and a loop into a records tracker.\n\n' +
+      '1. Add "Zara" to names with names.add("Zara").\n\n' +
+      '2. Add "Zara" with score 68 to scores with scores["Zara"] = 68.\n\n' +
+      '3. Loop through scores with for ((name, score) in scores), printing "$name: $score" for each entry.\n\n' +
+      '4. Inside the loop, if score >= 40, increment passCount by 1.\n\n' +
+      '5. After the loop, print "Passed: " followed by passCount.',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'StudentRecords.kt',
+    initialCode: 'fun main() {\n    val names = mutableListOf("Riya", "Tom")\n    val scores = mutableMapOf("Riya" to 82, "Tom" to 40)\n    // 1. Add "Zara" to names:\n\n    // 2. Add "Zara" mapped to 68 in scores:\n\n    // 3-4. Loop through scores, print "$name: $score", and count passing scores:\n\n    // 5. Print "Passed: " followed by passCount:\n}',
+    solutionCode: 'fun main() {\n    val names = mutableListOf("Riya", "Tom")\n    val scores = mutableMapOf("Riya" to 82, "Tom" to 40)\n    names.add("Zara")\n    scores["Zara"] = 68\n    var passCount = 0\n    for ((name, score) in scores) {\n        println(name + ": " + score)\n        if (score >= 40) {\n            passCount += 1\n        }\n    }\n    println("Passed: " + passCount)\n}',
+    sampleInput: 'main()',
+    expectedOutput: 'Riya: 82\nTom: 40\nZara: 68\nPassed: 3',
+    testCase: { call: '', expected: 'Riya: 82\nTom: 40\nZara: 68\nPassed: 3' }
+  },
   debug: { title: 'Fix the Pass Count', subtitle: 'The program should count every score of 40 or above, but a student scoring exactly 40 is not being counted.', challengeNumber: 1, totalChallenges: 1, difficulty: 'hard', bugType: 'logic', bugLabel: 'Logic Bug: Off-by-Boundary Comparison', brokenCode: 'fun main() {\n    val names = mutableListOf("Riya", "Tom")\n    val scores = mutableMapOf("Riya" to 82, "Tom" to 40)\n    names.add("Zara")\n    scores["Zara"] = 68\n    var passCount = 0\n    for ((name, score) in scores) {\n        println(name + ": " + score)\n        if (score > 40) {\n            passCount += 1\n        }\n    }\n    println("Passed: " + passCount)\n}', fixedCode: 'fun main() {\n    val names = mutableListOf("Riya", "Tom")\n    val scores = mutableMapOf("Riya" to 82, "Tom" to 40)\n    names.add("Zara")\n    scores["Zara"] = 68\n    var passCount = 0\n    for ((name, score) in scores) {\n        println(name + ": " + score)\n        if (score >= 40) {\n            passCount += 1\n        }\n    }\n    println("Passed: " + passCount)\n}', expectedOutput: 'Riya: 82\nTom: 40\nZara: 68\nPassed: 3', hints: ['Every score prints correctly — the problem is only in which ones get counted.', 'Tom scored exactly 40. Should a score of exactly 40 count as passing?', 'Change score > 40 to score >= 40.'], explanation: 'score > 40 excludes a score of exactly 40, undercounting Tom as a fail. The task requires 40 to count as passing, so >= 40 is needed.' },
   mastered: { topicTitle: 'Student Records (World Boss)', summary: 'You combined a List, a mutable Map, and a loop into a small student-record system — enrolling a new student, looking up scores by name, and counting how many passed.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'List, Set, and Map each model a different part of the same system' }, { title: 'Examples explored', subtitle: '3 patterns: unique subjects, growing the roster, and ranking scores' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 combined roster + scoring test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed an off-by-boundary comparison logic bug' }], xpEarned: 40, streakDays: 1, accuracy: '100%' },
 };

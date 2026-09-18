@@ -235,8 +235,8 @@ export const ARITHMETIC_OPERATORS_LESSON: FiveStageLesson = {
     title: 'Split the Loot',
     description:
       'Declare val coins = 47 and val players = 5.\n\n' +
-      '1. Calculate each player\'s equal share using integer division (coins / players).\n' +
-      '2. Calculate the leftover coins using the modulo operator (coins % players).\n' +
+      '1. Calculate each player\'s equal share using integer division (coins / players).\n\n' +
+      '2. Calculate the leftover coins using the modulo operator (coins % players).\n\n' +
       '3. Print the result as:\n' +
       '"Each player gets 9 coins, with 2 left over"',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
@@ -536,11 +536,17 @@ export const COMPARISON_OPERATORS_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Check Age Eligibility',
-    description: 'Declare val age = 20 and val minAge = 18, then print whether age is greater than or equal to minAge using the >= operator.',
+    description:
+      'Declare val age = 20 and val minAge = 18.\n\n' +
+      '1. Compare age and minAge using the >= operator.\n\n' +
+      '2. Print the boolean result of age >= minAge.',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'AgeCheck.kt',
     initialCode: `fun main() {
-    // TODO: declare age = 20 and minAge = 18, then print age >= minAge
+    val age = 20
+    val minAge = 18
+
+    // 1. Print whether age is greater than or equal to minAge (age >= minAge):
 }`,
     solutionCode: `fun main() {
     val age = 20
@@ -832,11 +838,17 @@ export const LOGICAL_OPERATORS_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Grant Dashboard Access',
-    description: 'Declare val isAdmin = true and val isBanned = false. Print whether the user can access the dashboard using isAdmin && !isBanned (which should print true).',
+    description:
+      'Declare val isAdmin = true and val isBanned = false.\n\n' +
+      '1. Combine the flags with logical AND (&&) and NOT (!).\n\n' +
+      '2. Print the boolean result of isAdmin && !isBanned.',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'DashboardAccess.kt',
     initialCode: `fun main() {
-    // TODO: declare isAdmin = true and isBanned = false, then print isAdmin && !isBanned
+    val isAdmin = true
+    val isBanned = false
+
+    // 1. Print whether user can access dashboard (isAdmin && !isBanned):
 }`,
     solutionCode: `fun main() {
     val isAdmin = true
@@ -1096,11 +1108,21 @@ export const ASSIGNMENT_OPERATORS_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Update a Wallet Balance',
-    description: 'Declare a mutable variable wallet with initial value 200, add 75 to it using +=, then subtract 50 from it using -=, and print the final balance.',
+    description:
+      'Declare a mutable variable var wallet = 200.\n\n' +
+      '1. Add 75 to wallet using +=.\n\n' +
+      '2. Subtract 50 from wallet using -=.\n\n' +
+      '3. Print the final balance of wallet.',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'Wallet.kt',
     initialCode: `fun main() {
-    // TODO: declare var wallet = 200, add 75 with +=, subtract 50 with -=, and print it
+    var wallet = 200
+
+    // 1. Add 75 to wallet using +=:
+
+    // 2. Subtract 50 from wallet using -=:
+
+    // 3. Print the final wallet balance:
 }`,
     solutionCode: `fun main() {
     var wallet = 200
@@ -1372,18 +1394,22 @@ export const INCREMENT_DECREMENT_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Track a Lives Counter',
-    description: 'Declare a mutable lives counter starting at 3 using var. Increase it twice using lives++, then decrease it once using lives--. Print the final result as "Lives: 4" using a string template.',
+    description:
+      'Declare a mutable lives counter starting at 3 using var.\n\n' +
+      '1. Increase it twice using lives++.\n\n' +
+      '2. Decrease it once using lives--.\n\n' +
+      '3. Print the final result as:\n' +
+      '"Lives: 4" using string templates ($lives)',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'Lives.kt',
     initialCode: `fun main() {
-    // 1. Declare mutable lives starting at 3 using var:
+    var lives = 3
 
-    // 2. Increment lives twice using lives++:
+    // 1. Increment lives twice using lives++:
 
-    // 3. Decrement lives once using lives--:
+    // 2. Decrement lives once using lives--:
 
-    // 4. Print the result as "Lives: 4" using a string template ($lives):
-
+    // 3. Print the result as "Lives: 4" using a string template ($lives):
 }`,
     solutionCode: `fun main() {
     var lives = 3
@@ -1604,13 +1630,20 @@ export const OPERATOR_PRECEDENCE_LESSON: FiveStageLesson = {
     xpReward: 25,
     title: 'Checkout Totals',
     description:
-      'A store needs to total a bill and check express-checkout eligibility. Declare val itemPrice = 25, val itemCount = 4, val hasCoupon = true, and val isMember = false. Calculate total as itemPrice * itemCount and print it. Then calculate qualifies as itemCount > 3 && hasCoupon || isMember and print it.',
+      'Declare val itemPrice = 25, val itemCount = 4, val hasCoupon = true, and val isMember = false.\n\n' +
+      '1. Calculate total as itemPrice * itemCount and print it.\n\n' +
+      '2. Calculate qualifies as itemCount > 3 && hasCoupon || isMember and print it.',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'CheckoutTotals.kt',
     initialCode: `fun main() {
-    // TODO: declare itemPrice, itemCount, hasCoupon, isMember
-    // TODO: calculate and print total as itemPrice * itemCount
-    // TODO: calculate and print qualifies as itemCount > 3 && hasCoupon || isMember
+    val itemPrice = 25
+    val itemCount = 4
+    val hasCoupon = true
+    val isMember = false
+
+    // 1. Calculate and print total as itemPrice * itemCount:
+
+    // 2. Calculate and print qualifies as itemCount > 3 && hasCoupon || isMember:
 }`,
     solutionCode: `fun main() {
     val itemPrice = 25
@@ -1860,18 +1893,26 @@ export const WORLD_2_BOSS_LESSON: FiveStageLesson = {
     xpReward: 50,
     title: 'Build the Smart Calculator',
     description:
-      'Declare var total = 0. Add 45 to it using +=, then add 30 using +=. Declare val budget = 100 and a val withinBudget that checks total <= budget. Declare var attempts = 0 and increment it once using ++. Print "Total: 75", then "Within budget: true", then "Attempts: 1", each on its own line.',
+      'Declare var total = 0.\n\n' +
+      '1. Add 45 to total using +=, then add 30 using +=.\n\n' +
+      '2. Declare val budget = 100 and val withinBudget = total <= budget.\n\n' +
+      '3. Declare var attempts = 0 and increment it once using ++.\n\n' +
+      '4. Print each value on its own line:\n' +
+      '   "Total: 75"\n' +
+      '   "Within budget: true"\n' +
+      '   "Attempts: 1"',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'SmartCalculator.kt',
     initialCode: `fun main() {
-    // 1. Declare var total = 0, then add 45 and 30 using +=:
+    var total = 0
 
-    // 2. Declare val budget = 100 and val withinBudget = total <= budget:
+    // 1. Add 45 to total using +=, then add 30 using +=:
+
+    // 2. Declare val budget = 100 and check val withinBudget = total <= budget:
 
     // 3. Declare var attempts = 0 and increment it once using ++:
 
-    // 4. Print "Total: 75", "Within budget: true", and "Attempts: 1":
-
+    // 4. Print "Total: $total", "Within budget: $withinBudget", and "Attempts: $attempts":
 }`,
     solutionCode: `fun main() {
     var total = 0

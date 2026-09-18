@@ -196,13 +196,19 @@ export const FOR_LESSON: FiveStageLesson = {
     xpReward: 20,
     title: 'Sum of a Range',
     description:
-      'Declare var total = 0. Use a for loop over the range 1..5 to add each number from 1 to 5 (inclusive) to total. Then print the result using a string template as "Sum: 15".',
+      'Declare var total = 0.\n\n' +
+      '1. Use a for loop over the range 1..5 to visit numbers 1 to 5 inclusive.\n\n' +
+      '2. Inside the loop, add each number to total.\n\n' +
+      '3. Print the result as:\n' +
+      '"Sum: 15" using string templates ($total)',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'SumOfRange.kt',
     initialCode: `fun main() {
     var total = 0
-    // TODO: use a for loop over 1..5 to add each number to total
 
+    // 1. Use a for loop over 1..5 to add each number to total:
+
+    // 2. Print "Sum: $total":
     println("Sum: $total")
 }`,
     solutionCode: `fun main() {
@@ -484,13 +490,18 @@ export const WHILE_LESSON: FiveStageLesson = {
     xpReward: 20,
     title: 'Countdown to Launch',
     description:
-      'Declare var seconds = 5. Use a while loop: while seconds is greater than 0, print seconds and then decrease it by 1. After the loop ends, print "Go!".',
+      'Declare var seconds = 5.\n\n' +
+      '1. Use a while loop that runs while seconds > 0.\n\n' +
+      '2. Inside the loop, print seconds and decrement it using seconds--.\n\n' +
+      '3. After the loop ends, print "Go!".',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'Countdown.kt',
     initialCode: `fun main() {
     var seconds = 5
-    // TODO: while seconds is greater than 0, print seconds and decrease it by 1
-    // TODO: after the loop ends, print "Go!"
+
+    // 1. While seconds > 0, print seconds and decrease it by 1:
+
+    // 2. After the loop ends, print "Go!":
 }`,
     solutionCode: `fun main() {
     var seconds = 5
@@ -792,12 +803,19 @@ export const DO_WHILE_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Count Up With do-while',
-    description: 'Declare var current = 1. Using a do-while loop, print current and then increment it, continuing while current is less than or equal to 4. After the loop finishes, print "Done".',
+    description:
+      'Declare var current = 1.\n\n' +
+      '1. Use a do-while loop to print current and increment it.\n\n' +
+      '2. Continue looping while current <= 4.\n\n' +
+      '3. After the loop finishes, print "Done".',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'CountUp.kt',
     initialCode: `fun main() {
     var current = 1
-    // TODO: use a do-while loop to print current and increment it, while current <= 4
+
+    // 1. Use a do-while loop to print current and increment it, while current <= 4:
+
+    // 2. Print "Done" after the loop:
     println("Done")
 }`,
     solutionCode: `fun main() {
@@ -1097,19 +1115,21 @@ export const RANGES_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Count Values Inside a Range',
-    description: 'Write a for-loop that visits every value from 1 to 10 inclusive (1..10). For each value, use an if check with in to test whether it falls inside 3..7 inclusive, and if it does, add 1 to a counter. After the loop, print the counter.',
+    description:
+      'Declare var count = 0.\n\n' +
+      '1. Write a for loop over 1..10 using loop variable i.\n\n' +
+      '2. Inside the loop, check if i falls within range 3..7 (i in 3..7).\n\n' +
+      '3. Increment count whenever the check passes.\n\n' +
+      '4. Print count after the loop completes.',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'RangeCounter.kt',
     initialCode: `fun main() {
     var count = 0
+
     // 1. Write a for-loop over 1..10 using loop variable i:
+    // 2. Inside the loop, check if (i in 3..7) and increment count:
 
-    // 2. Inside the loop, use if (i in 3..7) to test membership:
-
-        // 3. Increment count when the check passes (count++):
-
-    // 4. Print count after the loop:
-
+    // 3. Print count after the loop:
 }`,
     solutionCode: `fun main() {
     var count = 0
@@ -1405,11 +1425,14 @@ export const PROGRESSIONS_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Print Every Third Number',
-    description: 'Using a for loop with step, print every number from 1 to 20 (inclusive) that is 3 apart, starting at 1 -- one number per line.',
+    description:
+      'Print values stepping through a range.\n\n' +
+      '1. Use a for loop over the range 1..20 with a step of 3 (1..20 step 3).\n\n' +
+      '2. Print each number on its own line using println(i).',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'EveryThirdNumber.kt',
     initialCode: `fun main() {
-    // TODO: use a for loop with step to print every number from 1 to 20, 3 apart, starting at 1
+    // 1. Use a for loop with step (1..20 step 3) to print each number on its own line:
 }`,
     solutionCode: `fun main() {
     for (i in 1..20 step 3) {
@@ -1658,12 +1681,17 @@ export const DOWNTO_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Print a Countdown',
-    description: 'Write a loop that counts down from 5 to 1 using downTo, printing each number on its own line, then print "Go!" after the loop finishes.',
+    description:
+      'Count down using the downTo operator.\n\n' +
+      '1. Write a for loop counting down from 5 to 1 using downTo (5 downTo 1).\n\n' +
+      '2. Print each number on its own line.\n\n' +
+      '3. After the loop finishes, print "Go!".',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'Countdown.kt',
     initialCode: `fun main() {
-    // TODO: use a for-loop with downTo to count down from 5 to 1, printing each number
+    // 1. Use a for-loop with downTo to count down from 5 to 1, printing each number:
     
+    // 2. After the loop, print "Go!":
     println("Go!")
 }`,
     solutionCode: `fun main() {
@@ -1917,11 +1945,14 @@ export const STEP_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Count Up by 5',
-    description: 'Using a for loop with step, print every value from 1 to 20 (inclusive) counting up by 5, one per line: 1, then 6, then 11, then 16.',
+    description:
+      'Step through a range in increments of 5.\n\n' +
+      '1. Use a for loop over the range 1..20 with a step of 5 (1..20 step 5).\n\n' +
+      '2. Print each value on its own line (outputs 1, 6, 11, 16).',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'CountBy5.kt',
     initialCode: `fun main() {
-    // TODO: use a for loop with step to print 1, 6, 11, and 16 -- one per line
+    // 1. Use a for loop with step (1..20 step 5) to print 1, 6, 11, and 16:
 }`,
     solutionCode: `fun main() {
     for (i in 1..20 step 5) {
@@ -2180,12 +2211,17 @@ export const BREAK_LESSON: FiveStageLesson = {
     xpReward: 20,
     title: 'Stop the Countdown Scan Early',
     description:
-      'Write a for loop over 1..20 that prints each number with println(i), but uses break to stop the loop as soon as i equals 8 -- so 8 itself, and every number after it, must never print.',
+      'Terminate loop execution prematurely using break.\n\n' +
+      '1. Loop through numbers 1 to 20 (1..20).\n\n' +
+      '2. If i equals 8, break out of the loop before printing.\n\n' +
+      '3. Otherwise, print each number with println(i).',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'BreakEarly.kt',
     initialCode: `fun main() {
     for (i in 1..20) {
-        // TODO: if i equals 8, break out of the loop before printing it
+        // 1. If i equals 8, break out of the loop before printing:
+
+        // 2. Print i:
         println(i)
     }
 }`,
@@ -2475,12 +2511,18 @@ export const CONTINUE_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Skip Multiples of Four',
-    description: 'Using a for loop over 1..10, use continue to skip printing any number that is a multiple of 4 (i % 4 == 0), and print every other number.',
+    description:
+      'Skip loop iterations using continue.\n\n' +
+      '1. Loop through numbers 1 to 10 (1..10).\n\n' +
+      '2. If i is a multiple of 4 (i % 4 == 0), skip printing with continue.\n\n' +
+      '3. Print all remaining numbers using println(i).',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'SkipMultiplesOfFour.kt',
     initialCode: `fun main() {
     for (i in 1..10) {
-        // TODO: if i is a multiple of 4 (i % 4 == 0), skip it with continue
+        // 1. If i is a multiple of 4 (i % 4 == 0), skip with continue:
+
+        // 2. Print remaining numbers:
         println(i)
     }
 }`,
@@ -2753,16 +2795,19 @@ export const NESTED_LOOPS_LESSON: FiveStageLesson = {
     xpReward: 30,
     title: 'Print a Multiplication Table',
     description:
-      'Inside main(), write a nested for loop: an outer loop with i from 1 to 3, and for each i, an inner loop with j from 1 to 3. For every (i, j) pair, print each pair as "$i x $j = ${i * j}" using a string template.',
+      'Generate a 3x3 multiplication table using nested loops.\n\n' +
+      '1. Write an outer loop: for i from 1 to 3 (1..3).\n\n' +
+      '2. Inside, write an inner loop: for j from 1 to 3 (1..3).\n\n' +
+      '3. Print each multiplication result formatted as:\n' +
+      '"$i x $j = ${i * j}"',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'MultiplicationTable.kt',
     initialCode: `fun main() {
-    // 1. Outer loop: for i from 1 to 3
+    // 1. Outer loop: for i from 1 to 3:
 
-        // 2. Inner loop: for j from 1 to 3, nested inside the outer loop
+        // 2. Inner loop: for j from 1 to 3:
 
-            // 3. Print each pair as "$i x $j = \${i * j}"
-
+            // 3. Print each pair as "$i x $j = \${i * j}":
 }`,
     solutionCode: `fun main() {
     for (i in 1..3) {
@@ -2995,15 +3040,22 @@ export const WORLD_4_BOSS_LESSON: FiveStageLesson = {
     xpReward: 60,
     title: 'Build the Pattern & Number Analyzer',
     description:
-      'Loop through the numbers 1 to 19 using `for (i in 1..19 step 2)` so you only visit odd numbers. Skip any number that is a multiple of 5 with `continue`. Add every other number to a running `total`. If `total` exceeds 40, print "Total exceeded limit, stopping." and stop the loop with `break` -- otherwise print "Counted $i, total so far: $total".',
+      'Declare var total = 0.\n\n' +
+      '1. Loop through odd numbers using for (i in 1..19 step 2).\n\n' +
+      '2. Skip multiples of 5 using continue (i % 5 == 0).\n\n' +
+      '3. Add the number to total (total += i).\n\n' +
+      '4. If total > 40, print "Total exceeded limit, stopping." and terminate the loop with break.\n\n' +
+      '5. Otherwise, print "Counted $i, total so far: $total".',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'PatternAnalyzer.kt',
     initialCode: `fun main() {
     var total = 0
-    // TODO: loop from 1 to 19 step 2, skip multiples of 5 with continue,
-    // add each remaining number to total, and stop with break printing
-    // "Total exceeded limit, stopping." once total exceeds 40 -- otherwise
-    // print "Counted $i, total so far: $total"
+
+    // 1. Loop from 1 to 19 step 2:
+    // 2. Skip multiples of 5 with continue:
+    // 3. Add i to total:
+    // 4. If total > 40, print "Total exceeded limit, stopping." and break:
+    // 5. Otherwise print "Counted $i, total so far: $total":
 }`,
     solutionCode: `fun main() {
     var total = 0

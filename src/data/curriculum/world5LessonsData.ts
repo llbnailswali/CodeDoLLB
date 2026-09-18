@@ -80,7 +80,19 @@ export const DEFINING_FUNCTIONS_LESSON = makeLesson({
     { title: 'Two calls', code: ['fun ping() {', '    println("Ping")', '}', 'fun main() {', '    ping()', '    ping()', '}'], output: 'Ping\nPing', detail: 'Each call executes the complete function body.' },
     { title: 'Order matters', code: ['fun first() {', '    println("First")', '}', 'fun main() {', '    println("Start")', '    first()', '}'], output: 'Start\nFirst', detail: 'main prints Start before it calls first.' },
   ],
-  write: { title: 'Create a Status Function', description: 'Define `showStatus()` to print "System ready", then call it from main.', initial: 'fun main() {\n    // TODO: define and call showStatus()\n}', solution: 'fun showStatus() {\n    println("System ready")\n}\n\nfun main() {\n    showStatus()\n}', output: 'System ready', file: 'Status.kt', params: '(none)', returns: 'Unit' },
+  write: {
+    title: 'Create a Status Function',
+    description:
+      'Define and execute a reusable status function.\n\n' +
+      '1. Outside main, define a function named showStatus() that prints "System ready".\n\n' +
+      '2. Inside main(), call showStatus() to execute it.',
+    initial: '// 1. Outside main, define showStatus():\n\nfun main() {\n    // 2. Call showStatus():\n}',
+    solution: 'fun showStatus() {\n    println("System ready")\n}\n\nfun main() {\n    showStatus()\n}',
+    output: 'System ready',
+    file: 'Status.kt',
+    params: '(none)',
+    returns: 'Unit'
+  },
   debug: { title: 'Call the Welcome Function', subtitle: 'The function is correct, but the program should print its welcome message.', label: 'Logic Bug: Missing Function Call', broken: 'fun welcome() {\n    println("Welcome!")\n}\n\nfun main() {\n    println("Starting")\n}', fixed: 'fun welcome() {\n    println("Welcome!")\n}\n\nfun main() {\n    println("Starting")\n    welcome()\n}', output: 'Starting\nWelcome!', hints: ['The function exists, but defining code does not execute it.', 'Look inside main for the instruction that should run welcome.', 'Add welcome() after println("Starting").'], explanation: 'A function body runs only after a call. Adding welcome() in main produces the required second line.' },
 });
 
@@ -97,7 +109,19 @@ export const FUNCTION_PARAMETERS_LESSON = makeLesson({
     { title: 'Adding parameters', code: ['fun sum(a: Int, b: Int) {', '    println(a + b)', '}', 'fun main() {', '    sum(8, 2)', '}'], output: '10', detail: 'a and b receive 8 and 2, and their sum is printed.' },
     { title: 'Two separate calls', code: ['fun echo(word: String) {', '    println(word)', '}', 'fun main() {', '    echo("Up")', '    echo("Down")', '}'], output: 'Up\nDown', detail: 'Each call supplies a different argument.' },
   ],
-  write: { title: 'Build a Personal Greeting', description: 'Define `greet(name: String)` to print "Hello, " followed by name. Call it with "Riya".', initial: 'fun main() {\n    // TODO: define greet(name: String) and call it with "Riya"\n}', solution: 'fun greet(name: String) {\n    println("Hello, $name")\n}\n\nfun main() {\n    greet("Riya")\n}', output: 'Hello, Riya', file: 'Greeting.kt', params: '(none)', returns: 'Unit' },
+  write: {
+    title: 'Build a Personal Greeting',
+    description:
+      'Define a function that takes a name parameter.\n\n' +
+      '1. Define greet(name: String) to print "Hello, $name".\n\n' +
+      '2. Inside main(), call greet("Riya").',
+    initial: '// 1. Define greet(name: String):\n\nfun main() {\n    // 2. Call greet with "Riya":\n}',
+    solution: 'fun greet(name: String) {\n    println("Hello, $name")\n}\n\nfun main() {\n    greet("Riya")\n}',
+    output: 'Hello, Riya',
+    file: 'Greeting.kt',
+    params: '(none)',
+    returns: 'Unit'
+  },
   debug: { title: 'Use Both Inputs', subtitle: 'The total should include both numbers supplied to the function.', label: 'Logic Bug: Ignored Parameter', broken: 'fun total(a: Int, b: Int) {\n    println(a)\n}\n\nfun main() {\n    total(6, 4)\n}', fixed: 'fun total(a: Int, b: Int) {\n    println(a + b)\n}\n\nfun main() {\n    total(6, 4)\n}', output: '10', hints: ['One parameter is not contributing to the result.', 'The call supplies 6 and 4, so compare the body with the expected total.', 'Change println(a) to println(a + b).'], explanation: 'The broken version receives both inputs but prints only a. Adding b creates the requested total.' },
 });
 
@@ -114,7 +138,19 @@ export const RETURN_VALUES_LESSON = makeLesson({
     { title: 'Return into a template', code: ['fun tag(name: String): String {', '    return "#$name"', '}', 'fun main() {', '    println(tag("fun"))', '}'], output: '#fun', detail: 'tag returns the String #fun, then println prints it.' },
     { title: 'Return then add', code: ['fun next(n: Int): Int {', '    return n + 1', '}', 'fun main() {', '    println(next(9) + 1)', '}'], output: '11', detail: 'next(9) returns 10, then the caller adds 1.' },
   ],
-  write: { title: 'Return a Discounted Price', description: 'Define `discount(price: Int): Int` that returns price minus 5. Print the result of `discount(20)`.', initial: 'fun main() {\n    // TODO: define discount(price: Int): Int\n}', solution: 'fun discount(price: Int): Int {\n    return price - 5\n}\n\nfun main() {\n    println(discount(20))\n}', output: '15', file: 'Discount.kt', params: '(none)', returns: 'Unit' },
+  write: {
+    title: 'Return a Discounted Price',
+    description:
+      'Define a function that returns an Int value.\n\n' +
+      '1. Define discount(price: Int): Int that returns price - 5.\n\n' +
+      '2. Inside main(), call discount(20) and print the result using println().',
+    initial: '// 1. Define discount(price: Int): Int:\n\nfun main() {\n    // 2. Print the result of discount(20):\n}',
+    solution: 'fun discount(price: Int): Int {\n    return price - 5\n}\n\nfun main() {\n    println(discount(20))\n}',
+    output: '15',
+    file: 'Discount.kt',
+    params: '(none)',
+    returns: 'Unit'
+  },
   debug: { title: 'Return the Computed Result', subtitle: 'The function should return the doubled value, not the original input.', label: 'Logic Bug: Wrong Return Value', broken: 'fun double(n: Int): Int {\n    return n\n}\n\nfun main() {\n    println(double(7))\n}', fixed: 'fun double(n: Int): Int {\n    return n * 2\n}\n\nfun main() {\n    println(double(7))\n}', output: '14', hints: ['The function returns a value, but it has not transformed the input.', 'Compare the returned expression with the function name double.', 'Return n * 2 instead of n.'], explanation: 'The original return simply echoes n. Returning n * 2 sends 14 back to println.' },
 });
 
@@ -131,7 +167,19 @@ export const DEFAULT_PARAMETERS_LESSON = makeLesson({
     { title: 'Override a fallback', code: ['fun greet(name: String = "Guest") {', '    println("Hi, $name")', '}', 'fun main() {', '    greet("Noa")', '}'], output: 'Hi, Noa', detail: 'The supplied positional argument replaces the default for this call.' },
     { title: 'Required plus default', code: ['fun report(item: String, count: Int = 1) {', '    println("$item: $count")', '}', 'fun main() {', '    report("Pen")', '}'], output: 'Pen: 1', detail: 'item receives Pen and the omitted count receives 1.' },
   ],
-  write: { title: 'Set a Default Theme', description: 'Define `showTheme(theme: String = "Light")` to print "Theme: " followed by theme. Call it with no argument.', initial: 'fun main() {\n    // TODO: define showTheme with a default theme\n}', solution: 'fun showTheme(theme: String = "Light") {\n    println("Theme: $theme")\n}\n\nfun main() {\n    showTheme()\n}', output: 'Theme: Light', file: 'Theme.kt', params: '(none)', returns: 'Unit' },
+  write: {
+    title: 'Set a Default Theme',
+    description:
+      'Define a function with a default parameter value.\n\n' +
+      '1. Define showTheme(theme: String = "Light") to print "Theme: $theme".\n\n' +
+      '2. Inside main(), call showTheme() with no arguments so it uses the default value.',
+    initial: '// 1. Define showTheme(theme: String = "Light"):\n\nfun main() {\n    // 2. Call showTheme() with no arguments:\n}',
+    solution: 'fun showTheme(theme: String = "Light") {\n    println("Theme: $theme")\n}\n\nfun main() {\n    showTheme()\n}',
+    output: 'Theme: Light',
+    file: 'Theme.kt',
+    params: '(none)',
+    returns: 'Unit'
+  },
   debug: { title: 'Restore the Default', subtitle: 'Calling without an argument should print the intended fallback.', label: 'Logic Bug: Incorrect Default Value', broken: 'fun lives(count: Int = 1) {\n    println("Lives: $count")\n}\n\nfun main() {\n    lives()\n}', fixed: 'fun lives(count: Int = 3) {\n    println("Lives: $count")\n}\n\nfun main() {\n    lives()\n}', output: 'Lives: 3', hints: ['The call is correct; inspect the fallback declared in the parameter list.', 'No argument is passed, so the default determines the output.', 'Change the default from 1 to 3.'], explanation: 'When a call omits count, Kotlin uses the declared default. Updating it to 3 produces the target output.' },
 });
 
@@ -148,7 +196,19 @@ export const NAMED_ARGUMENTS_LESSON = makeLesson({
     { title: 'Clear Boolean meaning', code: ['fun access(admin: Boolean, active: Boolean) {', '    println(admin && active)', '}', '', 'fun main() {', '    access(active = true, admin = false)', '}'], output: 'false', detail: 'admin is false and active is true, so their && result is false.' },
     { title: 'Same-type parameters', code: ['fun size(width: Int, height: Int) {', '    println(width * height)', '}', '', 'fun main() {', '    size(height = 4, width = 6)', '}'], output: '24', detail: 'The labels give width 6 and height 4, so the area is 24.' },
   ],
-  write: { title: 'Call a Clear Position Function', description: 'The simulator does not execute named arguments. Define `position(x: Int, y: Int)` and call it positionally with 2 and 5 to print "2,5".', initial: 'fun main() {\n    // TODO: define position(x: Int, y: Int) and call positionally\n}', solution: 'fun position(x: Int, y: Int) {\n    println("$x,$y")\n}\n\nfun main() {\n    position(2, 5)\n}', output: '2,5', file: 'Position.kt', params: '(none)', returns: 'Unit' },
+  write: {
+    title: 'Call a Clear Position Function',
+    description:
+      'The simulator does not execute named arguments. Define a multi-parameter function and call it positionally.\n\n' +
+      '1. Define position(x: Int, y: Int) to print "$x,$y".\n\n' +
+      '2. Inside main(), call position(2, 5) to print "2,5".',
+    initial: '// 1. Define position(x: Int, y: Int):\n\nfun main() {\n    // 2. Call position with 2 and 5:\n}',
+    solution: 'fun position(x: Int, y: Int) {\n    println("$x,$y")\n}\n\nfun main() {\n    position(2, 5)\n}',
+    output: '2,5',
+    file: 'Position.kt',
+    params: '(none)',
+    returns: 'Unit'
+  },
   debug: { title: 'Pass the Coordinates in Order', subtitle: 'This executable practice uses positional arguments: the function should print x before y.', label: 'Logic Bug: Positional Arguments Reversed', broken: 'fun position(x: Int, y: Int) {\n    println("$x,$y")\n}\n\nfun main() {\n    position(5, 2)\n}', fixed: 'fun position(x: Int, y: Int) {\n    println("$x,$y")\n}\n\nfun main() {\n    position(2, 5)\n}', output: '2,5', hints: ['Compare the intended x and y values with their order in the call.', 'The first positional argument becomes x.', 'Swap the arguments to position(2, 5).'], explanation: 'Positional calls assign values by order. The fixed call sends 2 to x and 5 to y.' },
 });
 
@@ -165,7 +225,19 @@ export const SINGLE_EXPRESSION_FUNCTIONS_LESSON = makeLesson({
     { title: 'A concise check', code: ['fun isEven(n: Int) = n % 2 == 0', 'fun main() {', '    println(isEven(5))', '}'], output: 'false', detail: '5 % 2 is 1, so the comparison to 0 is false.' },
     { title: 'Compose a result', code: ['fun title(name: String) = "Dr. $name"', 'fun main() {', '    println(title("Lee"))', '}'], output: 'Dr. Lee', detail: 'The expression creates and returns the templated String.' },
   ],
-  write: { title: 'Write a Compact Converter', description: 'Define the single-expression function `minutesToSeconds(minutes: Int) = minutes * 60`, then print `minutesToSeconds(3)`.', initial: 'fun main() {\n    // TODO: define a single-expression minutesToSeconds function\n}', solution: 'fun minutesToSeconds(minutes: Int) = minutes * 60\n\nfun main() {\n    println(minutesToSeconds(3))\n}', output: '180', file: 'Converter.kt', params: '(none)', returns: 'Unit' },
+  write: {
+    title: 'Write a Compact Converter',
+    description:
+      'Define a concise single-expression function using = syntax.\n\n' +
+      '1. Define minutesToSeconds(minutes: Int) = minutes * 60.\n\n' +
+      '2. Inside main(), print the result of minutesToSeconds(3).',
+    initial: '// 1. Define single-expression function minutesToSeconds(minutes: Int):\n\nfun main() {\n    // 2. Print minutesToSeconds(3):\n}',
+    solution: 'fun minutesToSeconds(minutes: Int) = minutes * 60\n\nfun main() {\n    println(minutesToSeconds(3))\n}',
+    output: '180',
+    file: 'Converter.kt',
+    params: '(none)',
+    returns: 'Unit'
+  },
   debug: { title: 'Fix the Compact Formula', subtitle: 'The converter should multiply minutes by 60.', label: 'Logic Bug: Wrong Single Expression', broken: 'fun minutesToSeconds(minutes: Int) = minutes * 6\n\nfun main() {\n    println(minutesToSeconds(3))\n}', fixed: 'fun minutesToSeconds(minutes: Int) = minutes * 60\n\nfun main() {\n    println(minutesToSeconds(3))\n}', output: '180', hints: ['The compact syntax is fine; inspect the arithmetic expression.', 'How many seconds are in one minute?', 'Change * 6 to * 60.'], explanation: 'A single-expression function returns exactly the expression after =. Multiplying by 60 converts minutes to seconds.' },
 });
 
@@ -182,7 +254,19 @@ export const LOCAL_FUNCTIONS_LESSON = makeLesson({
     { title: 'Capture an outer value', code: ['fun main() {', '    val mark = "!"', '    fun cheer(word: String) = "$word$mark"', '    println(cheer("Win"))', '}'], output: 'Win!', detail: 'cheer reads mark from its enclosing main function.' },
     { title: 'Call twice locally', code: ['fun main() {', '    fun next(n: Int) = n + 1', '    println(next(1))', '    println(next(4))', '}'], output: '2\n5', detail: 'The same local helper is called with two inputs.' },
   ],
-  write: { title: 'Create a Local Formatter', description: 'Inside main, define `format(name: String) = "User: $name"` and print `format("Sam")`.', initial: 'fun main() {\n    // TODO: define the local format helper\n}', solution: 'fun main() {\n    fun format(name: String) = "User: $name"\n    println(format("Sam"))\n}', output: 'User: Sam', file: 'LocalHelper.kt', params: '(none)', returns: 'Unit' },
+  write: {
+    title: 'Create a Local Formatter',
+    description:
+      'Declare a local helper function scoped inside another function.\n\n' +
+      '1. Inside main(), define a local single-expression function: format(name: String) = "User: $name".\n\n' +
+      '2. Print the result of calling format("Sam").',
+    initial: 'fun main() {\n    // 1. Define local helper format(name: String) = "User: $name":\n\n    // 2. Print format("Sam"):\n}',
+    solution: 'fun main() {\n    fun format(name: String) = "User: $name"\n    println(format("Sam"))\n}',
+    output: 'User: Sam',
+    file: 'LocalHelper.kt',
+    params: '(none)',
+    returns: 'Unit'
+  },
   debug: { title: 'Fix the Local Helper Result', subtitle: 'The local formatter should include the supplied name.', label: 'Logic Bug: Ignored Local Parameter', broken: 'fun main() {\n    fun format(name: String) = "User"\n    println(format("Sam"))\n}', fixed: 'fun main() {\n    fun format(name: String) = "User: $name"\n    println(format("Sam"))\n}', output: 'User: Sam', hints: ['The helper receives a value but does not use it.', 'Look at the expression after = in format.', 'Include $name in the returned String.'], explanation: 'The broken helper discards name. Adding it to the template returns User: Sam.' },
 });
 
@@ -199,7 +283,19 @@ export const VARARG_LESSON = makeLesson({
     { title: 'Visit values, not indexes', code: ['fun main() {', '    fun show(vararg values: Int) {', '        for (value in values) {', '            println(value)', '        }', '    }', '    show(7, 8)', '}'], output: '7\n8', detail: 'Kotlin for-in iterates the vararg values themselves.' },
     { title: 'One argument', code: ['fun first(vararg words: String): String {', '    return words[0]', '}', 'fun main() {', '    println(first("Solo"))', '}'], output: 'Solo', detail: 'The vararg receives one String, so its first value is Solo.' },
   ],
-  write: { title: 'Sum Flexible Scores', description: 'Define `sumScores(vararg scores: Int): Int` that loops over scores, returns their total, and prints `sumScores(5, 10, 15)`.', initial: 'fun main() {\n    // TODO: define sumScores(vararg scores: Int): Int\n}', solution: 'fun sumScores(vararg scores: Int): Int {\n    var total = 0\n    for (score in scores) {\n        total += score\n    }\n    return total\n}\n\nfun main() {\n    println(sumScores(5, 10, 15))\n}', output: '30', file: 'Scores.kt', params: '(none)', returns: 'Unit' },
+  write: {
+    title: 'Sum Flexible Scores',
+    description:
+      'Accept a variable number of arguments using vararg.\n\n' +
+      '1. Define sumScores(vararg scores: Int): Int that loops over scores and returns their total sum.\n\n' +
+      '2. Inside main(), print the result of sumScores(5, 10, 15).',
+    initial: '// 1. Define sumScores(vararg scores: Int): Int:\n\nfun main() {\n    // 2. Print sumScores(5, 10, 15):\n}',
+    solution: 'fun sumScores(vararg scores: Int): Int {\n    var total = 0\n    for (score in scores) {\n        total += score\n    }\n    return total\n}\n\nfun main() {\n    println(sumScores(5, 10, 15))\n}',
+    output: '30',
+    file: 'Scores.kt',
+    params: '(none)',
+    returns: 'Unit'
+  },
   debug: { title: 'Accumulate Every Score', subtitle: 'The total should add every vararg value, not replace the running total.', label: 'Logic Bug: Vararg Total Overwritten', broken: 'fun sumScores(vararg scores: Int): Int {\n    var total = 0\n    for (score in scores) {\n        total = score\n    }\n    return total\n}\n\nfun main() {\n    println(sumScores(5, 10, 15))\n}', fixed: 'fun sumScores(vararg scores: Int): Int {\n    var total = 0\n    for (score in scores) {\n        total += score\n    }\n    return total\n}\n\nfun main() {\n    println(sumScores(5, 10, 15))\n}', output: '30', hints: ['The loop sees all scores, but the running total is not growing.', 'Compare assigning total with adding to total.', 'Replace total = score with total += score.'], explanation: 'Assignment discards previous scores on every iteration. += preserves the running total and produces 30.' },
 });
 
@@ -216,6 +312,20 @@ export const WORLD_5_BOSS_LESSON = makeLesson({
     { title: 'Default utility', code: ['fun greeting(name: String = "Guest") = "Hi, $name"', 'fun main() {', '    println(greeting())', '}'], output: 'Hi, Guest', detail: 'The omitted argument uses the declared default.' },
     { title: 'Toolkit total', code: ['fun sum(vararg values: Int): Int {', '    var total = 0', '    for (value in values) {', '        total += value', '    }', '    return total', '}', 'fun main() {', '    println(sum(1, 2, 3))', '}'], output: '6', detail: 'The vararg loop accumulates all three inputs.' },
   ],
-  write: { title: 'Build the Utility Toolkit', description: 'Create `double(n: Int) = n * 2` and `greeting(name: String = "Guest") = "Hello, $name"`. In main, print `greeting()` and `double(8)`.', initial: 'fun main() {\n    // TODO: create the double and greeting utilities\n}', solution: 'fun double(n: Int) = n * 2\nfun greeting(name: String = "Guest") = "Hello, $name"\n\nfun main() {\n    println(greeting())\n    println(double(8))\n}', output: 'Hello, Guest\n16', file: 'UtilityToolkit.kt', params: '(none)', returns: 'Unit' },
+  write: {
+    title: 'Build the Utility Toolkit',
+    description:
+      'Combine multiple helper functions into a cohesive utility program.\n\n' +
+      '1. Define double(n: Int) = n * 2.\n\n' +
+      '2. Define greeting(name: String = "Guest") = "Hello, $name".\n\n' +
+      '3. Inside main(), print greeting() on the first line.\n\n' +
+      '4. Inside main(), print double(8) on the second line.',
+    initial: '// 1. Define double(n: Int) = n * 2:\n\n// 2. Define greeting(name: String = "Guest") = "Hello, $name":\n\nfun main() {\n    // 3. Print greeting():\n\n    // 4. Print double(8):\n}',
+    solution: 'fun double(n: Int) = n * 2\nfun greeting(name: String = "Guest") = "Hello, $name"\n\nfun main() {\n    println(greeting())\n    println(double(8))\n}',
+    output: 'Hello, Guest\n16',
+    file: 'UtilityToolkit.kt',
+    params: '(none)',
+    returns: 'Unit'
+  },
   debug: { title: 'Repair the Toolkit Total', subtitle: 'The flexible sum utility should return the total of every supplied value.', label: 'Logic Bug: Incorrect Accumulation in Utility', broken: 'fun sum(vararg values: Int): Int {\n    var total = 0\n    for (value in values) {\n        total = value\n    }\n    return total\n}\n\nfun main() {\n    println(sum(3, 4, 5))\n}', fixed: 'fun sum(vararg values: Int): Int {\n    var total = 0\n    for (value in values) {\n        total += value\n    }\n    return total\n}\n\nfun main() {\n    println(sum(3, 4, 5))\n}', output: '12', hints: ['The function receives all three values but only keeps one result.', 'Inspect how total changes inside the loop.', 'Use total += value so earlier values are preserved.'], explanation: 'The broken utility overwrites total on each pass, leaving only 5. Accumulating with += returns 3 + 4 + 5, or 12.' },
 });

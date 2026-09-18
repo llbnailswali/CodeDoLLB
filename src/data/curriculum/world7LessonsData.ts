@@ -13,7 +13,23 @@ export const NULLABLE_TYPES_LESSON: FiveStageLesson = {
     { id: 'nullabletypes-predict-2', questionNumber: 2, totalQuestions: 3, title: 'A Nullable Holding Null', topicMeta: 'Nullable holding null', language: 'Kotlin', code: ['fun main() {', '    val nickname: String? = null', '    println(nickname)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'null', isCorrect: true }, { id: 'B', label: 'Bo', isCorrect: false }, { id: 'C', label: 'An empty line with nothing on it', isCorrect: false }, { id: 'D', label: 'An error', isCorrect: false }], explanation: { codeRef: 'val nickname: String? = null', detail: 'Printing null shows the literal text "null", not an empty string or blank line.' } },
     { id: 'nullabletypes-predict-3', questionNumber: 3, totalQuestions: 3, title: 'Nullable Applies to Any Type', topicMeta: 'A nullable Int', language: 'Kotlin', code: ['fun main() {', '    val age: Int? = null', '    println(age)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'null', isCorrect: true }, { id: 'B', label: '0', isCorrect: false }, { id: 'C', label: 'An error, since Int can never be null', isCorrect: false }, { id: 'D', label: 'age', isCorrect: false }], explanation: { codeRef: 'val age: Int? = null', detail: 'Int? allows null just as readily as String? does — nullability is not limited to text.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Store a Missing Middle Name', description: 'Create a nullable String named `middleName` and set it to null, since not every person has one. Print middleName.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'MiddleName.kt', initialCode: 'fun main() {\n    // TODO: declare a nullable String named middleName, set to null, and print it\n}', solutionCode: 'fun main() {\n    val middleName: String? = null\n    println(middleName)\n}', sampleInput: 'main()', expectedOutput: 'null', testCase: { call: '', expected: 'null' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Store a Missing Middle Name',
+    description:
+      'Declare and print a nullable String variable.\n\n' +
+      '1. Declare a nullable String variable named middleName (String?) and initialize it to null.\n\n' +
+      '2. Print middleName using println().',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'MiddleName.kt',
+    initialCode: 'fun main() {\n    // 1. Declare a nullable String named middleName set to null:\n\n    // 2. Print middleName:\n}',
+    solutionCode: 'fun main() {\n    val middleName: String? = null\n    println(middleName)\n}',
+    sampleInput: 'main()',
+    expectedOutput: 'null',
+    testCase: { call: '', expected: 'null' }
+  },
   debug: { title: 'Fix the Missing Value', subtitle: 'The program should represent "no phone number yet" with null, but it uses an empty string instead — which is a different value entirely.', challengeNumber: 1, totalChallenges: 1, difficulty: 'easy', bugType: 'logic', bugLabel: 'Logic Bug: Empty String Instead of Null', brokenCode: 'fun main() {\n    val phone: String? = ""\n    println(phone)\n}', fixedCode: 'fun main() {\n    val phone: String? = null\n    println(phone)\n}', expectedOutput: 'null', hints: ['phone is declared nullable, but check what value it actually holds.', '"" is an empty piece of text, not the same thing as "no value at all".', 'Change "" to null.'], explanation: 'An empty String ("") is still a real value — it is text with zero characters. null means something different: there is no value at all. The task calls for null specifically.' },
   mastered: { topicTitle: 'Nullable Types', summary: 'You have mastered nullable types: marking a type with ? to allow null, and recognizing that null is distinct from an empty string or zero.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'Type? allows a variable to hold null; plain types never can' }, { title: 'Examples explored', subtitle: '3 patterns: nullable String with a value, with null, and a nullable Int' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 nullable-declaration test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed an empty-string-instead-of-null logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -31,7 +47,24 @@ export const NULLABLE_VARIABLES_LESSON: FiveStageLesson = {
     { id: 'nullablevars-predict-2', questionNumber: 2, totalQuestions: 3, title: 'Assigning Null', topicMeta: 'a value to null', language: 'Kotlin', code: ['fun main() {', '    var name: String? = "Amy"', '    name = null', '    println(name)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'null', isCorrect: true }, { id: 'B', label: 'Amy', isCorrect: false }, { id: 'C', label: 'An error, since name already had a value', isCorrect: false }, { id: 'D', label: 'An empty line', isCorrect: false }], explanation: { codeRef: 'name = null', detail: 'A nullable var can be reassigned back to null just as freely as to a value.' } },
     { id: 'nullablevars-predict-3', questionNumber: 3, totalQuestions: 3, title: 'Multiple Reassignments', topicMeta: 'Only the last assignment survives', language: 'Kotlin', code: ['fun main() {', '    var mood: String? = "Happy"', '    mood = null', '    mood = "Excited"', '    println(mood)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'Excited', isCorrect: true }, { id: 'B', label: 'null', isCorrect: false }, { id: 'C', label: 'Happy', isCorrect: false }, { id: 'D', label: 'Happy\nnull\nExcited', isCorrect: false }], explanation: { codeRef: 'mood = "Excited"', detail: 'Each reassignment replaces the one before it; only the final value, "Excited", remains when printed.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Issue a Support Ticket', description: 'Create a nullable String var named `ticket` set to null, and print it. Then reassign ticket to "T-204" and print it again.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Ticket.kt', initialCode: 'fun main() {\n    var ticket: String? = null\n    println(ticket)\n    // TODO: reassign ticket to "T-204" and print it again\n}', solutionCode: 'fun main() {\n    var ticket: String? = null\n    println(ticket)\n    ticket = "T-204"\n    println(ticket)\n}', sampleInput: 'main()', expectedOutput: 'null\nT-204', testCase: { call: '', expected: 'null\nT-204' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Issue a Support Ticket',
+    description:
+      'Reassign a nullable var between null and a real value.\n\n' +
+      '1. Given ticket set to null, print its initial value.\n\n' +
+      '2. Reassign ticket to "T-204".\n\n' +
+      '3. Print ticket again.',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Ticket.kt',
+    initialCode: 'fun main() {\n    var ticket: String? = null\n    // 1. Print initial ticket:\n    println(ticket)\n    // 2. Reassign ticket to "T-204":\n\n    // 3. Print ticket again:\n}',
+    solutionCode: 'fun main() {\n    var ticket: String? = null\n    println(ticket)\n    ticket = "T-204"\n    println(ticket)\n}',
+    sampleInput: 'main()',
+    expectedOutput: 'null\nT-204',
+    testCase: { call: '', expected: 'null\nT-204' }
+  },
   debug: { title: 'Fix the Missing Reassignment', subtitle: 'The program should update ticket once it’s issued, but it creates an unrelated new variable instead of reassigning ticket.', challengeNumber: 1, totalChallenges: 1, difficulty: 'medium', bugType: 'logic', bugLabel: 'Logic Bug: New Variable Instead of Reassignment', brokenCode: 'fun main() {\n    var ticket: String? = null\n    println(ticket)\n    val ticket2 = "T-204"\n    println(ticket)\n}', fixedCode: 'fun main() {\n    var ticket: String? = null\n    println(ticket)\n    ticket = "T-204"\n    println(ticket)\n}', expectedOutput: 'null\nT-204', hints: ['ticket is printed twice — check whether it actually changes between the two prints.', 'val ticket2 = "T-204" creates a brand-new variable; it does not update ticket at all.', 'Change val ticket2 = "T-204" to ticket = "T-204".'], explanation: 'val ticket2 = "T-204" declares an entirely separate variable, leaving the original ticket unchanged at null. Reassigning ticket = "T-204" updates the same variable instead.' },
   mastered: { topicTitle: 'Nullable Variables', summary: 'You have mastered reassigning a nullable var in both directions, and recognizing that only the most recent assignment matters.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'A nullable var can move freely between null and a real value' }, { title: 'Examples explored', subtitle: '3 patterns: null-to-value, value-to-null, and multiple reassignments' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 reassignment test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a new-variable-instead-of-reassignment logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -49,7 +82,23 @@ export const SAFE_CALL_LESSON: FiveStageLesson = {
     { id: 'safecall-predict-2', questionNumber: 2, totalQuestions: 3, title: 'Safe Call on Null', topicMeta: '?. short-circuiting to null', language: 'Kotlin', code: ['fun main() {', '    val city: String? = null', '    println(city?.length)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'null', isCorrect: true }, { id: 'B', label: '0', isCorrect: false }, { id: 'C', label: 'An error', isCorrect: false }, { id: 'D', label: 'city', isCorrect: false }], explanation: { codeRef: 'city?.length', detail: 'city is null, so length is never accessed — the safe call produces null instead of crashing.' } },
     { id: 'safecall-predict-3', questionNumber: 3, totalQuestions: 3, title: 'Plain . on a Null Value', topicMeta: 'Why ?. exists', language: 'Kotlin', code: ['fun main() {', '    val city: String? = null', '    println(city.length)', '}'], prompt: 'What will this code do?', options: [{ id: 'A', label: 'Crash, since a plain . cannot be used safely on a null value', isCorrect: true }, { id: 'B', label: 'Print null', isCorrect: false }, { id: 'C', label: 'Print 0', isCorrect: false }, { id: 'D', label: 'Print an empty line', isCorrect: false }], explanation: { codeRef: 'city.length', detail: 'Without ?., accessing .length on a null value crashes the program — this is exactly the crash ?. is designed to prevent.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Safely Read a Missing Country', description: 'Create a nullable String named `country` set to null. Print country?.length using a safe call, so the program does not crash.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Country.kt', initialCode: 'fun main() {\n    val country: String? = null\n    // TODO: safely print country\'s length\n}', solutionCode: 'fun main() {\n    val country: String? = null\n    println(country?.length)\n}', sampleInput: 'main()', expectedOutput: 'null', testCase: { call: '', expected: 'null' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Safely Read a Missing Country',
+    description:
+      'Safely read properties using the safe call operator (?.).\n\n' +
+      '1. Given nullable String country set to null, access its length safely using country?.length.\n\n' +
+      '2. Print the result using println().',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Country.kt',
+    initialCode: 'fun main() {\n    val country: String? = null\n    // 1-2. Safely read and print country\'s length using ?.:\n}',
+    solutionCode: 'fun main() {\n    val country: String? = null\n    println(country?.length)\n}',
+    sampleInput: 'main()',
+    expectedOutput: 'null',
+    testCase: { call: '', expected: 'null' }
+  },
   debug: { title: 'Fix the Crash', subtitle: 'The program crashes because it accesses .length directly on a value that might be null.', challengeNumber: 1, totalChallenges: 1, difficulty: 'medium', bugType: 'runtime', bugLabel: 'Runtime Bug: Missing Safe Call', brokenCode: 'fun main() {\n    val country: String? = null\n    println(country.length)\n}', fixedCode: 'fun main() {\n    val country: String? = null\n    println(country?.length)\n}', expectedOutput: 'null', hints: ['The program crashes before it can print anything — look at how country is accessed.', 'country is nullable and currently null; a plain . cannot safely handle that.', 'Change country.length to country?.length.'], explanation: 'country.length crashes because country is null and . cannot be used safely on a null value. country?.length reads it safely instead, producing null.' },
   mastered: { topicTitle: 'Safe Call ?.', summary: 'You have mastered the safe call operator: reading a property or method only when a value is not null, and avoiding a crash by producing null instead.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: '?. skips the access on null instead of crashing, producing null' }, { title: 'Examples explored', subtitle: '3 patterns: safe call on a value, on null, and confirming the program continues' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 safe-call test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a missing-safe-call runtime crash' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -67,7 +116,23 @@ export const ELVIS_OPERATOR_LESSON: FiveStageLesson = {
     { id: 'elvis-predict-2', questionNumber: 2, totalQuestions: 3, title: 'Real Value Skips the Fallback', topicMeta: '?: with a present value', language: 'Kotlin', code: ['fun main() {', '    val discount: Int? = 15', '    println(discount ?: 0)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '15', isCorrect: true }, { id: 'B', label: '0', isCorrect: false }, { id: 'C', label: '15 or 0, unpredictably', isCorrect: false }, { id: 'D', label: 'null', isCorrect: false }], explanation: { codeRef: 'discount ?: 0', detail: 'discount already has a value, 15, so the fallback 0 is never used.' } },
     { id: 'elvis-predict-3', questionNumber: 3, totalQuestions: 3, title: 'Safe Call Feeding Elvis', topicMeta: 'Chaining ?. into ?:', language: 'Kotlin', code: ['fun main() {', '    val bio: String? = "Hi"', '    println(bio?.length ?: -1)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '2', isCorrect: true }, { id: 'B', label: '-1', isCorrect: false }, { id: 'C', label: 'Hi', isCorrect: false }, { id: 'D', label: 'null', isCorrect: false }], explanation: { codeRef: 'bio?.length ?: -1', detail: 'bio is not null, so ?. reads its real length, 2, and the -1 fallback is never reached.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Apply a Default Theme', description: 'Create a nullable String named `theme` set to null. Print theme ?: "Light" so a sensible default is shown when no theme is set.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Theme.kt', initialCode: 'fun main() {\n    val theme: String? = null\n    // TODO: print theme, falling back to "Light" if it\'s null\n}', solutionCode: 'fun main() {\n    val theme: String? = null\n    println(theme ?: "Light")\n}', sampleInput: 'main()', expectedOutput: 'Light', testCase: { call: '', expected: 'Light' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Apply a Default Theme',
+    description:
+      'Provide a fallback value using the Elvis operator (?:).\n\n' +
+      '1. Given nullable String theme set to null, use theme ?: "Light" to supply a default fallback.\n\n' +
+      '2. Print the evaluated expression using println().',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Theme.kt',
+    initialCode: 'fun main() {\n    val theme: String? = null\n    // 1-2. Print theme with a fallback of "Light" using ?::\n}',
+    solutionCode: 'fun main() {\n    val theme: String? = null\n    println(theme ?: "Light")\n}',
+    sampleInput: 'main()',
+    expectedOutput: 'Light',
+    testCase: { call: '', expected: 'Light' }
+  },
   debug: { title: 'Fix the Missing Fallback', subtitle: 'The program should fall back to "Light" when there’s no theme, but it falls back to theme itself, which is also null.', challengeNumber: 1, totalChallenges: 1, difficulty: 'easy', bugType: 'logic', bugLabel: 'Logic Bug: Fallback Referencing the Same Nullable Value', brokenCode: 'fun main() {\n    val theme: String? = null\n    println(theme ?: theme)\n}', fixedCode: 'fun main() {\n    val theme: String? = null\n    println(theme ?: "Light")\n}', expectedOutput: 'Light', hints: ['The fallback after ?: should be a real, non-null default value.', 'theme ?: theme falls back to theme itself, which is still null.', 'Change the fallback from theme to "Light".'], explanation: 'theme ?: theme uses theme as its own fallback, so a null theme just produces null again. A real default like "Light" is needed instead.' },
   mastered: { topicTitle: 'Elvis Operator ?:', summary: 'You have mastered the Elvis operator: supplying a fallback value for null, and chaining it naturally after a safe call.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: '?: provides a fallback only when the left side is null' }, { title: 'Examples explored', subtitle: '3 patterns: fallback used, fallback skipped, and chaining with ?.' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 default-value test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a fallback-referencing-itself logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -85,7 +150,23 @@ export const NON_NULL_ASSERTION_LESSON: FiveStageLesson = {
     { id: 'nonnull-predict-2', questionNumber: 2, totalQuestions: 3, title: 'A False Assertion', topicMeta: '!! on an actual null', language: 'Kotlin', code: ['fun main() {', '    val score: Int? = null', '    println(score!!)', '}'], prompt: 'What will this code do?', options: [{ id: 'A', label: 'Crash with a null-pointer error', isCorrect: true }, { id: 'B', label: 'Print null', isCorrect: false }, { id: 'C', label: 'Print 0', isCorrect: false }, { id: 'D', label: 'Print nothing and continue', isCorrect: false }], explanation: { codeRef: 'score!!', detail: 'score really is null, so the assertion is wrong and the program crashes immediately rather than continuing.' } },
     { id: 'nonnull-predict-3', questionNumber: 3, totalQuestions: 3, title: '!! Combined With a Property', topicMeta: '!! followed by .property', language: 'Kotlin', code: ['fun main() {', '    val title: String? = "Hi"', '    println(title!!.length)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '2', isCorrect: true }, { id: 'B', label: 'null', isCorrect: false }, { id: 'C', label: 'Hi', isCorrect: false }, { id: 'D', label: 'It crashes', isCorrect: false }], explanation: { codeRef: 'title!!.length', detail: 'title genuinely holds "Hi", so the assertion succeeds and .length reads normally: 2.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Assert a Known Username', description: 'Create a nullable String named `username` set to "kotlin_dev" — a value you know for certain is present. Print username!!.length using a non-null assertion.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Username.kt', initialCode: 'fun main() {\n    val username: String? = "kotlin_dev"\n    // TODO: print username\'s length using !!\n}', solutionCode: 'fun main() {\n    val username: String? = "kotlin_dev"\n    println(username!!.length)\n}', sampleInput: 'main()', expectedOutput: '10', testCase: { call: '', expected: '10' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Assert a Known Username',
+    description:
+      'Assert that a nullable variable is not null using !!.\n\n' +
+      '1. Given nullable String username set to "kotlin_dev", assert it is non-null and read its length using username!!.length.\n\n' +
+      '2. Print the length using println().',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Username.kt',
+    initialCode: 'fun main() {\n    val username: String? = "kotlin_dev"\n    // 1-2. Print username\'s length using !!:\n}',
+    solutionCode: 'fun main() {\n    val username: String? = "kotlin_dev"\n    println(username!!.length)\n}',
+    sampleInput: 'main()',
+    expectedOutput: '10',
+    testCase: { call: '', expected: '10' }
+  },
   debug: { title: 'Fix the Risky Assertion', subtitle: 'The program crashes because it asserts a value is non-null when it genuinely can be null — !! is the wrong tool here.', challengeNumber: 1, totalChallenges: 1, difficulty: 'medium', bugType: 'runtime', bugLabel: 'Runtime Bug: Non-null Assertion on an Actual Null', brokenCode: 'fun main() {\n    val username: String? = null\n    println(username!!.length)\n}', fixedCode: 'fun main() {\n    val username: String? = null\n    println(username?.length ?: 0)\n}', expectedOutput: '0', hints: ['The program crashes before it can print anything — look at how username is accessed.', 'username can genuinely be null here, so asserting it is non-null with !! is unsafe.', 'Replace username!!.length with username?.length ?: 0.'], explanation: '!! is a promise that a value isn’t null — but username really can be null, so that promise is broken and the program crashes. Since null is a real possibility here, ?.length ?: 0 is the safer choice: it reads the length if present, or falls back to 0.' },
   mastered: { topicTitle: 'Non-null Assertion !!', summary: 'You have mastered !!: asserting a nullable value is definitely non-null, and recognizing when it crashes instead of the safer ?./?: alternatives.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: '!! forces non-null treatment, succeeding or crashing depending on the real value' }, { title: 'Examples explored', subtitle: '3 patterns: successful assertion, crashing assertion, and !! used alone' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 non-null-assertion test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Replaced an unsafe !! with ?./?: to fix a real crash' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -103,7 +184,24 @@ export const NULL_CHECKS_LESSON: FiveStageLesson = {
     { id: 'nullchecks-predict-2', questionNumber: 2, totalQuestions: 3, title: 'A Missing Token', topicMeta: '!= null taking the false branch', language: 'Kotlin', code: ['fun main() {', '    val token: String? = null', '    if (token != null) {', '        println("Valid token")', '    } else {', '        println("Missing token")', '    }', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'Missing token', isCorrect: true }, { id: 'B', label: 'Valid token', isCorrect: false }, { id: 'C', label: 'null', isCorrect: false }, { id: 'D', label: 'An error', isCorrect: false }], explanation: { codeRef: 'token != null', detail: 'token is null, so the check is false and the else branch runs instead.' } },
     { id: 'nullchecks-predict-3', questionNumber: 3, totalQuestions: 3, title: 'Checking == null When Present', topicMeta: '== null taking the false branch', language: 'Kotlin', code: ['fun main() {', '    val id: Int? = 7', '    if (id == null) {', '        println("No id")', '    } else {', '        println("Id is " + id)', '    }', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'Id is 7', isCorrect: true }, { id: 'B', label: 'No id', isCorrect: false }, { id: 'C', label: '7', isCorrect: false }, { id: 'D', label: 'An error', isCorrect: false }], explanation: { codeRef: 'id == null', detail: 'id holds 7, so id == null is false, and the else branch runs.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Report a Missing Age', description: 'Create a nullable Int named `age` set to null. If age is not null, print "Age: " followed by age; otherwise print "Age unknown".', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Age.kt', initialCode: 'fun main() {\n    val age: Int? = null\n    // TODO: print "Age: " + age if present, otherwise "Age unknown"\n}', solutionCode: 'fun main() {\n    val age: Int? = null\n    if (age != null) {\n        println("Age: " + age)\n    } else {\n        println("Age unknown")\n    }\n}', sampleInput: 'main()', expectedOutput: 'Age unknown', testCase: { call: '', expected: 'Age unknown' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Report a Missing Age',
+    description:
+      'Use explicit null checks with if/else.\n\n' +
+      '1. Check if age != null.\n\n' +
+      '2. If true, print "Age: " followed by age.\n\n' +
+      '3. If false, print "Age unknown".',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Age.kt',
+    initialCode: 'fun main() {\n    val age: Int? = null\n    // 1-3. If age is not null, print "Age: $age", otherwise print "Age unknown":\n}',
+    solutionCode: 'fun main() {\n    val age: Int? = null\n    if (age != null) {\n        println("Age: " + age)\n    } else {\n        println("Age unknown")\n    }\n}',
+    sampleInput: 'main()',
+    expectedOutput: 'Age unknown',
+    testCase: { call: '', expected: 'Age unknown' }
+  },
   debug: { title: 'Fix the Swapped Branches', subtitle: 'The program should report "Age unknown" when age is missing, but its branch bodies are swapped.', challengeNumber: 1, totalChallenges: 1, difficulty: 'easy', bugType: 'logic', bugLabel: 'Logic Bug: Swapped if/else Branch Bodies', brokenCode: 'fun main() {\n    val age: Int? = null\n    if (age != null) {\n        println("Age unknown")\n    } else {\n        println("Age: " + age)\n    }\n}', fixedCode: 'fun main() {\n    val age: Int? = null\n    if (age != null) {\n        println("Age: " + age)\n    } else {\n        println("Age unknown")\n    }\n}', expectedOutput: 'Age unknown', hints: ['Compare which message prints when age is present versus missing.', 'The "Age unknown" message is currently inside the != null branch, which is backwards.', 'Swap the two println messages between the if and else branches.'], explanation: 'The messages are reversed: "Age unknown" runs when age IS present, and "Age: " + age runs when it is missing (printing "Age: null"). Swapping them fixes the logic.' },
   mastered: { topicTitle: 'Null Checks', summary: 'You have mastered branching on nullability with if (x != null) and if (x == null), choosing whichever direction reads more clearly.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'if (x != null)/if (x == null) branch based on whether a value is present' }, { title: 'Examples explored', subtitle: '3 patterns: present value, missing value, and checking == null directly' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 conditional-report test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a swapped-branch-bodies logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -121,7 +219,24 @@ export const SMART_CASTS_LESSON: FiveStageLesson = {
     { id: 'smartcasts-predict-2', questionNumber: 2, totalQuestions: 3, title: 'Checked and Present', topicMeta: 'Smart cast succeeding', language: 'Kotlin', code: ['fun main() {', '    val label: String? = "Total"', '    if (label != null) {', '        println(label.length)', '    }', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '5', isCorrect: true }, { id: 'B', label: 'null', isCorrect: false }, { id: 'C', label: 'Total', isCorrect: false }, { id: 'D', label: 'It crashes', isCorrect: false }], explanation: { codeRef: 'label.length', detail: 'label != null confirmed a real value, so the smart cast makes label.length safe, printing 5.' } },
     { id: 'smartcasts-predict-3', questionNumber: 3, totalQuestions: 3, title: 'Checked and Missing', topicMeta: 'The if branch never running', language: 'Kotlin', code: ['fun main() {', '    val label: String? = null', '    if (label != null) {', '        println(label.length)', '    } else {', '        println("No label")', '    }', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'No label', isCorrect: true }, { id: 'B', label: '0', isCorrect: false }, { id: 'C', label: 'null', isCorrect: false }, { id: 'D', label: 'It crashes', isCorrect: false }], explanation: { codeRef: 'else', detail: 'label is null, so the if branch (and its smart cast) never runs — the else branch handles it instead.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Measure a Bio Safely', description: 'Create a nullable String named `bio` set to "Loves Kotlin". If bio is not null, print its length directly (no ?. needed inside the check); otherwise print "No bio".', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Bio.kt', initialCode: 'fun main() {\n    val bio: String? = "Loves Kotlin"\n    // TODO: if bio is not null, print its length directly; otherwise print "No bio"\n}', solutionCode: 'fun main() {\n    val bio: String? = "Loves Kotlin"\n    if (bio != null) {\n        println(bio.length)\n    } else {\n        println("No bio")\n    }\n}', sampleInput: 'main()', expectedOutput: '12', testCase: { call: '', expected: '12' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Measure a Bio Safely',
+    description:
+      'Rely on Kotlin smart casting after a null check.\n\n' +
+      '1. Check if bio != null.\n\n' +
+      '2. If true, print bio.length directly without using ?..\n\n' +
+      '3. If false, print "No bio".',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Bio.kt',
+    initialCode: 'fun main() {\n    val bio: String? = "Loves Kotlin"\n    // 1-3. If bio is not null, print bio.length directly; otherwise print "No bio":\n}',
+    solutionCode: 'fun main() {\n    val bio: String? = "Loves Kotlin"\n    if (bio != null) {\n        println(bio.length)\n    } else {\n        println("No bio")\n    }\n}',
+    sampleInput: 'main()',
+    expectedOutput: '12',
+    testCase: { call: '', expected: '12' }
+  },
   debug: { title: 'Fix the Missing Guard', subtitle: 'The program crashes because it accesses bio.length directly, with no null check to make that access safe.', challengeNumber: 1, totalChallenges: 1, difficulty: 'medium', bugType: 'runtime', bugLabel: 'Runtime Bug: Direct Access With No Smart Cast', brokenCode: 'fun main() {\n    val bio: String? = null\n    println(bio.length)\n}', fixedCode: 'fun main() {\n    val bio: String? = null\n    if (bio != null) {\n        println(bio.length)\n    } else {\n        println("No bio")\n    }\n}', expectedOutput: 'No bio', hints: ['The program crashes before it can print anything — look at how bio is accessed.', 'bio.length is only safe once something has confirmed bio isn’t null.', 'Wrap the access in if (bio != null) { ... } else { println("No bio") }.'], explanation: 'bio.length crashes because bio is null and nothing confirmed otherwise first. Adding if (bio != null) lets Kotlin smart-cast bio to non-null inside that branch, with an else to handle the null case safely.' },
   mastered: { topicTitle: 'Smart Casts', summary: 'You have mastered smart casts: how a null check unlocks safe, direct . access for the rest of its own block, without extending beyond it.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'A null check narrows a nullable value to non-null inside its own block' }, { title: 'Examples explored', subtitle: '3 patterns: smart-cast access, an else fallback, and narrowing scope' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 smart-cast test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a missing-null-check runtime crash' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -139,7 +254,23 @@ export const SAFE_CASTS_LESSON: FiveStageLesson = {
     { id: 'safecasts-predict-2', questionNumber: 2, totalQuestions: 3, title: 'Casting to the Wrong Type', topicMeta: 'as? Int failing', language: 'Kotlin', code: ['fun main() {', '    val obj: Any = "abc"', '    println(obj as? Int)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'null', isCorrect: true }, { id: 'B', label: 'abc', isCorrect: false }, { id: 'C', label: '0', isCorrect: false }, { id: 'D', label: 'It crashes', isCorrect: false }], explanation: { codeRef: 'obj as? Int', detail: 'obj actually holds a String, not an Int, so the cast fails and produces null — not a crash.' } },
     { id: 'safecasts-predict-3', questionNumber: 3, totalQuestions: 3, title: 'Cast Succeeding Before the Fallback', topicMeta: 'as? ?: with a matching type', language: 'Kotlin', code: ['fun main() {', '    val obj: Any = "Kotlin"', '    println(obj as? String ?: "unknown")', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: 'Kotlin', isCorrect: true }, { id: 'B', label: 'unknown', isCorrect: false }, { id: 'C', label: 'null', isCorrect: false }, { id: 'D', label: 'obj', isCorrect: false }], explanation: { codeRef: 'obj as? String ?: "unknown"', detail: 'obj really is a String, so the cast succeeds and the "unknown" fallback is never reached.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Safely Cast a Mismatched Value', description: 'Create a val named `data` of type Any holding the Int 42. Use as? to cast data to a String, store it in `text`, and print text.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'SafeCast.kt', initialCode: 'fun main() {\n    val data: Any = 42\n    // TODO: safely cast data to String into text, then print text\n}', solutionCode: 'fun main() {\n    val data: Any = 42\n    val text = data as? String\n    println(text)\n}', sampleInput: 'main()', expectedOutput: 'null', testCase: { call: '', expected: 'null' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Safely Cast a Mismatched Value',
+    description:
+      'Perform safe type casting with the as? operator.\n\n' +
+      '1. Safely cast data to String using data as? String and store it in val text.\n\n' +
+      '2. Print text using println().',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'SafeCast.kt',
+    initialCode: 'fun main() {\n    val data: Any = 42\n    // 1. Safely cast data to String into text using as?:\n\n    // 2. Print text:\n}',
+    solutionCode: 'fun main() {\n    val data: Any = 42\n    val text = data as? String\n    println(text)\n}',
+    sampleInput: 'main()',
+    expectedOutput: 'null',
+    testCase: { call: '', expected: 'null' }
+  },
   debug: { title: 'Fix the Wrong Target Type', subtitle: 'The program should recover data as a String, but it casts to the wrong type entirely.', challengeNumber: 1, totalChallenges: 1, difficulty: 'medium', bugType: 'logic', bugLabel: 'Logic Bug: Casting to the Wrong Type', brokenCode: 'fun main() {\n    val data: Any = "Kotlin"\n    val text = data as? Int\n    println(text)\n}', fixedCode: 'fun main() {\n    val data: Any = "Kotlin"\n    val text = data as? String\n    println(text)\n}', expectedOutput: 'Kotlin', hints: ['data genuinely holds a String — check which type the cast is targeting.', 'as? Int fails here because data is not an Int, so text becomes null.', 'Change data as? Int to data as? String.'], explanation: 'data as? Int fails because data actually holds a String, so text becomes null instead of "Kotlin". Casting to the type data really is, String, lets the cast succeed.' },
   mastered: { topicTitle: 'Safe Casts as?', summary: 'You have mastered as?: casting to a type only when the value genuinely matches, and getting null instead of a crash when it doesn’t.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'as? succeeds when the value matches the type, and produces null otherwise' }, { title: 'Examples explored', subtitle: '3 patterns: a successful cast, a failed cast, and combining with ?:' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 safe-cast test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a wrong-target-type logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -157,7 +288,23 @@ export const NULLABLE_COLLECTIONS_LESSON: FiveStageLesson = {
     { id: 'nullablecollections-predict-2', questionNumber: 2, totalQuestions: 3, title: 'A Missing List Entirely', topicMeta: 'List<Int>? safe access', language: 'Kotlin', code: ['fun main() {', '    val ids: List<Int>? = null', '    println(ids?.size ?: 0)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '0', isCorrect: true }, { id: 'B', label: 'null', isCorrect: false }, { id: 'C', label: 'An error', isCorrect: false }, { id: 'D', label: '1', isCorrect: false }], explanation: { codeRef: 'ids?.size ?: 0', detail: 'ids itself is null, so ?.size produces null, and the ?: fallback supplies 0.' } },
     { id: 'nullablecollections-predict-3', questionNumber: 3, totalQuestions: 3, title: 'A Missing Map Value', topicMeta: 'Map<String, Int?> with a fallback', language: 'Kotlin', code: ['fun main() {', '    val prices: Map<String, Int?> = mapOf("Book" to null)', '    println(prices["Book"] ?: -1)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '-1', isCorrect: true }, { id: 'B', label: 'null', isCorrect: false }, { id: 'C', label: '0', isCorrect: false }, { id: 'D', label: 'Book', isCorrect: false }], explanation: { codeRef: 'prices["Book"] ?: -1', detail: '"Book" maps to null, so the ?: fallback supplies -1 instead.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Handle a Missing Bonus List', description: 'Create a nullable List<Int> named `bonuses` set to null. Print bonuses?.size ?: 0, so a missing list safely reports 0.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Bonuses.kt', initialCode: 'fun main() {\n    val bonuses: List<Int>? = null\n    // TODO: safely print bonuses\' size, falling back to 0\n}', solutionCode: 'fun main() {\n    val bonuses: List<Int>? = null\n    println(bonuses?.size ?: 0)\n}', sampleInput: 'main()', expectedOutput: '0', testCase: { call: '', expected: '0' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Handle a Missing Bonus List',
+    description:
+      'Handle a nullable collection with a fallback size.\n\n' +
+      '1. Given nullable List bonuses set to null, safely read its size with bonuses?.size and fallback to 0 using ?:.\n\n' +
+      '2. Print the result using println().',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Bonuses.kt',
+    initialCode: 'fun main() {\n    val bonuses: List<Int>? = null\n    // 1-2. Safely print bonuses\' size, falling back to 0:\n}',
+    solutionCode: 'fun main() {\n    val bonuses: List<Int>? = null\n    println(bonuses?.size ?: 0)\n}',
+    sampleInput: 'main()',
+    expectedOutput: '0',
+    testCase: { call: '', expected: '0' }
+  },
   debug: { title: 'Fix the Missing List Crash', subtitle: 'The program crashes because it reads .size directly on a list reference that might not exist.', challengeNumber: 1, totalChallenges: 1, difficulty: 'medium', bugType: 'runtime', bugLabel: 'Runtime Bug: Missing Safe Call on a Nullable Collection', brokenCode: 'fun main() {\n    val bonuses: List<Int>? = null\n    println(bonuses.size)\n}', fixedCode: 'fun main() {\n    val bonuses: List<Int>? = null\n    println(bonuses?.size ?: 0)\n}', expectedOutput: '0', hints: ['The program crashes before it can print anything — look at how bonuses is accessed.', 'bonuses is nullable and currently null; a plain .size cannot handle that safely.', 'Change bonuses.size to bonuses?.size ?: 0.'], explanation: 'bonuses.size crashes because bonuses itself is null, and a plain . cannot be used safely on it. bonuses?.size ?: 0 handles the missing list safely, falling back to 0.' },
   mastered: { topicTitle: 'Nullable Collections & Collection Values', summary: 'You have mastered the difference between nullable elements inside a collection and a nullable collection reference itself, plus safely accessing either.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'List<Int?> (nullable elements) differs from List<Int>? (nullable collection)' }, { title: 'Examples explored', subtitle: '3 patterns: nullable elements, a nullable list reference, and a Map with nullable values' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 nullable-collection safe-access test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a missing-safe-call runtime crash on a nullable collection' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -175,7 +322,23 @@ export const CHAINING_NULLABLE_OPERATIONS_LESSON: FiveStageLesson = {
     { id: 'chaining-predict-2', questionNumber: 2, totalQuestions: 3, title: 'The Value Itself Is Null', topicMeta: 'A null value inside the chain', language: 'Kotlin', code: ['fun main() {', '    val bios: Map<String, String?> = mapOf("Sam" to null)', '    println(bios["Sam"]?.length ?: -1)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '-1', isCorrect: true }, { id: 'B', label: '0', isCorrect: false }, { id: 'C', label: 'null', isCorrect: false }, { id: 'D', label: 'It crashes', isCorrect: false }], explanation: { codeRef: 'bios["Sam"]?.length ?: -1', detail: 'Sam is a key, but the bio itself is null, so ?. short-circuits and -1 is used.' } },
     { id: 'chaining-predict-3', questionNumber: 3, totalQuestions: 3, title: 'The Key Doesn’t Exist', topicMeta: 'A completely missing key', language: 'Kotlin', code: ['fun main() {', '    val bios: Map<String, String?> = mapOf("Sam" to "Hi")', '    println(bios["Zed"]?.length ?: -1)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '-1', isCorrect: true }, { id: 'B', label: '2', isCorrect: false }, { id: 'C', label: 'null', isCorrect: false }, { id: 'D', label: 'It crashes', isCorrect: false }], explanation: { codeRef: 'bios["Zed"]?.length ?: -1', detail: '"Zed" was never added as a key at all, so the lookup produces null just as surely as a null value would, and -1 is used.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 20, title: 'Report Nickname Lengths Safely', description: 'Create a Map<String, String?> named `nicknames` with "Tom" to null and "Ana" to "Az". Print the length of Ana’s nickname (falling back to 0), then Tom’s (also falling back to 0).', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'Nicknames.kt', initialCode: 'fun main() {\n    val nicknames: Map<String, String?> = mapOf("Tom" to null, "Ana" to "Az")\n    // TODO: print Ana\'s nickname length (or 0), then Tom\'s (or 0)\n}', solutionCode: 'fun main() {\n    val nicknames: Map<String, String?> = mapOf("Tom" to null, "Ana" to "Az")\n    println(nicknames["Ana"]?.length ?: 0)\n    println(nicknames["Tom"]?.length ?: 0)\n}', sampleInput: 'main()', expectedOutput: '2\n0', testCase: { call: '', expected: '2\n0' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 20,
+    title: 'Report Nickname Lengths Safely',
+    description:
+      'Chain null-safe map lookup, property access, and Elvis fallback.\n\n' +
+      '1. Print the length of Ana\'s nickname from nicknames (nicknames["Ana"]?.length ?: 0).\n\n' +
+      '2. Print the length of Tom\'s nickname from nicknames (nicknames["Tom"]?.length ?: 0).',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'Nicknames.kt',
+    initialCode: 'fun main() {\n    val nicknames: Map<String, String?> = mapOf("Tom" to null, "Ana" to "Az")\n    // 1. Print Ana\'s nickname length (or 0):\n\n    // 2. Print Tom\'s nickname length (or 0):\n}',
+    solutionCode: 'fun main() {\n    val nicknames: Map<String, String?> = mapOf("Tom" to null, "Ana" to "Az")\n    println(nicknames["Ana"]?.length ?: 0)\n    println(nicknames["Tom"]?.length ?: 0)\n}',
+    sampleInput: 'main()',
+    expectedOutput: '2\n0',
+    testCase: { call: '', expected: '2\n0' }
+  },
   debug: { title: 'Fix the Missing Fallback', subtitle: 'The program should safely fall back to 0 for a missing nickname, but the fallback was left off one of the two lines.', challengeNumber: 1, totalChallenges: 1, difficulty: 'medium', bugType: 'logic', bugLabel: 'Logic Bug: Missing ?: Fallback', brokenCode: 'fun main() {\n    val nicknames: Map<String, String?> = mapOf("Tom" to null, "Ana" to "Az")\n    println(nicknames["Ana"]?.length ?: 0)\n    println(nicknames["Tom"]?.length)\n}', fixedCode: 'fun main() {\n    val nicknames: Map<String, String?> = mapOf("Tom" to null, "Ana" to "Az")\n    println(nicknames["Ana"]?.length ?: 0)\n    println(nicknames["Tom"]?.length ?: 0)\n}', expectedOutput: '2\n0', hints: ['Compare the two println lines — one of them is missing something the other has.', 'nicknames["Tom"]?.length has no ?: fallback, so it prints null instead of 0.', 'Add ?: 0 to the end of the Tom line, matching the Ana line.'], explanation: 'nicknames["Tom"]?.length has no fallback, so it prints the literal word null instead of 0. Adding ?: 0, matching the Ana line, gives both lines the same safe, guaranteed-non-null handling.' },
   mastered: { topicTitle: 'Chaining Nullable Operations', summary: 'You have mastered chaining ?. across multiple steps that could each independently be null, finished with a single ?: fallback.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'A chain of ?. steps short-circuits to null the moment any one step fails' }, { title: 'Examples explored', subtitle: '3 patterns: a fully successful chain, a null value, and a missing key' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 chained safe-call test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a missing ?: fallback logic bug' }], xpEarned: 20, streakDays: 1, accuracy: '100%' },
 };
@@ -193,7 +356,26 @@ export const WORLD_7_BOSS_LESSON: FiveStageLesson = {
     { id: 'boss7-predict-2', questionNumber: 2, totalQuestions: 3, title: 'Counting Valid Scores', topicMeta: 'Accumulator guarded by a null check', language: 'Kotlin', code: ['fun main() {', '    val scores: Map<String, Int?> = mapOf("Dan" to 70, "Eve" to null, "Fay" to 60)', '    var validCount = 0', '    for ((name, score) in scores) {', '        if (score != null) {', '            validCount += 1', '        }', '    }', '    println(validCount)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '2', isCorrect: true }, { id: 'B', label: '3', isCorrect: false }, { id: 'C', label: '1', isCorrect: false }, { id: 'D', label: '0', isCorrect: false }], explanation: { codeRef: 'validCount += 1', detail: 'Only Dan and Fay have real scores; Eve’s null score is correctly skipped, leaving validCount at 2.' } },
     { id: 'boss7-predict-3', questionNumber: 3, totalQuestions: 3, title: 'A Completely Missing Student', topicMeta: 'Elvis fallback for a missing key', language: 'Kotlin', code: ['fun main() {', '    val scores: Map<String, Int?> = mapOf("Dan" to 70)', '    println(scores["Zed"] ?: -1)', '}'], prompt: 'What will this code print?', options: [{ id: 'A', label: '-1', isCorrect: true }, { id: 'B', label: 'null', isCorrect: false }, { id: 'C', label: '70', isCorrect: false }, { id: 'D', label: 'It crashes', isCorrect: false }], explanation: { codeRef: 'scores["Zed"] ?: -1', detail: '"Zed" was never added as a key, so the lookup produces null, and the ?: fallback supplies -1.' } },
   ] },
-  writeRun: { challengeNumber: 1, totalChallenges: 1, xpReward: 40, title: 'Build the Safe Data Processor', description: 'Create a Map<String, Int?> named `scores` with "Ann" to 82, "Ben" to null, and "Cy" to 91. Loop through it, printing "name: score" when present or "name: no score yet" when null, while counting real scores into a var named `validCount`. Finally, print "Valid scores: " followed by validCount.', requirements: { name: 'main', params: '(none)', returns: 'Unit' }, fileName: 'SafeDataProcessor.kt', initialCode: 'fun main() {\n    val scores: Map<String, Int?> = mapOf("Ann" to 82, "Ben" to null, "Cy" to 91)\n    // TODO: loop through scores, reporting each one and counting valid scores\n    // into validCount, then print "Valid scores: " + validCount\n}', solutionCode: 'fun main() {\n    val scores: Map<String, Int?> = mapOf("Ann" to 82, "Ben" to null, "Cy" to 91)\n    var validCount = 0\n    for ((name, score) in scores) {\n        if (score != null) {\n            println(name + ": " + score)\n            validCount += 1\n        } else {\n            println(name + ": no score yet")\n        }\n    }\n    println("Valid scores: " + validCount)\n}', sampleInput: 'main()', expectedOutput: 'Ann: 82\nBen: no score yet\nCy: 91\nValid scores: 2', testCase: { call: '', expected: 'Ann: 82\nBen: no score yet\nCy: 91\nValid scores: 2' } },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 40,
+    title: 'Build the Safe Data Processor',
+    description:
+      'Build a null-safe records processor.\n\n' +
+      '1. Initialize var validCount = 0.\n\n' +
+      '2. Loop through scores using for ((name, score) in scores).\n\n' +
+      '3. If score != null, print "$name: $score" and increment validCount by 1.\n\n' +
+      '4. If score is null, print "$name: no score yet".\n\n' +
+      '5. After the loop, print "Valid scores: " followed by validCount.',
+    requirements: { name: 'main', params: '(none)', returns: 'Unit' },
+    fileName: 'SafeDataProcessor.kt',
+    initialCode: 'fun main() {\n    val scores: Map<String, Int?> = mapOf("Ann" to 82, "Ben" to null, "Cy" to 91)\n    // 1. Initialize validCount:\n\n    // 2-4. Loop through scores, report each score or fallback, and count valid scores:\n\n    // 5. Print "Valid scores: " followed by validCount:\n}',
+    solutionCode: 'fun main() {\n    val scores: Map<String, Int?> = mapOf("Ann" to 82, "Ben" to null, "Cy" to 91)\n    var validCount = 0\n    for ((name, score) in scores) {\n        if (score != null) {\n            println(name + ": " + score)\n            validCount += 1\n        } else {\n            println(name + ": no score yet")\n        }\n    }\n    println("Valid scores: " + validCount)\n}',
+    sampleInput: 'main()',
+    expectedOutput: 'Ann: 82\nBen: no score yet\nCy: 91\nValid scores: 2',
+    testCase: { call: '', expected: 'Ann: 82\nBen: no score yet\nCy: 91\nValid scores: 2' }
+  },
   debug: { title: 'Fix the Score Counter', subtitle: 'The report prints correctly, but validCount counts every student instead of only the ones with a real score.', challengeNumber: 1, totalChallenges: 1, difficulty: 'hard', bugType: 'logic', bugLabel: 'Logic Bug: Counting Outside the Null Check', brokenCode: 'fun main() {\n    val scores: Map<String, Int?> = mapOf("Ann" to 82, "Ben" to null, "Cy" to 91)\n    var validCount = 0\n    for ((name, score) in scores) {\n        if (score != null) {\n            println(name + ": " + score)\n        } else {\n            println(name + ": no score yet")\n        }\n        validCount += 1\n    }\n    println("Valid scores: " + validCount)\n}', fixedCode: 'fun main() {\n    val scores: Map<String, Int?> = mapOf("Ann" to 82, "Ben" to null, "Cy" to 91)\n    var validCount = 0\n    for ((name, score) in scores) {\n        if (score != null) {\n            println(name + ": " + score)\n            validCount += 1\n        } else {\n            println(name + ": no score yet")\n        }\n    }\n    println("Valid scores: " + validCount)\n}', expectedOutput: 'Ann: 82\nBen: no score yet\nCy: 91\nValid scores: 2', hints: ['The printed report is correct — check exactly where validCount is incremented relative to the if/else.', 'validCount += 1 sits after the whole if/else block, so it runs for every student, including Ben.', 'Move validCount += 1 inside the if (score != null) branch, right after the println.'], explanation: 'validCount += 1 runs unconditionally after the if/else, so it counts Ben (a null score) too, giving 3 instead of 2. Moving it inside the if (score != null) branch counts only students with a real score.' },
   mastered: { topicTitle: 'Safe Data Processor (World Boss)', summary: 'You combined null checks, smart casts, an accumulator, and the Elvis operator into a program that processes incomplete data without crashing.', passedCount: '3 / 3 PASSED', verificationItems: [{ title: 'Concept understood', subtitle: 'Null checks, safe calls, and fallbacks combine to process real, incomplete data safely' }, { title: 'Examples explored', subtitle: '3 patterns: reporting every entry, counting valid entries, and a safe single-lookup default' }, { title: 'Predictions completed', subtitle: '3/3 correct output forecasts' }, { title: 'Code written & executed', subtitle: '1 combined report + counter test passed' }, { title: 'Bugs diagnosed & repaired', subtitle: 'Fixed a counting-outside-the-null-check logic bug' }], xpEarned: 40, streakDays: 1, accuracy: '100%' },
 };

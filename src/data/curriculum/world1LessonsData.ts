@@ -194,7 +194,10 @@ export const COMMENTS_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Comment Out the Extra Line',
-    description: 'An unwanted line is printing alongside the real message. Comment it out using // so only "Mission Ready!" prints.',
+    description:
+      'An unwanted line is printing alongside the real message.\n\n' +
+      '1. Comment out the unwanted line using //.\n\n' +
+      '2. Ensure only "Mission Ready!" prints to the console.',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -202,6 +205,7 @@ export const COMMENTS_LESSON: FiveStageLesson = {
     },
     fileName: 'CommentsChallenge.kt',
     initialCode: `fun main() {
+    // 1. Comment out the unwanted println statement using //:
     println("Not part of the final output")
     println("Mission Ready!")
 }`,
@@ -438,7 +442,10 @@ export const PRINT_PRINTLN_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Format a Status Banner',
-    description: 'Use print() to output "Status:" and println() to output "ACTIVE" so they appear together as "Status:ACTIVE".',
+    description:
+      'Format and display a status indicator.\n\n' +
+      '1. Use print() to output "Status:".\n\n' +
+      '2. Use println() to output "ACTIVE" so they appear together as "Status:ACTIVE".',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -446,7 +453,9 @@ export const PRINT_PRINTLN_LESSON: FiveStageLesson = {
     },
     fileName: 'StatusBanner.kt',
     initialCode: `fun main() {
-    // TODO: print "Status:" without newline, then println "ACTIVE"
+    // 1. Print "Status:" without a newline:
+
+    // 2. Print "ACTIVE" on the same line using println():
 }`,
     solutionCode: `fun main() {
     print("Status:")
@@ -677,7 +686,10 @@ export const VAL_VS_VAR_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Update a Game Score',
-    description: 'Declare a mutable variable `score` with initial value 50, add 25 to it, and print the updated score (75).',
+    description:
+      'Declare a mutable variable var score = 50.\n\n' +
+      '1. Update score by adding 25 (or setting it to 75).\n\n' +
+      '2. Print the updated score to the console.',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -685,7 +697,11 @@ export const VAL_VS_VAR_LESSON: FiveStageLesson = {
     },
     fileName: 'GameScore.kt',
     initialCode: `fun main() {
-    // TODO: declare var score = 50, update score to 75, and print it
+    var score = 50
+
+    // 1. Update score to 75 (or score += 25):
+
+    // 2. Print the updated score:
 }`,
     solutionCode: `fun main() {
     var score = 50
@@ -919,7 +935,12 @@ export const VARIABLES_TYPE_INFERENCE_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Declare Explicit and Inferred Variables',
-    description: 'Declare `val username = "Alex"` and `val level: Int = 10`. Print username on one line and level on the next.',
+    description:
+      'Declare two variables:\n' +
+      '• val username = "Alex" (type inferred)\n' +
+      '• val level: Int = 10 (explicit type)\n\n' +
+      '1. Print username on the first line.\n\n' +
+      '2. Print level on the second line.',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -927,7 +948,9 @@ export const VARIABLES_TYPE_INFERENCE_LESSON: FiveStageLesson = {
     },
     fileName: 'UserVars.kt',
     initialCode: `fun main() {
-    // TODO: declare username and level, then print each
+    // 1. Declare username = "Alex" and level: Int = 10:
+
+    // 2. Print username and level on separate lines:
 }`,
     solutionCode: `fun main() {
     val username = "Alex"
@@ -1163,7 +1186,13 @@ export const INT_LONG_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Calculate Seconds in a Day',
-    description: 'Declare `val hours = 24`, `val minutes = 60`, `val seconds = 60`. Calculate total seconds (`hours * minutes * seconds`) and print the result.',
+    description:
+      'Declare the time constants:\n' +
+      '• val hours = 24\n' +
+      '• val minutes = 60\n' +
+      '• val seconds = 60\n\n' +
+      '1. Calculate the total seconds in a day: hours * minutes * seconds.\n\n' +
+      '2. Print the resulting total seconds (86400).',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -1171,7 +1200,11 @@ export const INT_LONG_LESSON: FiveStageLesson = {
     },
     fileName: 'SecondsInDay.kt',
     initialCode: `fun main() {
-    // TODO: calculate and print total seconds in a 24-hour day
+    val hours = 24
+    val minutes = 60
+    val seconds = 60
+
+    // 1. Calculate and print total seconds (hours * minutes * seconds):
 }`,
     solutionCode: `fun main() {
     val hours = 24
@@ -1405,7 +1438,10 @@ export const FLOAT_DOUBLE_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Calculate Circle Area',
-    description: 'Declare `val radius = 5.0` and `val pi = 3.14`. Calculate area (`pi * radius * radius`) and print it.',
+    description:
+      'Declare val radius = 5.0 and val pi = 3.14.\n\n' +
+      '1. Calculate area using the formula: pi * radius * radius.\n\n' +
+      '2. Print the calculated area (78.5).',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -1413,7 +1449,10 @@ export const FLOAT_DOUBLE_LESSON: FiveStageLesson = {
     },
     fileName: 'CircleArea.kt',
     initialCode: `fun main() {
-    // TODO: calculate area of a circle with radius 5.0 and pi 3.14
+    val radius = 5.0
+    val pi = 3.14
+
+    // 1. Calculate and print area (pi * radius * radius):
 }`,
     solutionCode: `fun main() {
     val radius = 5.0
@@ -1649,7 +1688,10 @@ export const BOOLEAN_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Toggle a Feature Flag',
-    description: 'Declare `val isPremium = false`. Print its negated value `!isPremium` (which should print `true`).',
+    description:
+      'Declare val isPremium = false.\n\n' +
+      '1. Use the logical NOT operator (!) to negate isPremium.\n\n' +
+      '2. Print the negated value (!isPremium), which outputs true.',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -1657,7 +1699,9 @@ export const BOOLEAN_LESSON: FiveStageLesson = {
     },
     fileName: 'FeatureFlag.kt',
     initialCode: `fun main() {
-    // TODO: declare isPremium = false and print !isPremium
+    val isPremium = false
+
+    // 1. Print the negated value using !isPremium:
 }`,
     solutionCode: `fun main() {
     val isPremium = false
@@ -1890,7 +1934,10 @@ export const CHAR_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Print a First Initial',
-    description: 'Declare `val initial: Char = \'K\'` and print it using `println`.',
+    description:
+      'Declare a Char variable:\n' +
+      'val initial: Char = \'K\'\n\n' +
+      '1. Use println() to print initial to the console.',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -1898,7 +1945,7 @@ export const CHAR_LESSON: FiveStageLesson = {
     },
     fileName: 'Initial.kt',
     initialCode: `fun main() {
-    // TODO: declare val initial: Char = 'K' and print it
+    // 1. Declare val initial: Char = 'K' and print it:
 }`,
     solutionCode: `fun main() {
     val initial: Char = 'K'
@@ -2131,7 +2178,10 @@ export const STRING_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Print Combined Title',
-    description: 'Declare `val prefix = "Kotlin"` and `val suffix = "Awakening"`. Print them combined with a space in between: `"Kotlin Awakening"`.',
+    description:
+      'Declare val prefix = "Kotlin" and val suffix = "Awakening".\n\n' +
+      '1. Combine prefix and suffix with a space in between.\n\n' +
+      '2. Print the combined title: "Kotlin Awakening".',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -2139,7 +2189,10 @@ export const STRING_LESSON: FiveStageLesson = {
     },
     fileName: 'CombinedTitle.kt',
     initialCode: `fun main() {
-    // TODO: combine prefix, a space, and suffix, then print
+    val prefix = "Kotlin"
+    val suffix = "Awakening"
+
+    // 1. Combine prefix, space, and suffix, then print:
 }`,
     solutionCode: `fun main() {
     val prefix = "Kotlin"
@@ -2371,7 +2424,11 @@ export const STRING_TEMPLATES_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Format a User Summary',
-    description: 'Given `val name = "Kai"` and `val points = 95`, use string templates to print `"Kai scored 95 points!"`.',
+    description:
+      'Given val name = "Kai" and val points = 95.\n\n' +
+      '1. Use string templates ($name and $points) to construct the message.\n\n' +
+      '2. Print the result:\n' +
+      '"Kai scored 95 points!"',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -2381,7 +2438,8 @@ export const STRING_TEMPLATES_LESSON: FiveStageLesson = {
     initialCode: `fun main() {
     val name = "Kai"
     val points = 95
-    // TODO: print "$name scored $points points!" using string templates
+
+    // 1. Print "$name scored $points points!" using string templates:
 }`,
     solutionCode: `fun main() {
     val name = "Kai"
@@ -2621,7 +2679,14 @@ export const WORLD_1_BOSS_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 50,
     title: 'Build the Personal Profile Program',
-    description: 'Declare `val name = "CodeDo"`, `val grade = \'A\'`, `val score = 100`. Print `"User: $name | Grade: $grade | Score: $score"`.',
+    description:
+      'Declare the user profile variables:\n' +
+      '• val name = "CodeDo"\n' +
+      '• val grade = \'A\'\n' +
+      '• val score = 100\n\n' +
+      '1. Use string templates to combine the values.\n\n' +
+      '2. Print the profile summary:\n' +
+      '"User: $name | Grade: $grade | Score: $score"',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -2629,7 +2694,11 @@ export const WORLD_1_BOSS_LESSON: FiveStageLesson = {
     },
     fileName: 'ProfileProgram.kt',
     initialCode: `fun main() {
-    // TODO: declare name, grade, score and print the profile summary
+    val name = "CodeDo"
+    val grade = 'A'
+    val score = 100
+
+    // 1. Print "User: $name | Grade: $grade | Score: $score" using string templates:
 }`,
     solutionCode: `fun main() {
     val name = "CodeDo"

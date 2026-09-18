@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Stage4WriteRunData } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
 import { runKotlinCode, KotlinExecutionResult } from '../utils/kotlinRunner';
@@ -38,11 +38,146 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
   const [showOutputPanel, setShowOutputPanel] = useState<boolean>(false);
   const [showSolutionModal, setShowSolutionModal] = useState<boolean>(false);
   const [showOverflowMenu, setShowOverflowMenu] = useState<boolean>(false);
-  const [showTaskModal, setShowTaskModal] = useState<boolean>(false);
+
+  // Auto-open Task dialog as soon as Editor screen opens
+  const [showTaskModal, setShowTaskModal] = useState<boolean>(true);
+  const [modalAnimState, setModalAnimState] = useState<'open' | 'closing' | 'opening' | 'closed'>('open');
+  const [genieStyle, setGenieStyle] = useState<React.CSSProperties>({});
+  const [isTaskButtonCatching, setIsTaskButtonCatching] = useState<boolean>(false);
+
   const [cursorArrowsVisible, setCursorArrowsVisible] = useState<boolean>(false);
   const [horizontalScrollEnabled, setHorizontalScrollEnabled] = useState<boolean>(false);
 
   const editorRef = useRef<KotlinCodeEditorHandle>(null);
+  const taskButtonRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const animTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pulseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-open Task dialog when switching challenges
+  useEffect(() => {
+    setShowTaskModal(true);
+    setModalAnimState('open');
+  }, [data]);
+
+  // Clean up animation timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
+      if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
+    };
+  }, []);
+
+  // Compute macOS Genie effect coordinates towards the Top Task button
+  const computeGenieStyle = (forOpening = false): React.CSSProperties => {
+    const btnEl = taskButtonRef.current;
+    const modalEl = modalRef.current;
+
+    let btnCenterX = 70;
+    let btnCenterY = 40;
+    let btnWidth = 72;
+    let btnHeight = 28;
+
+    if (btnEl) {
+      const bRect = btnEl.getBoundingClientRect();
+      btnCenterX = bRect.left + bRect.width / 2;
+      btnCenterY = bRect.top + bRect.height / 2;
+      btnWidth = bRect.width;
+      btnHeight = bRect.height;
+    }
+
+    let modalCenterX = window.innerWidth / 2;
+    let modalCenterY = window.innerHeight / 2;
+    let modalWidth = Math.min(372, window.innerWidth - 32);
+    let modalHeight = Math.min(window.innerHeight * 0.82, 520);
+    let modalLeft = (window.innerWidth - modalWidth) / 2;
+
+    if (modalEl && !forOpening) {
+      const mRect = modalEl.getBoundingClientRect();
+      modalCenterX = mRect.left + mRect.width / 2;
+      modalCenterY = mRect.top + mRect.height / 2;
+      modalWidth = mRect.width;
+      modalHeight = mRect.height;
+      modalLeft = mRect.left;
+    }
+
+    const dx = btnCenterX - modalCenterX;
+    const dy = btnCenterY - modalCenterY;
+    const sx = Math.max(0.08, btnWidth / modalWidth);
+    const sy = Math.max(0.04, btnHeight / modalHeight);
+
+    // Calculate where the button sits relative to the modal's top edge (0% - 100%)
+    const pinchX = Math.max(6, Math.min(94, ((btnCenterX - modalLeft) / modalWidth) * 100));
+    // Subtle tilt towards the direction of the button
+    const tilt = dx < 0 ? Math.max(-5, Math.min(-1.5, dx / 45)) : Math.min(5, Math.max(1.5, dx / 45));
+
+    return {
+      '--genie-dx': `${dx.toFixed(1)}px`,
+      '--genie-dy': `${dy.toFixed(1)}px`,
+      '--genie-scale-x': `${sx.toFixed(3)}`,
+      '--genie-scale-y': `${sy.toFixed(3)}`,
+      '--genie-pinch-x': `${pinchX.toFixed(1)}%`,
+      '--genie-tilt': `${tilt.toFixed(1)}deg`,
+    } as React.CSSProperties;
+  };
+
+  // macOS Genie minimization into the Top Task button
+  const handleCloseTaskModal = () => {
+    if (modalAnimState === 'closing') return;
+    soundFX.playClick();
+
+    const style = computeGenieStyle(false);
+    setGenieStyle(style);
+    setModalAnimState('closing');
+
+    if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
+    animTimeoutRef.current = setTimeout(() => {
+      setShowTaskModal(false);
+      setModalAnimState('closed');
+
+      // Trigger the macOS dock-style button catch bounce/glow on the Task button
+      setIsTaskButtonCatching(true);
+      if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
+      pulseTimeoutRef.current = setTimeout(() => {
+        setIsTaskButtonCatching(false);
+      }, 700);
+    }, 490);
+  };
+
+  // Expand modal out from the Top Task button
+  const handleOpenTaskModal = () => {
+    soundFX.playClick();
+    if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
+
+    const style = computeGenieStyle(true);
+    setGenieStyle(style);
+
+    setShowTaskModal(true);
+    setModalAnimState('opening');
+
+    animTimeoutRef.current = setTimeout(() => {
+      setModalAnimState('open');
+    }, 440);
+  };
+
+  const handleToggleTaskModal = () => {
+    if (showTaskModal && modalAnimState !== 'closing') {
+      handleCloseTaskModal();
+    } else {
+      handleOpenTaskModal();
+    }
+  };
+
+  // Escape key closes modal with Genie effect
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showTaskModal && modalAnimState === 'open') {
+        handleCloseTaskModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showTaskModal, modalAnimState]);
 
   // Any edit to the code should dismiss a currently-shown run result, since
   // it no longer describes what's in the editor.
@@ -159,15 +294,15 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             </svg>
           </button>
 
-          {/* Short & meaningful Task Button (no doc icon) */}
+          {/* Short & meaningful Task Button with macOS Genie animation */}
           <button
+            ref={taskButtonRef}
             type="button"
             id="task-trigger-btn"
-            onClick={() => {
-              soundFX.playClick();
-              setShowTaskModal((prev) => !prev);
-            }}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium active:scale-95 transition-all cursor-pointer ${
+            onClick={handleToggleTaskModal}
+            className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium active:scale-95 transition-all cursor-pointer ${
+              isTaskButtonCatching ? 'animate-task-catch ring-2 ring-indigo-400' : ''
+            } ${
               showTaskModal
                 ? 'bg-indigo-600/25 border-indigo-500/70 text-indigo-200 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
                 : isDark
@@ -177,6 +312,13 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             aria-label="Toggle Task"
             title="Click to view Task"
           >
+            {/* When minimized into the button, show an attractive subtle pulse beacon */}
+            {!showTaskModal && (
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500 border border-white/60"></span>
+              </span>
+            )}
             <span className="font-semibold tracking-tight">Task</span>
             <svg
               className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
@@ -250,7 +392,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                 type="button"
                 onClick={() => {
                   setShowOverflowMenu(false);
-                  setShowTaskModal(true);
+                  handleOpenTaskModal();
                 }}
                 className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer ${
                   isDark ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-slate-100 text-slate-700'
@@ -358,20 +500,35 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
         isDark={isDark}
       />
 
-      {/* ================= BEGIN: Task Details Modal ================= */}
+      {/* ================= BEGIN: Task Details Modal (macOS Genie Animation) ================= */}
       {showTaskModal && (
         <div
-          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
-          onClick={() => setShowTaskModal(false)}
+          className={`fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 select-text ${
+            modalAnimState === 'closing'
+              ? 'animate-genie-backdrop-out'
+              : modalAnimState === 'opening'
+              ? 'animate-genie-backdrop-in'
+              : 'animate-fadeIn'
+          }`}
+          onClick={handleCloseTaskModal}
         >
           <div
-            className={`w-full max-w-[372px] mx-auto rounded-2xl border p-5 shadow-2xl animate-scaleUp max-h-[82vh] overflow-y-auto ${
+            ref={modalRef}
+            style={genieStyle}
+            className={`w-full max-w-[372px] mx-auto rounded-2xl border shadow-2xl max-h-[82vh] flex flex-col overflow-hidden ${
+              modalAnimState === 'closing'
+                ? 'animate-genie-suck'
+                : modalAnimState === 'opening'
+                ? 'animate-genie-expand'
+                : 'animate-scaleUp'
+            } ${
               isDark ? 'border-slate-700/80 bg-[#121622] text-slate-100' : 'border-slate-300 bg-white text-slate-900'
             }`}
             onClick={(e) => e.stopPropagation()}
             id="task-details-modal"
           >
-            <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+            {/* Sticky Top Header: Title + Cross Button */}
+            <div className={`sticky top-0 z-10 flex items-center justify-between px-5 py-3.5 border-b shrink-0 ${isDark ? 'border-slate-800 bg-[#121622]' : 'border-slate-200 bg-white'}`}>
               <div className="flex items-center gap-2">
                 <span
                   className={`px-2 py-0.5 rounded-md font-mono text-[10.5px] font-bold border ${
@@ -390,7 +547,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
               <button
                 type="button"
                 aria-label="Close task details"
-                onClick={() => setShowTaskModal(false)}
+                onClick={handleCloseTaskModal}
                 className={`cursor-pointer p-1 rounded-lg transition-colors ${
                   isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
                 }`}
@@ -401,67 +558,71 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
               </button>
             </div>
 
-            <div className="my-3.5">
-              <h3 className={`font-bold text-base mb-1.5 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                {data.title || topicTitle || 'Kotlin Code Task'}
-              </h3>
-              <p className={`text-xs leading-relaxed whitespace-pre-line ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                {data.description}
-              </p>
-            </div>
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto px-5 py-3.5 space-y-3.5 flex-1 overscroll-contain">
+              <div>
+                <h3 className={`font-bold text-base mb-1.5 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                  {data.title || topicTitle || 'Kotlin Code Task'}
+                </h3>
+                <p className={`text-xs leading-relaxed whitespace-pre-line ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                  {data.description}
+                </p>
+              </div>
 
-            {/* Specifications Card */}
-            <div
-              className={`space-y-2 p-3.5 rounded-xl border text-xs font-mono my-3 ${
-                isDark ? 'bg-[#090d16] border-slate-800' : 'bg-slate-50 border-slate-200'
-              }`}
-            >
-              <div className={`text-[11px] font-bold uppercase tracking-wider mb-1 font-sans ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Signature & Types
-              </div>
-              <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                <span>Function:</span>
-                <span className={isDark ? 'text-indigo-300 font-semibold' : 'text-indigo-600 font-semibold'}>{data.requirements.name}</span>
-              </div>
-              <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                <span>Parameters:</span>
-                <span className={isDark ? 'text-amber-300' : 'text-amber-700'}>{data.requirements.params}</span>
-              </div>
-              <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                <span>Returns:</span>
-                <span className={isDark ? 'text-emerald-300' : 'text-emerald-700'}>{data.requirements.returns}</span>
-              </div>
-            </div>
-
-            {/* Sample Input / Output */}
-            {(data.sampleInput || data.expectedOutput) && (
+              {/* Specifications Card */}
               <div
-                className={`p-3.5 rounded-xl border text-xs font-mono my-3 ${
+                className={`space-y-2 p-3.5 rounded-xl border text-xs font-mono ${
                   isDark ? 'bg-[#090d16] border-slate-800' : 'bg-slate-50 border-slate-200'
                 }`}
               >
-                <div className={`text-[11px] font-bold uppercase tracking-wider mb-1.5 font-sans ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Example Case
+                <div className={`text-[11px] font-bold uppercase tracking-wider mb-1 font-sans ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Signature & Types
                 </div>
-                {data.sampleInput && (
-                  <div className={`flex justify-between items-center mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    <span>Call:</span>
-                    <span className={isDark ? 'text-sky-300' : 'text-sky-700'}>{data.sampleInput}</span>
-                  </div>
-                )}
-                {data.expectedOutput && (
-                  <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    <span>Output:</span>
-                    <span className={isDark ? 'text-emerald-400 font-bold' : 'text-emerald-700 font-bold'}>{data.expectedOutput}</span>
-                  </div>
-                )}
+                <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span>Function:</span>
+                  <span className={isDark ? 'text-indigo-300 font-semibold' : 'text-indigo-600 font-semibold'}>{data.requirements.name}</span>
+                </div>
+                <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span>Parameters:</span>
+                  <span className={isDark ? 'text-amber-300' : 'text-amber-700'}>{data.requirements.params}</span>
+                </div>
+                <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span>Returns:</span>
+                  <span className={isDark ? 'text-emerald-300' : 'text-emerald-700'}>{data.requirements.returns}</span>
+                </div>
               </div>
-            )}
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+              {/* Sample Input / Output */}
+              {(data.sampleInput || data.expectedOutput) && (
+                <div
+                  className={`p-3.5 rounded-xl border text-xs font-mono ${
+                    isDark ? 'bg-[#090d16] border-slate-800' : 'bg-slate-50 border-slate-200'
+                  }`}
+                >
+                  <div className={`text-[11px] font-bold uppercase tracking-wider mb-1.5 font-sans ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Example Case
+                  </div>
+                  {data.sampleInput && (
+                    <div className={`flex justify-between items-start gap-2.5 mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <span className="shrink-0 leading-snug">Call:</span>
+                      <span className={`text-right leading-snug break-words ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>{data.sampleInput}</span>
+                    </div>
+                  )}
+                  {data.expectedOutput && (
+                    <div className={`flex justify-between items-start gap-2.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <span className="shrink-0 leading-snug">Output:</span>
+                      <span className={`text-right leading-snug break-words whitespace-pre-line ${isDark ? 'text-emerald-400 font-bold' : 'text-emerald-700 font-bold'}`}>{data.expectedOutput}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Fixed Bottom Footer */}
+            <div className={`flex items-center justify-end px-5 py-3 border-t shrink-0 ${isDark ? 'border-slate-800 bg-[#121622]' : 'border-slate-200 bg-white'}`}>
               <button
                 type="button"
-                onClick={() => setShowTaskModal(false)}
+                onClick={handleCloseTaskModal}
                 className="w-full sm:w-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-[0_0_14px_rgba(99,102,241,0.4)] transition-all cursor-pointer"
               >
                 <span>Back to Code</span>
@@ -479,14 +640,14 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
           onClick={() => setShowOutputPanel(false)}
         >
           <div
-            className={`w-full max-w-[372px] mx-auto rounded-2xl border p-5 shadow-2xl animate-scaleUp max-h-[85vh] overflow-y-auto ${
+            className={`w-full max-w-[372px] mx-auto rounded-2xl border shadow-2xl animate-scaleUp max-h-[85vh] flex flex-col overflow-hidden ${
               isDark ? 'border-slate-700/80 bg-[#121622] text-slate-100' : 'border-slate-300 bg-white text-slate-900'
             }`}
             onClick={(e) => e.stopPropagation()}
             id="run-result-modal"
           >
-            {/* Modal Header */}
-            <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+            {/* Modal Header - Sticky to top */}
+            <div className={`sticky top-0 z-10 flex items-center justify-between px-5 py-3.5 border-b shrink-0 ${isDark ? 'border-slate-800 bg-[#121622]' : 'border-slate-200 bg-white'}`}>
               <div className="flex items-center gap-2">
                 {executionResult.success ? (
                   <span
@@ -534,7 +695,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             </div>
 
             {/* Modal Body */}
-            <div className="my-3.5">
+            <div className="overflow-y-auto px-5 py-4 flex-1 overscroll-contain">
               {executionResult.success ? (
                 <>
                   <h3 className={`font-bold text-base mb-1 flex items-center gap-1.5 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
@@ -553,10 +714,10 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                     <div className={`text-[11px] font-bold uppercase tracking-wider mb-1 font-sans ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                       Output Verification
                     </div>
-                    <div className={`flex justify-between items-center ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                      <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Output:</span>
+                    <div className={`flex justify-between items-start gap-2.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      <span className={`shrink-0 leading-snug ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Output:</span>
                       <span
-                        className={`font-bold px-2 py-0.5 rounded border ${
+                        className={`font-bold px-2 py-0.5 rounded border leading-snug break-words whitespace-pre-line text-right ${
                           isDark ? 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30' : 'text-emerald-700 bg-emerald-100 border-emerald-300'
                         }`}
                       >
@@ -564,9 +725,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                       </span>
                     </div>
                     {data.expectedOutput && (
-                      <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        <span>Expected:</span>
-                        <span className={isDark ? 'text-slate-300 font-medium' : 'text-slate-700 font-medium'}>{data.expectedOutput}</span>
+                      <div className={`flex justify-between items-start gap-2.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <span className="shrink-0 leading-snug">Expected:</span>
+                        <span className={`text-right leading-snug break-words whitespace-pre-line ${isDark ? 'text-slate-300 font-medium' : 'text-slate-700 font-medium'}`}>{data.expectedOutput}</span>
                       </div>
                     )}
                   </div>
@@ -588,10 +749,10 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                     <div className={`text-[11px] font-bold uppercase tracking-wider mb-1 font-sans ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                       Output Details
                     </div>
-                    <div className={`flex justify-between items-center ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                      <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Your Output:</span>
+                    <div className={`flex justify-between items-start gap-2.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      <span className={`shrink-0 leading-snug ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Your Output:</span>
                       <span
-                        className={`font-bold px-2 py-0.5 rounded border ${
+                        className={`font-bold px-2 py-0.5 rounded border leading-snug break-words whitespace-pre-line text-right ${
                           isDark ? 'text-rose-400 bg-rose-500/15 border-rose-500/30' : 'text-rose-700 bg-rose-100 border-rose-300'
                         }`}
                       >
@@ -599,9 +760,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                       </span>
                     </div>
                     {data.expectedOutput && (
-                      <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        <span>Expected:</span>
-                        <span className={isDark ? 'text-emerald-400 font-medium' : 'text-emerald-700 font-medium'}>{data.expectedOutput}</span>
+                      <div className={`flex justify-between items-start gap-2.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <span className="shrink-0 leading-snug">Expected:</span>
+                        <span className={`text-right leading-snug break-words whitespace-pre-line ${isDark ? 'text-emerald-400 font-medium' : 'text-emerald-700 font-medium'}`}>{data.expectedOutput}</span>
                       </div>
                     )}
                   </div>
@@ -609,8 +770,8 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
               )}
             </div>
 
-            {/* Modal Actions */}
-            <div className={`flex items-center justify-end gap-2.5 pt-2 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+            {/* Modal Actions - Sticky to bottom */}
+            <div className={`flex items-center justify-end gap-2.5 px-5 py-3 border-t shrink-0 ${isDark ? 'border-slate-800 bg-[#121622]' : 'border-slate-200 bg-white'}`}>
               <button
                 type="button"
                 onClick={() => setShowOutputPanel(false)}
@@ -661,36 +822,42 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
       {showSolutionModal && data.solutionCode && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
           <div
-            className={`w-full max-w-sm rounded-2xl border p-4 shadow-2xl ${
+            className={`w-full max-w-sm rounded-2xl border shadow-2xl max-h-[85vh] flex flex-col overflow-hidden ${
               isDark ? 'border-slate-700/80 bg-[#121622] text-slate-100' : 'border-slate-300 bg-white text-slate-900'
             }`}
           >
-            <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+            {/* Sticky Header */}
+            <div className={`sticky top-0 z-10 flex items-center justify-between px-5 py-3.5 border-b shrink-0 ${isDark ? 'border-slate-800 bg-[#121622]' : 'border-slate-200 bg-white'}`}>
               <h3 className={`font-bold text-sm ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>Reference Solution</h3>
               <button
                 type="button"
+                aria-label="Close reference solution"
                 onClick={() => setShowSolutionModal(false)}
-                className={`cursor-pointer p-1 ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800'}`}
+                className={`cursor-pointer p-1 rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
             </div>
 
-            <div
-              className={`my-3 p-3 rounded-xl border font-mono text-xs whitespace-pre overflow-x-auto ${
-                isDark ? 'bg-[#090d16] border-slate-800 text-indigo-300' : 'bg-slate-50 border-slate-200 text-indigo-700'
-              }`}
-            >
-              {data.solutionCode}
+            {/* Scrollable Body */}
+            <div className="overflow-y-auto px-5 py-3.5 flex-1 overscroll-contain">
+              <div
+                className={`p-3 rounded-xl border font-mono text-xs whitespace-pre overflow-x-auto ${
+                  isDark ? 'bg-[#090d16] border-slate-800 text-indigo-300' : 'bg-slate-50 border-slate-200 text-indigo-700'
+                }`}
+              >
+                {data.solutionCode}
+              </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-1">
+            {/* Sticky Footer */}
+            <div className={`flex items-center justify-end gap-2 px-5 py-3 border-t shrink-0 ${isDark ? 'border-slate-800 bg-[#121622]' : 'border-slate-200 bg-white'}`}>
               <button
                 type="button"
                 onClick={() => setShowSolutionModal(false)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-medium cursor-pointer transition-colors ${
                   isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                 }`}
               >
@@ -702,7 +869,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                   setShowSolutionModal(false);
                   handleAcceptSuggestion();
                 }}
-                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer transition-colors shadow-[0_0_14px_rgba(99,102,241,0.4)]"
               >
                 Apply Solution
               </button>

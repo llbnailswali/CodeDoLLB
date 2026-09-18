@@ -195,12 +195,18 @@ export const IF_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Check Storage Warning',
-    description: 'Declare val usedPercent = 92. If usedPercent is greater than or equal to 90, print "Warning: storage almost full".',
+    description:
+      'Declare val usedPercent = 92.\n\n' +
+      '1. Check if usedPercent is greater than or equal to 90 using an if statement.\n\n' +
+      '2. Inside the if block, print:\n' +
+      '"Warning: storage almost full"',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'StorageWarning.kt',
     initialCode: `fun main() {
     val usedPercent = 92
-    // TODO: if usedPercent is 90 or higher, print "Warning: storage almost full"
+    // 1. Check if usedPercent is greater than or equal to 90 using an if statement:
+
+    // 2. Print "Warning: storage almost full"
 }`,
     solutionCode: `fun main() {
     val usedPercent = 92
@@ -481,18 +487,22 @@ export const IF_ELSE_LESSON: FiveStageLesson = {
     xpReward: 20,
     title: 'Ticket Price Calculator',
     description:
-      'Declare val age = 10 and val isHoliday = true. Use an if/else statement: print "Child ticket" if age is less than 12, otherwise print "Adult ticket". Then use if/else as an expression to set val price to 15 if isHoliday is true, otherwise 10, and print the result as "Price: 15" using a string template.',
+      'Declare val age = 10 and val isHoliday = true.\n\n' +
+      '1. Use an if/else statement: print "Child ticket" if age is less than 12, otherwise print "Adult ticket".\n\n' +
+      '2. Use if/else as an expression to set val price to 15 if isHoliday is true, otherwise 10.\n\n' +
+      '3. Print the result as:\n' +
+      '"Price: 15" using a string template',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'TicketPrice.kt',
     initialCode: `fun main() {
     val age = 10
     val isHoliday = true
 
-    // 1. Use if/else: print "Child ticket" if age is less than 12, otherwise print "Adult ticket"
+    // 1. Use if/else: print "Child ticket" if age is less than 12, otherwise print "Adult ticket":
 
-    // 2. Use if/else as an expression: val price = 15 if isHoliday is true, otherwise 10
+    // 2. Use if/else as an expression: val price = 15 if isHoliday is true, otherwise 10:
 
-    // 3. Print the price as "Price: 15" using a string template
+    // 3. Print the price as "Price: 15" using a string template:
 }`,
     solutionCode: `fun main() {
     val age = 10
@@ -786,13 +796,19 @@ export const ELSE_IF_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Grade the Score',
-    description: 'Declare val score = 82, then use an if / else if / else chain to print "Grade: A" (score >= 90), "Grade: B" (score >= 80), "Grade: C" (score >= 70), or "Grade: F" otherwise.',
+    description:
+      'Declare val score = 82.\n\n' +
+      '1. Use an if / else if / else chain to evaluate the score:\n\n' +
+      '2. If score >= 90, print "Grade: A".\n\n' +
+      '3. Else if score >= 80, print "Grade: B".\n\n' +
+      '4. Else if score >= 70, print "Grade: C".\n\n' +
+      '5. Otherwise, print "Grade: F".',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'GradeScore.kt',
     initialCode: `fun main() {
     val score = 82
-    // TODO: use if / else if / else to print "Grade: A" (score >= 90),
-    // "Grade: B" (score >= 80), "Grade: C" (score >= 70), or "Grade: F" otherwise
+    // 1. Use if / else if / else to print "Grade: A" (score >= 90),
+    //    "Grade: B" (score >= 80), "Grade: C" (score >= 70), or "Grade: F" otherwise:
 }`,
     solutionCode: `fun main() {
     val score = 82
@@ -1076,13 +1092,20 @@ export const WHEN_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Classify the Day',
-    description: 'Declare val dayNumber = 6. Use a when statement with dayNumber as the subject: branches 1, 2, 3, 4, 5 should print "Weekday", branches 6, 7 should print "Weekend", and else should print "Invalid day".',
+    description:
+      'Declare val dayNumber = 6.\n\n' +
+      '1. Write a when statement with dayNumber as the subject.\n\n' +
+      '2. For branches 1, 2, 3, 4, 5, print "Weekday".\n\n' +
+      '3. For branches 6, 7, print "Weekend".\n\n' +
+      '4. In the else branch, print "Invalid day".',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'DayClassifier.kt',
     initialCode: `fun main() {
     val dayNumber = 6
-    // TODO: use when (dayNumber) with branches 1, 2, 3, 4, 5 -> "Weekday",
-    // 6, 7 -> "Weekend", and else -> "Invalid day"
+    // 1. Use when (dayNumber) with branches:
+    //    1, 2, 3, 4, 5 -> "Weekday"
+    //    6, 7 -> "Weekend"
+    //    else -> "Invalid day"
 }`,
     solutionCode: `fun main() {
     val dayNumber = 6
@@ -1343,13 +1366,22 @@ export const WHEN_WITH_RANGES_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Build a Grade Classifier',
-    description: 'Declare val score = 78. Write a when block that checks score against ranges and prints the matching grade: in 90..100 -> "Grade: A", in 80..89 -> "Grade: B", in 70..79 -> "Grade: C", else -> "Grade: F". For score = 78, this should print "Grade: C".',
+    description:
+      'Declare val score = 78.\n\n' +
+      '1. Write a when (score) statement that checks ranges.\n\n' +
+      '2. In branch in 90..100, print "Grade: A".\n\n' +
+      '3. In branch in 80..89, print "Grade: B".\n\n' +
+      '4. In branch in 70..79, print "Grade: C".\n\n' +
+      '5. In the else branch, print "Grade: F".',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'GradeClassifier.kt',
     initialCode: `fun main() {
     val score = 78
-    // TODO: use when(score) with range branches to print "Grade: A" for 90..100,
-    // TODO: "Grade: B" for 80..89, "Grade: C" for 70..79, and "Grade: F" otherwise
+    // 1. Write a when (score) statement with range branches:
+    //    in 90..100 -> print "Grade: A"
+    //    in 80..89 -> print "Grade: B"
+    //    in 70..79 -> print "Grade: C"
+    //    else -> print "Grade: F"
 }`,
     solutionCode: `fun main() {
     val score = 78
@@ -1619,7 +1651,14 @@ export const WHEN_AS_EXPRESSION_LESSON: FiveStageLesson = {
     xpReward: 20,
     title: 'Classify the Temperature',
     description:
-      'Declare val temperature = 28. Assign the result of a when-expression to val description, classifying temperature as: in 30..100 -> "Hot", in 20..29 -> "Warm", in 10..19 -> "Cool", else -> "Cold". Print the result as "It\'s Warm outside".',
+      'Declare val temperature = 28.\n\n' +
+      '1. Assign the result of a when (temperature) expression to val description:\n' +
+      '   • in 30..100 -> "Hot"\n' +
+      '   • in 20..29 -> "Warm"\n' +
+      '   • in 10..19 -> "Cool"\n' +
+      '   • else -> "Cold"\n\n' +
+      '2. Print the result as:\n' +
+      '"It\'s Warm outside" using string templates ($description)',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'ClassifyTemperature.kt',
     initialCode: `fun main() {
@@ -1627,7 +1666,7 @@ export const WHEN_AS_EXPRESSION_LESSON: FiveStageLesson = {
     // 1. Assign the result of a when-expression to val description:
     //    in 30..100 -> "Hot", in 20..29 -> "Warm", in 10..19 -> "Cool", else -> "Cold"
 
-    // 2. Print "It's Warm outside"
+    // 2. Print "It's $description outside"
 }`,
     solutionCode: `fun main() {
     val temperature = 28
@@ -1907,19 +1946,23 @@ export const MULTIPLE_NESTED_CONDITIONS_LESSON: FiveStageLesson = {
     xpReward: 30,
     title: 'Loan Approval System',
     description:
-      'Write main() so it declares hasStableJob = true, creditScore = 750, and income = 30000. Nest the credit check inside a check for hasStableJob: only when hasStableJob is true, combine two conditions with && -- creditScore at least 700 AND income at least 25000 -- and print "Loan approved" when both hold, otherwise print "Loan denied". When hasStableJob is false, print "Employment required" without checking anything else.',
+      'Declare hasStableJob = true, creditScore = 750, and income = 30000.\n\n' +
+      '1. Check if hasStableJob is true using an outer if statement.\n\n' +
+      '2. Inside the outer if, combine two checks with &&:\n' +
+      '   creditScore >= 700 && income >= 25000\n\n' +
+      '3. Print "Loan approved" if both conditions hold, otherwise print "Loan denied".\n\n' +
+      '4. If hasStableJob is false, the outer else branch must print:\n' +
+      '"Employment required"',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'LoanApproval.kt',
     initialCode: `fun main() {
-    // 1. Declare hasStableJob = true, creditScore = 750, and income = 30000:
+    val hasStableJob = true
+    val creditScore = 750
+    val income = 30000
 
-    // 2. Nested if: only check credit terms when hasStableJob is true:
-
-        // 3. Inside it, combine two checks with &&: creditScore >= 700 and income >= 25000.
-        //    Print "Loan approved" when both hold, otherwise print "Loan denied":
-
-    // 4. When hasStableJob is false, print "Employment required":
-
+    // 1. Outer check: only evaluate credit terms when hasStableJob is true:
+    // 2. Nested check: combine creditScore >= 700 && income >= 25000 ("Loan approved" vs "Loan denied"):
+    // 3. Outer else: print "Employment required":
 }`,
     solutionCode: `fun main() {
     val hasStableJob = true
@@ -2188,13 +2231,21 @@ export const TYPE_CHECKS_IS_LESSON: FiveStageLesson = {
     totalChallenges: 1,
     xpReward: 20,
     title: 'Classify the User Input',
-    description: 'A form field can hold different kinds of values. Declare val input: Any = 30 and use is to check whether input is an Int. If it is, print "Input is a number.". Otherwise, print "Input is not a number.".',
+    description:
+      'Declare val input: Any = 30.\n\n' +
+      '1. Use the `is` operator to check whether input is an Int.\n\n' +
+      '2. If input is an Int, print:\n' +
+      '"Input is a number."\n\n' +
+      '3. Otherwise, print:\n' +
+      '"Input is not a number."',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'ClassifyInput.kt',
     initialCode: `fun main() {
     val input: Any = 30
-    // 1. Use \`is\` to check whether input is an Int.
+    // 1. Check whether input is an Int using \`is\`:
+
     // 2. If it is, print "Input is a number."
+
     // 3. Otherwise, print "Input is not a number."
 }`,
     solutionCode: `fun main() {
@@ -2457,14 +2508,29 @@ export const WORLD_3_BOSS_LESSON: FiveStageLesson = {
     xpReward: 50,
     title: 'Build the Grade & Eligibility Program',
     description:
-      'Declare `val score = 88`, `val attendance = 90`, and `val hasNoInfractions = true`. Compute `grade` with a `when (score)` expression using ranges: `in 90..100` -> "A", `in 80..89` -> "B", `in 70..79` -> "C", `in 60..69` -> "D", `else` -> "F". Then compute `isEligible` as `(score >= 90 || attendance >= 95) && hasNoInfractions`. Print `"Grade: $grade"` then print `"Eligible: $isEligible"`.',
+      'Declare val score = 88, val attendance = 90, and val hasNoInfractions = true.\n\n' +
+      '1. Compute val grade using a when (score) expression:\n' +
+      '   • in 90..100 -> "A"\n' +
+      '   • in 80..89 -> "B"\n' +
+      '   • in 70..79 -> "C"\n' +
+      '   • in 60..69 -> "D"\n' +
+      '   • else -> "F"\n\n' +
+      '2. Compute val isEligible using boolean logic:\n' +
+      '   (score >= 90 || attendance >= 95) && hasNoInfractions\n\n' +
+      '3. Print "Grade: $grade".\n\n' +
+      '4. Print "Eligible: $isEligible".',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'GradeEligibility.kt',
     initialCode: `fun main() {
-    // TODO: declare score, attendance, hasNoInfractions
-    // TODO: compute grade with a when-expression using ranges (90-100 A, 80-89 B, 70-79 C, 60-69 D, else F)
-    // TODO: compute isEligible as (score >= 90 || attendance >= 95) && hasNoInfractions
-    // TODO: print "Grade: $grade" then print "Eligible: $isEligible"
+    val score = 88
+    val attendance = 90
+    val hasNoInfractions = true
+
+    // 1. Compute val grade with a when-expression (ranges: 90..100 -> "A", 80..89 -> "B", etc.):
+
+    // 2. Compute val isEligible as (score >= 90 || attendance >= 95) && hasNoInfractions:
+
+    // 3. Print "Grade: $grade" and "Eligible: $isEligible":
 }`,
     solutionCode: `fun main() {
     val score = 88
