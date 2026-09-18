@@ -13,21 +13,26 @@
   }
 
   .font-outfit,
-  [class*="font-['Outfit']"] {
+  [class*="font-['Outfit'"],
+  [class*='font-["Outfit"'] {
     font-family: var(--font-display) !important;
   }
 
   .font-jakarta,
-  [class*="font-['Plus_Jakarta_Sans']"] {
+  .font-sans,
+  [class*="font-['Plus_Jakarta_Sans'"],
+  [class*='font-["Plus_Jakarta_Sans"'] {
     font-family: var(--font-body) !important;
   }
 
   .font-mono,
-  [class*="font-['JetBrains_Mono']"] {
+  [class*="font-['JetBrains_Mono'"],
+  [class*='font-["JetBrains_Mono"'] {
     font-family: var(--font-code) !important;
   }
 
-  .font-tutorial {
+  .font-tutorial,
+  .font-serif {
     font-family: var(--font-tutorial) !important;
   }
 

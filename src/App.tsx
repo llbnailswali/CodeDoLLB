@@ -338,7 +338,12 @@ export default function App() {
           {showVisualsGallery ? (
             <World1VisualsShowcase theme={theme} onBack={popRoute} />
           ) : showFontThemes ? (
-            <FontThemesView theme={theme} onBack={popRoute} />
+            <FontThemesView
+              theme={theme}
+              onBack={popRoute}
+              onSelectAndGoHome={() => openTab('learn')}
+              onToggleTheme={toggleTheme}
+            />
           ) : fiveStageLessonKey ? (
             /* 5-Stage Interactive Lesson Flow (Learn -> Explore -> Predict -> Write & Run -> Mastered) */
             <Detail
