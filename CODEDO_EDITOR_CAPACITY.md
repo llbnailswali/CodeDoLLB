@@ -33,7 +33,7 @@ Use this value for every lesson’s **Runnable after capability added?** field.
 | 1 | Inheritance & Abstract classes | Partial / simulated | Single inheritance works; abstract-member enforcement is compiler-only. | Yes — requires Kotlin compiler/checker | Keep abstract-class practice conceptual until compiler diagnostics exist. |
 | 2 | Interfaces & Multiple interface implementation | Partial / simulated | One interface works; multiple interfaces do not parse. | Yes — add runner capability | Parse multiple supertypes and preserve each implemented contract. |
 | 3 | Sealed classes & Sealed interfaces | Partial / simulated | A closed hierarchy can be shown, but exhaustiveness is not checked. | Yes — requires Kotlin compiler/checker | Add real compiler checking for exhaustive `when` behavior. |
-| 4 | Data classes in domain modeling & Enum classes | Built (verified) | Simple data classes and enums already run. | Already runnable | Use full runnable tasks and execute every snippet. |
+| 4 | Data classes in domain modeling & Enum classes | Built (verified) | Simple data-class construction, field access, display, and enums run. Generated copy() and value equality are reading/prediction topics only. | Already runnable | Keep editor tasks within the verified subset; verify copy/equality reading examples with real Kotlin. |
 | 5 | Nested classes | Partial / simulated | The class-body parser cannot safely parse a class inside another class. | Yes — add runner capability | Add depth-aware nested-class parsing. |
 | 6 | Inner classes | Partial / simulated | Requires a captured outer-instance reference. | Yes — add runner capability | Model `inner` receiver/outer-instance access. |
 | 7 | Object declarations | Built (verified) | Plain singleton objects already run. | Already runnable | Use full runnable tasks and execute every snippet. |
@@ -46,6 +46,13 @@ Use this value for every lesson’s **Runnable after capability added?** field.
 | 14 | Domain Model Engine | Partial / simulated | Depends on selected advanced OOP capabilities. | Yes — add runner capability | Keep boss runnable only with the already verified data-class/enum/object subset. |
 
 ## 4. Authoring rule
+
+Apply the [coverage-first authoring rule](CODEDO_MASTER_PLAN.md#required-authoring-rule--analyze-coverage-before-choosing-counts)
+before choosing activity counts. Map each commonly used concept to examples,
+predictions, writing, and debugging. Editor limitations must be recorded per
+concept; they must not silently reduce the lesson's teaching coverage. Use as
+many supported writing/debugging tasks as the coverage needs, rather than
+defaulting to one of each.
 
 1. Check this table before writing a lesson.
 

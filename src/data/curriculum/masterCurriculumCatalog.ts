@@ -1341,7 +1341,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "advanced-oop-kotlin-types",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
+        "description": "Reuse finished behavior from a base class while requiring each concrete subclass to complete its missing behavior.",
         "questionsCount": 3, "fiveStageLessonKey": "world-11-inheritance-abstract-classes"
       },
       {
@@ -1351,7 +1351,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "advanced-oop-kotlin-types",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
+        "description": "Combine independent capabilities in one class, pass it through either contract, and resolve conflicting default implementations explicitly.",
         "questionsCount": 3, "fiveStageLessonKey": "world-11-interfaces-multiple-interface-implementa"
       },
       {
@@ -1361,7 +1361,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "advanced-oop-kotlin-types",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
+        "description": "Represent alternatives with different data and let Kotlin check that a when expression handles every possible variant.",
         "questionsCount": 3, "fiveStageLessonKey": "world-11-sealed-classes-sealed-interfaces"
       },
       {
@@ -1371,7 +1371,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "advanced-oop-kotlin-types",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
+        "description": "Separate records that carry data from a fixed vocabulary of states, then reason about value equality and copies.",
         "questionsCount": 3, "fiveStageLessonKey": "world-11-data-classes-in-domain-modeling-enum-cla"
       },
       {
@@ -1381,7 +1381,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "advanced-oop-kotlin-types",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
+        "description": "Group a helper type inside its owner’s namespace without tying helper instances to an outer object.",
         "questionsCount": 3, "fiveStageLessonKey": "world-11-nested-classes"
       },
       {
@@ -1391,7 +1391,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "advanced-oop-kotlin-types",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
+        "description": "Bind a helper to one particular outer instance so it can read that owner’s data and observe changes to it.",
         "questionsCount": 3, "fiveStageLessonKey": "world-11-inner-classes"
       },
       {
@@ -1401,7 +1401,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "advanced-oop-kotlin-types",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
+        "description": "Create one shared service, access its members directly, and trace state shared by every reference to that service.",
         "questionsCount": 3, "fiveStageLessonKey": "world-11-object-declarations"
       },
       {
@@ -1411,7 +1411,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "advanced-oop-kotlin-types",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
+        "description": "Put creation helpers beside their class and distinguish the shared companion from each separately created instance.",
         "questionsCount": 3, "fiveStageLessonKey": "world-11-companion-objects"
       },
       {
@@ -1421,7 +1421,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "advanced-oop-kotlin-types",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
+        "description": "Write receiver-style helpers without modifying a class, and distinguish static extension selection from virtual member dispatch.",
         "questionsCount": 3, "fiveStageLessonKey": "world-11-extension-functions"
       },
       {
@@ -1431,7 +1431,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "advanced-oop-kotlin-types",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
+        "description": "Expose derived information with property syntax while keeping storage in the original object.",
         "questionsCount": 3, "fiveStageLessonKey": "world-11-extension-properties"
       },
       {
@@ -1441,7 +1441,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "advanced-oop-kotlin-types",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
+        "description": "Implement an interface by forwarding work to a composed object, then override only the behavior your wrapper needs to change.",
         "questionsCount": 3, "fiveStageLessonKey": "world-11-delegation"
       },
       {
@@ -1451,7 +1451,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "advanced-oop-kotlin-types",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
+        "description": "Let a reusable delegate control how a property is read or written: initialize on demand, observe changes, or look up a named value.",
         "questionsCount": 3, "fiveStageLessonKey": "world-11-delegated-properties"
       },
       {
@@ -1461,8 +1461,8 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "advanced-oop-kotlin-types",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Placeholder -- lesson content not yet authored. See CODEDO_MASTER_PLAN.md for the intended topic scope.",
-        "questionsCount": 3, "fiveStageLessonKey": "world-11-visibility-and-api-design"
+        "description": "Expose the operations callers need while protecting state and implementation details that callers must not control directly.",
+        "questionsCount": 4, "fiveStageLessonKey": "world-11-visibility-and-api-design"
       },
       {
         "id": "world-11-boss",
@@ -1471,8 +1471,8 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "boss",
         "durationMinutes": 10,
         "xpReward": 50,
-        "description": "Design a maintainable domain model using Kotlin's OOP and type-system features.",
-        "questionsCount": 0,
+        "description": "Combine ticket records, a fixed priority vocabulary, and one formatting service into a consistent report for multiple records.",
+        "questionsCount": 3,
         "isBoss": true
         ,"fiveStageLessonKey": "world-11-boss"
       }

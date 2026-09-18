@@ -3,6 +3,64 @@
 > **Single Source of Truth Document**
 > This file contains the complete, authoritative specification and master curriculum plan for CodeDo. All ongoing development, curriculum structuring, exercise counts, and feature progression must strictly align with this document.
 
+## Required Authoring Rule — Analyze Coverage Before Choosing Counts
+
+**Updated 2026-09-18. This rule supersedes all fixed counts, numeric minimums,
+count formulas, and example quotas elsewhere in this document.** Earlier
+references to three or five–six activities are historical guidance, not current
+requirements. This applies to every world, including revisions to World 11.
+
+Example and prediction counts must follow the lesson's complexity and the
+coverage needed for a practical understanding. **There is no fixed count,
+numeric minimum, or maximum.** Explore and Predict may need different counts.
+Do not stop at a standard number or pad a simple lesson to reach one.
+
+Before authoring or revising a lesson:
+
+1. **Analyze the topic.** List all commonly used concepts, syntax patterns,
+   behaviors, practical use cases, and common mistakes within its scope.
+   Include important edge cases that affect everyday use. Identify prerequisites
+   and explicitly defer specialist details that belong in another lesson.
+2. **Plan coverage first.** Record the following map in the lesson/world's
+   content planning or review Markdown file before writing the activities:
+
+   | Common concept / behavior | Explore example(s) | Prediction(s) | Write & Run task(s) | Debug task(s) | Limitation or deferral |
+   |---|---|---|---|---|---|
+   | Name the specific skill | How it will be demonstrated | What the learner must reason about | How the learner will implement it | What mistake the learner will diagnose | State the reason if a stage cannot apply |
+
+3. **Derive the counts from the map.** State how many examples and predictions
+   the lesson needs and why. Add multiple activities when one concept has
+   materially different common behaviors. Changing only names or numbers does
+   not provide new concept coverage. Counts may change when analysis reveals
+   gaps; they are a result of planning, not a quota imposed on it.
+4. **Teach and check every common concept.** Explore must explain real code and
+   its behavior progressively. Predict must test understanding through distinct
+   code scenarios, plausible mistakes, and clear explanations. Do not leave a
+   common concept covered only by a mention in Learn or a definition question.
+5. **Carry that coverage into Write & Run and Debug.** Learners must implement
+   the supported concepts they explored and predicted, then diagnose and repair
+   representative mistakes involving those concepts. Use as many tasks as the
+   coverage requires; one writing task and one bug are not a universal default.
+   A combined task may cover several concepts only when each is actually
+   exercised and verified. Do not teach a broad lesson and assess only its
+   simplest concept in the editor.
+6. **Respect execution capability and activity relevance.** Check
+   [CODEDO_EDITOR_CAPACITY.md](CODEDO_EDITOR_CAPACITY.md). If a concept cannot
+   be executed or checked faithfully, retain its real Kotlin examples and
+   predictions, record the missing capability and deferred practice in the map,
+   and do not fabricate a runnable task or claim implementation mastery. Record
+   a reason for any other inapplicable activity. A current UI/data-model limit
+   of one task is an implementation gap, not grounds to shrink needed coverage.
+7. **Review coverage before completion.** Verify that every listed common
+   concept has meaningful teaching and assessment, that supported concepts
+   carry through to writing/debugging, and that runnable solutions and bug
+   repairs pass while broken versions fail. Completion depends on this review,
+   not matching another lesson's activity count.
+
+**Quality benchmark:** World 8, Lesson 12 illustrates concrete explanations,
+progressive examples, meaningful predictions, precise writing instructions, and
+useful debugging hints. Reuse that quality standard, not its exercise counts.
+
 ---
 
 ## Curriculum Goal
@@ -2451,7 +2509,7 @@ Before finalizing or releasing a curriculum:
 5. Confirm no World contains vague labels that hide multiple unlisted concepts.
 6. Confirm every topic has an appropriate activity strategy.
 7. Confirm exercise counts are coverage-driven rather than fixed.
-8. Confirm minimum activity counts are respected where the activity applies.
+8. Confirm the concept coverage map justifies activity counts and carries supported concepts into Write & Run and Debug, with any gaps explicitly recorded.
 9. Confirm the World Boss tests integration of the World concepts.
 
 This creates a **single source of truth relationship**:
