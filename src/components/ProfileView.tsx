@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppTheme, FontSize, UserStats } from '../types';
 import { soundFX } from '../utils/audio';
+import { getSavedFontCombo } from '../utils/fontThemes';
 
 interface ProfileViewProps {
   theme: AppTheme;
@@ -14,6 +15,7 @@ interface ProfileViewProps {
   onChangeFontSize: (size: FontSize) => void;
   onResetProgress: () => void;
   onOpenVisualsGallery: () => void;
+  onOpenFontThemes: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -28,9 +30,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onChangeFontSize,
   onResetProgress,
   onOpenVisualsGallery,
+  onOpenFontThemes,
 }) => {
   const isDark = theme === 'dark';
   const [showResetConfirm, setShowResetConfirm] = useState<boolean>(false);
+  const activeFontCombo = getSavedFontCombo();
 
   const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const activeDays = [true, true, true, true, true, true, true]; // 12-day streak
@@ -313,6 +317,47 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             ))}
           </div>
         </div>
+
+        {/* Typography & Recommended Font Combos */}
+        <button
+          type="button"
+          onClick={() => {
+            soundFX.playClick();
+            onOpenFontThemes();
+          }}
+          className={`w-full p-3 rounded-xl flex items-center justify-between transition-all border ${
+            isDark
+              ? 'bg-[#0f1422] border-white/5 hover:border-white/15 hover:bg-[#141a29]'
+              : 'bg-slate-50/80 border-slate-200/80 hover:bg-slate-100 neu-raised-sm'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                isDark ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-100 text-purple-600'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">font_download</span>
+            </div>
+            <div className="flex flex-col text-left">
+              <div className="flex items-center gap-2">
+                <span className="font-['Outfit'] text-xs font-bold leading-tight">Typography &amp; Font Combos</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+                  {activeFontCombo.isDefault ? 'DEFAULT' : 'ACTIVE'}
+                </span>
+              </div>
+              <span className="font-mono text-[10px] text-slate-400 truncate max-w-[200px]">
+                {activeFontCombo.name}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-slate-400">
+            <span className="text-[11px] font-['Outfit'] hidden sm:inline text-indigo-400 font-semibold">
+              Explore &amp; Try
+            </span>
+            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+          </div>
+        </button>
       </div>
 
       {/* Streak Calendar / Weekly Heatmap */}

@@ -28,12 +28,15 @@ import { LeaderboardView } from './components/LeaderboardView';
 import { ProfileView } from './components/ProfileView';
 import { Detail, DetailHandle, StageKey } from './components/Detail';
 import { World1VisualsShowcase } from './components/World1VisualsShowcase';
+import { FontThemesView } from './components/FontThemesView';
+import { applyFontComboToDom, getSavedFontCombo } from './utils/fontThemes';
 
 type AppRoute =
   | { kind: 'tab'; tab: TabType; worldId?: string; scrollTop?: number }
   | { kind: 'drill'; scrollTop?: number }
   | { kind: 'lesson'; lessonKey: string; initialStage?: StageKey; scrollTop?: number }
-  | { kind: 'visuals'; scrollTop?: number };
+  | { kind: 'visuals'; scrollTop?: number }
+  | { kind: 'font-themes'; scrollTop?: number };
 
 export default function App() {
   const [theme, setTheme] = useState<AppTheme>(() => StorageManager.getTheme());
@@ -42,6 +45,11 @@ export default function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(1); // Question 2 (Step 2 of 5: val x = 10, val y = 20)
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => StorageManager.getSoundEnabled());
   const [fontSize, setFontSize] = useState<FontSize>(() => StorageManager.getFontSize());
+
+  // Apply persisted font combo to DOM on startup
+  useEffect(() => {
+    applyFontComboToDom(getSavedFontCombo());
+  }, []);
 
   // User Stats loaded from storage with daily reset check
   const [userStats, setUserStats] = useState<UserStats>(() => StorageManager.getUserStats());
@@ -53,6 +61,7 @@ export default function App() {
   const fiveStageLessonKey = currentRoute.kind === 'lesson' ? currentRoute.lessonKey : null;
   const fiveStageInitialStage = currentRoute.kind === 'lesson' ? currentRoute.initialStage : undefined;
   const showVisualsGallery = currentRoute.kind === 'visuals';
+  const showFontThemes = currentRoute.kind === 'font-themes';
 
   const getRootScrollTop = () => {
     const rootEl = document.getElementById('root');
@@ -227,6 +236,8 @@ export default function App() {
     CapacitorApp.addListener('backButton', () => {
       if (showVisualsGallery) {
         popRoute();
+      } else if (showFontThemes) {
+        popRoute();
       } else if (fiveStageLessonKey) {
         detailRef.current?.goBack();
       } else if (isLessonActive) {
@@ -248,7 +259,7 @@ export default function App() {
     return () => {
       removeListener?.();
     };
-  }, [showVisualsGallery, fiveStageLessonKey, isLessonActive, navigationStack.length]);
+  }, [showVisualsGallery, showFontThemes, fiveStageLessonKey, isLessonActive, navigationStack.length]);
 
   const handleLessonComplete = (earnedXP: number, completedWorldId?: string) => {
     setUserStats((prev) => {
@@ -299,7 +310,7 @@ export default function App() {
       theme === 'dark' ? 'bg-[#0b0f19] text-[#dfe2f1]' : 'bg-[#f8f9fb] text-[#191c1e]'
     }`}>
         {/* Top Header */}
-        {!fiveStageLessonKey && !showVisualsGallery && (
+        {!fiveStageLessonKey && !showVisualsGallery && !showFontThemes && (
           <Header
             theme={theme}
             activeTab={activeTab}
@@ -326,6 +337,8 @@ export default function App() {
         <main className={`flex-1 w-full flex flex-col font-size-${fontSize}`}>
           {showVisualsGallery ? (
             <World1VisualsShowcase theme={theme} onBack={popRoute} />
+          ) : showFontThemes ? (
+            <FontThemesView theme={theme} onBack={popRoute} />
           ) : fiveStageLessonKey ? (
             /* 5-Stage Interactive Lesson Flow (Learn -> Explore -> Predict -> Write & Run -> Mastered) */
             <Detail
@@ -404,12 +417,13 @@ export default function App() {
               onChangeFontSize={changeFontSize}
               onResetProgress={handleResetProgress}
               onOpenVisualsGallery={() => routeFromHome({ kind: 'visuals' })}
+              onOpenFontThemes={() => routeFromHome({ kind: 'font-themes' })}
             />
           )}
         </main>
 
         {/* Bottom Navigation Bar (Hidden when actively in lesson or drill) */}
-        {!isLessonActive && !fiveStageLessonKey && !showVisualsGallery && (
+        {!isLessonActive && !fiveStageLessonKey && !showVisualsGallery && !showFontThemes && (
           <Navigation
             theme={theme}
             activeTab={activeTab === 'curriculum' ? 'learn' : activeTab}

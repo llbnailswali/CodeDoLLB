@@ -2,9 +2,33 @@
 
 @layer base {
   :root {
-    --font-outfit: 'Outfit', sans-serif;
-    --font-jakarta: 'Plus Jakarta Sans', sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    --font-display: 'Outfit', sans-serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+    --font-code: 'JetBrains Mono', monospace;
+    --font-tutorial: 'Plus Jakarta Sans', sans-serif;
+
+    --font-outfit: var(--font-display);
+    --font-jakarta: var(--font-body);
+    --font-mono: var(--font-code);
+  }
+
+  .font-outfit,
+  [class*="font-['Outfit']"] {
+    font-family: var(--font-display) !important;
+  }
+
+  .font-jakarta,
+  [class*="font-['Plus_Jakarta_Sans']"] {
+    font-family: var(--font-body) !important;
+  }
+
+  .font-mono,
+  [class*="font-['JetBrains_Mono']"] {
+    font-family: var(--font-code) !important;
+  }
+
+  .font-tutorial {
+    font-family: var(--font-tutorial) !important;
   }
 
   html,
@@ -38,7 +62,7 @@
   }
 
   body {
-    font-family: var(--font-jakarta);
+    font-family: var(--font-body);
     -webkit-tap-highlight-color: transparent;
     user-select: none;
   }
