@@ -160,7 +160,7 @@ export const TaskBottomSheet: React.FC<TaskBottomSheetProps> = ({
             </div>
 
             {/* Description */}
-            <div className="bg-[#141926] p-2.5 rounded-lg border border-slate-800 text-slate-300 text-[11.5px] leading-relaxed">
+            <div className="bg-[#141926] p-2.5 rounded-lg border border-slate-800 text-slate-300 text-[11.5px] leading-relaxed whitespace-pre-line">
               {description || 'Implement the function logic to calculate and return the required value.'}
             </div>
 

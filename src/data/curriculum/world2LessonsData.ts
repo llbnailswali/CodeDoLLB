@@ -234,7 +234,11 @@ export const ARITHMETIC_OPERATORS_LESSON: FiveStageLesson = {
     xpReward: 20,
     title: 'Split the Loot',
     description:
-      'Declare val coins = 47 and val players = 5. Use integer division to calculate each player\'s equal share, and the modulo operator to calculate the leftover coins. Print the result as "Each player gets 9 coins, with 2 left over".',
+      'Declare val coins = 47 and val players = 5.\n\n' +
+      '1. Calculate each player\'s equal share using integer division (coins / players).\n' +
+      '2. Calculate the leftover coins using the modulo operator (coins % players).\n' +
+      '3. Print the result as:\n' +
+      '"Each player gets 9 coins, with 2 left over"',
     requirements: { name: 'main', params: '(none)', returns: 'Unit' },
     fileName: 'SplitLoot.kt',
     initialCode: `fun main() {

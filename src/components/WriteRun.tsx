@@ -405,7 +405,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
               <h3 className={`font-bold text-base mb-1.5 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                 {data.title || topicTitle || 'Kotlin Code Task'}
               </h3>
-              <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+              <p className={`text-xs leading-relaxed whitespace-pre-line ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                 {data.description}
               </p>
             </div>
