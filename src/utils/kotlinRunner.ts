@@ -729,8 +729,7 @@ function transpileWhenBlocks(code: string): string {
  *    trailing arguments) for everything this app's lessons need
  */
 function cleanKotlinParams(params: string): string {
-  return params
-    .split(',')
+  return splitTopLevelCommas(params)
     .map((p) => {
       const trimmed = p.trim();
       if (!trimmed) return '';
@@ -743,6 +742,86 @@ function cleanKotlinParams(params: string): string {
     })
     .filter(Boolean)
     .join(', ');
+}
+
+/**
+ * Removes function-type annotations before the line-oriented function and
+ * declaration transforms run. At runtime both Kotlin function types and JS
+ * functions are simply callable values, so retaining `(Int) -> Int` would
+ * only leave invalid JavaScript behind. This deliberately handles the
+ * simple non-generic signatures used by the Phase 1 Lambda Lab exercises.
+ */
+function stripFunctionTypeAnnotations(code: string): string {
+  return code.replace(
+    /\(\s*(?:[A-Za-z_][A-Za-z0-9_<>?]*(?:\s*,\s*[A-Za-z_][A-Za-z0-9_<>?]*)*)?\s*\)\s*->\s*[A-Za-z_][A-Za-z0-9_<>?]*/g,
+    'Function'
+  );
+}
+
+function cleanLambdaParams(params: string): string {
+  return splitTopLevelCommas(params)
+    .map((param) => param.trim().match(/^([A-Za-z_][A-Za-z0-9_]*)/)?.[1] || '')
+    .filter(Boolean)
+    .join(', ');
+}
+
+/**
+ * Converts the intentionally small Phase 1 lambda subset into JavaScript:
+ *
+ *   { value: Int -> value * 2 }  -> (value) => (value * 2)
+ *   { it * 2 }                   -> (it) => (it * 2)
+ *   apply(4) { it * 2 }          -> apply(4, (it) => (it * 2))
+ *   ::double                     -> double
+ *
+ * Lambdas are restricted to a single expression on one physical line.
+ * Labelled/non-local returns and compiler-only inline semantics are
+ * deliberately outside this runner's supported subset.
+ */
+function transformTrailingLambdas(line: string): string {
+  // Kotlin's trailing-lambda call syntax must be normalized before the
+  // generic lambda replacements below. This runs before the OOP declaration
+  // pass, while the source still contains Kotlin (rather than generated JS
+  // class methods such as `area() { return ... }`).
+  line = line.replace(
+    /\b([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+)\s*\{\s*([A-Za-z_][A-Za-z0-9_]*(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?]*)?(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?]*)?)*)\s*->\s*([^{}\n]+?)\s*\}/g,
+    (_whole, name, params, body) => `${name}((${cleanLambdaParams(params)}) => (${body.trim()}))`
+  );
+  line = line.replace(
+    /\b([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+)\s*\{\s*([^{}\n]+?)\s*\}/g,
+    (_whole, name, body) => `${name}((it) => (${body.trim()}))`
+  );
+  line = line.replace(
+    /\b([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*\(([^(){}\n]*)\)\s*\{\s*([A-Za-z_][A-Za-z0-9_]*(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?]*)?(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?]*)?)*)\s*->\s*([^{}\n]+?)\s*\}/g,
+    (_whole, name, args, params, body) => `${name}(${args.trim()}${args.trim() ? ', ' : ''}(${cleanLambdaParams(params)}) => (${body.trim()}))`
+  );
+  line = line.replace(
+    /\b([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*\(([^(){}\n]*)\)\s*\{\s*([^{}\n]+?)\s*\}/g,
+    (_whole, name, args, body) => `${name}(${args.trim()}${args.trim() ? ', ' : ''}(it) => (${body.trim()}))`
+  );
+
+  return line;
+}
+
+function transformLambdaExpressions(line: string): string {
+
+  // Explicit-parameter lambda literals may appear in an assignment or as a
+  // regular call argument. The arrow token makes this safe to distinguish
+  // from ordinary Kotlin blocks.
+  line = line.replace(
+    /\{\s*([A-Za-z_][A-Za-z0-9_]*(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?]*)?(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?]*)?)*)\s*->\s*([^{}\n]+?)\s*\}/g,
+    (_whole, params, body) => `(${cleanLambdaParams(params)}) => (${body.trim()})`
+  );
+
+  // Kotlin supplies `it` for a one-parameter lambda with no explicit
+  // parameter list. Only recognize a lambda where an expression is expected
+  // (`=`, `(`, or `,`) so an ordinary block is never reinterpreted.
+  line = line.replace(
+    /([=(,]\s*)\{\s*([^{}\n]+?)\s*\}/g,
+    (_whole, prefix, body) => `${prefix}(it) => (${body.trim()})`
+  );
+
+  // A plain function reference is the same callable value in JavaScript.
+  return line.replace(/::([A-Za-z_][A-Za-z0-9_]*)\b/g, '$1');
 }
 
 /** Finds variables initialized with mapOf/mutableMapOf so only their square
@@ -1222,6 +1301,8 @@ function transpileOOPDeclarations(code: string): string {
  */
 function transpileKotlinToJS(kotlinCode: string): string {
   kotlinCode = stripCollectionGenerics(kotlinCode);
+  kotlinCode = stripFunctionTypeAnnotations(kotlinCode);
+  kotlinCode = kotlinCode.split('\n').map(transformTrailingLambdas).join('\n');
   kotlinCode = transpileMapDeclarations(kotlinCode);
   kotlinCode = transpileOOPDeclarations(kotlinCode);
   kotlinCode = transpileWhenBlocks(kotlinCode);
@@ -1278,6 +1359,12 @@ function transpileKotlinToJS(kotlinCode: string): string {
     line = transformElvisOperator(line);
     line = transformNonNullAssertion(line);
 
+    // Function values: lambda literals, trailing lambdas, and `::function`
+    // references. This comes before val/var and function rewriting so the
+    // resulting JavaScript arrows and callable values flow through the
+    // existing pipeline unchanged.
+    line = transformLambdaExpressions(line);
+
     // Replace Kotlin val -> const, var -> let
     // Handle: val name: Type = expr -> const name = expr
     // The type char class includes `?` so a nullable declared type
@@ -1295,6 +1382,13 @@ function transpileKotlinToJS(kotlinCode: string): string {
     // fun foo(a: Int, b: String): String { -> function foo(a, b) {
     line = line.replace(/\bfun\s+([a-zA-Z0-9_]+)\s*\((.*?)\)(?:\s*:\s*[a-zA-Z0-9_<>?]+)?\s*\{/g, (_, name, params) => {
       return `function ${name}(${cleanKotlinParams(params)}) {`;
+    });
+
+    // Anonymous Kotlin functions are callable values too. Unlike lambdas,
+    // their ordinary `return` is local to the function, which maps directly
+    // to a JS function expression.
+    line = line.replace(/\bfun\s*\((.*?)\)(?:\s*:\s*[a-zA-Z0-9_<>?]+)?\s*\{/g, (_, params) => {
+      return `function (${cleanKotlinParams(params)}) {`;
     });
 
     // Handle single-expression functions: fun sum(a: Int, b: Int) = a + b
@@ -1467,6 +1561,43 @@ export async function compileAndRunKotlin(
     (Array.prototype as any).reversed = function () {
       return [...this].reverse();
     };
+  }
+  // Kotlin-style collection operations used by Collection Wizardry. These
+  // are deliberately eager Array operations: they model Kotlin's standard
+  // Iterable APIs, not lazy Sequence behavior (which is taught later).
+  if (typeof (Array.prototype as any).mapNotNull !== 'function') {
+    (Array.prototype as any).mapNotNull = function (transform: (value: any) => any) {
+      return this.map(transform).filter((value: any) => value !== null && value !== undefined);
+    };
+    (Array.prototype as any).filterNot = function (predicate: (value: any) => boolean) {
+      return this.filter((value: any) => !predicate(value));
+    };
+    (Array.prototype as any).flatten = function () { return this.flatMap((value: any) => value); };
+    (Array.prototype as any).fold = function (initial: any, operation: (acc: any, value: any) => any) {
+      return this.reduce((acc: any, value: any) => operation(acc, value), initial);
+    };
+    (Array.prototype as any).groupBy = function (keySelector: (value: any) => any) {
+      const groups = new Map<any, any[]>();
+      for (const value of this) { const key = keySelector(value); groups.set(key, [...(groups.get(key) || []), value]); }
+      return groups;
+    };
+    (Array.prototype as any).associate = function (transform: (value: any) => [any, any]) { return new Map(this.map(transform)); };
+    (Array.prototype as any).partition = function (predicate: (value: any) => boolean) {
+      return [this.filter(predicate), this.filter((value: any) => !predicate(value))];
+    };
+    (Array.prototype as any).zip = function (other: any[]) { return this.slice(0, other.length).map((value: any, index: number) => [value, other[index]]); };
+    (Array.prototype as any).chunked = function (size: number) { const result = []; for (let i = 0; i < this.length; i += size) result.push(this.slice(i, i + size)); return result; };
+    (Array.prototype as any).windowed = function (size: number) { const result = []; for (let i = 0; i + size <= this.length; i++) result.push(this.slice(i, i + size)); return result; };
+    (Array.prototype as any).distinct = function () { return [...new Set(this)]; };
+    (Array.prototype as any).sorted = function () { return [...this].sort((a: any, b: any) => a < b ? -1 : a > b ? 1 : 0); };
+    (Array.prototype as any).sortedBy = function (selector: (value: any) => any) { return [...this].sort((a: any, b: any) => selector(a) < selector(b) ? -1 : selector(a) > selector(b) ? 1 : 0); };
+    (Array.prototype as any).sum = function () { return this.reduce((total: number, value: number) => total + value, 0); };
+    (Array.prototype as any).average = function () { return this.length === 0 ? NaN : this.sum() / this.length; };
+    (Array.prototype as any).any = function (predicate?: (value: any) => boolean) { return predicate ? this.some(predicate) : this.length > 0; };
+    (Array.prototype as any).all = function (predicate: (value: any) => boolean) { return this.every(predicate); };
+    (Array.prototype as any).none = function (predicate?: (value: any) => boolean) { return predicate ? !this.some(predicate) : this.length === 0; };
+    (Array.prototype as any).minOrNull = function () { return this.length ? Math.min(...this) : null; };
+    (Array.prototype as any).maxOrNull = function () { return this.length ? Math.max(...this) : null; };
   }
 
   const customPrintln = (...args: any[]) => {

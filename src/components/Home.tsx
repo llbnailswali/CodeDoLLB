@@ -24,6 +24,14 @@ const getWorld = (order: number) => {
   return world;
 };
 
+// Temporary availability rule shared with Listing: show a world as active as
+// soon as all of its five-stage lesson data exists. Replace with real learner
+// completion/unlocking when progression is connected to the journey map.
+const hasCollectedWorldData = (worldOrder: number) => {
+  const world = getWorld(worldOrder);
+  return world.lessons.length > 0 && world.lessons.every((lesson) => Boolean(lesson.fiveStageLessonKey));
+};
+
 // Shared styling for the "world name + lesson count" pair repeated across every
 // node on the snake path, so completed/locked worlds stay visually consistent.
 // Colors reuse the app's own neu-surface recipe; locked/disabled variants
@@ -310,9 +318,11 @@ const StandardWorldNode: React.FC<WorldNodeProps> = ({
   onWorldClick,
 }) => {
   const world = getWorld(worldOrder);
-  const isCompleted = worldOrder <= completedWorlds;
-  const isCurrent = worldOrder === completedWorlds + 1;
-  const isLocked = worldOrder > completedWorlds + 1;
+  const isDataAvailable = hasCollectedWorldData(worldOrder);
+  const isCompleted = isDataAvailable && worldOrder <= completedWorlds;
+  const isCurrent = isDataAvailable && worldOrder === completedWorlds + 1;
+  const isLocked = !isDataAvailable;
+  const isAvailableToStart = isDataAvailable && !isCompleted && !isCurrent;
   const isLeft = align === 'left';
 
   return (
@@ -322,10 +332,12 @@ const StandardWorldNode: React.FC<WorldNodeProps> = ({
       }`}
     >
       <div
-        className={`flex items-center gap-2.5 cursor-pointer active:scale-95 transition-all ${
+        className={`flex items-center gap-2.5 transition-all ${
           !isLeft ? 'flex-row-reverse text-right' : ''
-        } ${isLocked ? 'opacity-70 hover:opacity-90' : 'opacity-100'}`}
-        onClick={() => onWorldClick(world.id)}
+        } ${isLocked ? 'opacity-55 cursor-not-allowed' : 'opacity-100 cursor-pointer active:scale-95'}`}
+        onClick={() => {
+          if (isDataAvailable) onWorldClick(world.id);
+        }}
       >
         <div
           data-node-id={nodeId}
@@ -359,6 +371,11 @@ const StandardWorldNode: React.FC<WorldNodeProps> = ({
               play_arrow
             </span>
           )}
+          {isAvailableToStart && (
+            <span className="material-symbols-outlined text-emerald-500 text-[20px]">
+              play_arrow
+            </span>
+          )}
           {isLocked && (
             <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
               lock
@@ -369,23 +386,28 @@ const StandardWorldNode: React.FC<WorldNodeProps> = ({
           <div className={`flex items-center gap-1.5 ${!isLeft ? 'justify-end' : ''}`}>
             <span
               className={`text-[10px] font-mono font-bold ${
-                isCompleted || isCurrent
+                isDataAvailable
                   ? 'text-indigo-600 dark:text-indigo-400'
                   : 'text-slate-500 dark:text-slate-400'
               }`}
             >
-              {String(world.order).padStart(2, '0')}
+              World {String(world.order).padStart(2, '0')}
             </span>
             {isCurrent && (
               <span className="text-[8px] font-mono font-extrabold uppercase px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-500 border border-indigo-500/30">
                 CURRENT
               </span>
             )}
+            {isAvailableToStart && (
+              <span className="text-[8px] font-mono font-extrabold uppercase px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                AVAILABLE
+              </span>
+            )}
           </div>
-          <span className={getWorldTitleClass(isDark, isCompleted || isCurrent)}>
+          <span className={getWorldTitleClass(isDark, isDataAvailable)}>
             {world.title}
           </span>
-          <span className={getLessonTagClass(isDark, isCompleted || isCurrent)}>
+          <span className={getLessonTagClass(isDark, isDataAvailable)}>
             {world.lessons.length} lessons
           </span>
         </div>
@@ -452,6 +474,8 @@ export const Home: React.FC<HomeProps> = ({
   }, [completedWorldsCount]);
 
   const handleWorldClick = (worldId: string) => {
+    const worldOrder = Number(worldId.replace('world-', ''));
+    if (!hasCollectedWorldData(worldOrder)) return;
     soundFX.playClick();
     if (onSelectWorld) {
       onSelectWorld(worldId);
@@ -669,7 +693,7 @@ export const Home: React.FC<HomeProps> = ({
               <div className="flex flex-col">
                 <div className="flex items-baseline justify-between">
                   <h3 className="text-base font-['Outfit'] font-bold text-inherit tracking-tight">
-                    05 · {getWorld(5).title}
+                    World 05 · {getWorld(5).title}
                   </h3>
                   <span
                     className={`text-[11px] font-semibold font-mono ${
@@ -897,7 +921,7 @@ export const Home: React.FC<HomeProps> = ({
                     : 'text-slate-500 dark:text-slate-400'
                 }`}
               >
-                15
+                World 15
               </span>
               <span className={getWorldTitleClass(isDark, completedWorldsCount >= 14)}>
                 {getWorld(15).title}

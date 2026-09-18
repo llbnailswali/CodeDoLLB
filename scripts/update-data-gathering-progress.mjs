@@ -38,7 +38,10 @@ function parseCatalog(source) {
   }));
 
   const lessonIdRe = /^ {8}"id": "/gm;
-  const fiveStageKeyRe = /^ {8}"fiveStageLessonKey": /gm;
+  // The catalog is TypeScript rather than strict JSON, so a lesson's fields
+  // may be formatted across lines or compactly on one line. Count the key
+  // itself instead of making progress depend on its indentation.
+  const fiveStageKeyRe = /"fiveStageLessonKey": /g;
 
   return headers.map((h, i) => {
     const end = i + 1 < headers.length ? headers[i + 1].start : source.length;

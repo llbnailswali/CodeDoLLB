@@ -1758,6 +1758,9 @@ import {
 import { ARRAYS_LESSON, LISTS_LESSON, SETS_LESSON, MAPS_LESSON, MUTABLE_VS_READONLY_LESSON, CREATING_ACCESSING_COLLECTIONS_LESSON, ADDING_REMOVING_UPDATING_LESSON, ITERATING_COLLECTIONS_LESSON, BASIC_COLLECTION_OPERATIONS_LESSON, CHOOSING_COLLECTION_TYPE_LESSON, WORLD_6_BOSS_LESSON } from './curriculum/world6LessonsData';
 import { NULLABLE_TYPES_LESSON, NULLABLE_VARIABLES_LESSON, SAFE_CALL_LESSON, ELVIS_OPERATOR_LESSON, NON_NULL_ASSERTION_LESSON, NULL_CHECKS_LESSON, SMART_CASTS_LESSON, SAFE_CASTS_LESSON, NULLABLE_COLLECTIONS_LESSON, CHAINING_NULLABLE_OPERATIONS_LESSON, WORLD_7_BOSS_LESSON } from './curriculum/world7LessonsData';
 import { CLASSES_LESSON, OBJECTS_LESSON, PROPERTIES_LESSON, METHODS_LESSON, CONSTRUCTORS_LESSON, PRIMARY_CONSTRUCTORS_LESSON, INIT_LESSON, VISIBILITY_MODIFIERS_LESSON, DATA_CLASSES_LESSON, ENUMS_LESSON, BASIC_INHERITANCE_LESSON, INTERFACES_LESSON, OVERRIDING_MEMBERS_LESSON, WORLD_8_BOSS_LESSON } from './curriculum/world8LessonsData';
+import { LAMBDA_EXPRESSIONS_LESSON, ANONYMOUS_FUNCTIONS_LESSON, FUNCTION_TYPES_LESSON, HIGHER_ORDER_FUNCTIONS_LESSON, IT_LESSON, FUNCTION_REFERENCES_LESSON, RETURNING_FROM_LAMBDAS_LESSON, LOCAL_RETURNS_LESSON, INLINE_FUNCTIONS_LESSON, NOINLINE_LESSON, CROSSINLINE_LESSON, WORLD_9_BOSS_LESSON } from './curriculum/world9LessonsData';
+import { WORLD_10_LESSONS } from './curriculum/world10LessonsData';
+import { WORLD_11_LESSONS } from './curriculum/world11LessonsData';
 
 export const AVAILABLE_FIVE_STAGE_LESSONS: Record<string, FiveStageLesson> = {
   variables: VARIABLES_LESSON,
@@ -1874,4 +1877,37 @@ export const AVAILABLE_FIVE_STAGE_LESSONS: Record<string, FiveStageLesson> = {
   'world-8-interfaces': INTERFACES_LESSON,
   'world-8-overriding-members': OVERRIDING_MEMBERS_LESSON,
   'world-8-boss': WORLD_8_BOSS_LESSON,
+  // World 9 - Lambda Lab
+  'world-9-lambda-expressions': LAMBDA_EXPRESSIONS_LESSON,
+  'world-9-anonymous-functions': ANONYMOUS_FUNCTIONS_LESSON,
+  'world-9-function-types': FUNCTION_TYPES_LESSON,
+  'world-9-higher-order-functions': HIGHER_ORDER_FUNCTIONS_LESSON,
+  'world-9-it': IT_LESSON,
+  'world-9-function-references': FUNCTION_REFERENCES_LESSON,
+  'world-9-returning-from-lambdas': RETURNING_FROM_LAMBDAS_LESSON,
+  'world-9-local-returns': LOCAL_RETURNS_LESSON,
+  'world-9-inline-functions': INLINE_FUNCTIONS_LESSON,
+  'world-9-noinline': NOINLINE_LESSON,
+  'world-9-crossinline': CROSSINLINE_LESSON,
+  'world-9-boss': WORLD_9_BOSS_LESSON,
+  // World 10 - Collection Wizardry
+  'world-10-map-mapnotnull-filter': WORLD_10_LESSONS[0],
+  'world-10-filternot-filterisinstance-flatmap': WORLD_10_LESSONS[1],
+  'world-10-flatten-reduce-fold': WORLD_10_LESSONS[2],
+  'world-10-groupby-associate-partition': WORLD_10_LESSONS[3],
+  'world-10-zip-chunked-windowed': WORLD_10_LESSONS[4],
+  'world-10-distinct-sorted': WORLD_10_LESSONS[5],
+  'world-10-sortedby-min-max': WORLD_10_LESSONS[6],
+  'world-10-sum-average-any-all-none': WORLD_10_LESSONS[7],
+  'world-10-first-find-collection-pipelines-and-chai': WORLD_10_LESSONS[8],
+  'world-10-boss': WORLD_10_LESSONS[9],
+  'world-11-inheritance-abstract-classes': WORLD_11_LESSONS[0],
+  'world-11-interfaces-multiple-interface-implementa': WORLD_11_LESSONS[1],
+  'world-11-sealed-classes-sealed-interfaces': WORLD_11_LESSONS[2],
+  'world-11-data-classes-in-domain-modeling-enum-cla': WORLD_11_LESSONS[3],
+  'world-11-nested-classes': WORLD_11_LESSONS[4], 'world-11-inner-classes': WORLD_11_LESSONS[5],
+  'world-11-object-declarations': WORLD_11_LESSONS[6], 'world-11-companion-objects': WORLD_11_LESSONS[7],
+  'world-11-extension-functions': WORLD_11_LESSONS[8], 'world-11-extension-properties': WORLD_11_LESSONS[9],
+  'world-11-delegation': WORLD_11_LESSONS[10], 'world-11-delegated-properties': WORLD_11_LESSONS[11],
+  'world-11-visibility-and-api-design': WORLD_11_LESSONS[12], 'world-11-boss': WORLD_11_LESSONS[13],
 };

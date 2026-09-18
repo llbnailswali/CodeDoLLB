@@ -31,9 +31,9 @@ markers below is overwritten.
 | World 6 — Collection Valley | 11 / 11 | ✅ Complete |
 | World 7 — Null Safety Shield | 11 / 11 | ✅ Complete |
 | World 8 — Object Kingdom | 14 / 14 | ✅ Complete |
-| World 9 — Lambda Lab | 0 / 12 | ⬜ Not started |
-| World 10 — Collection Wizardry | 0 / 10 | ⬜ Not started |
-| World 11 — OOP Evolution | 0 / 14 | ⬜ Not started |
+| World 9 — Lambda Lab | 12 / 12 | ✅ Complete |
+| World 10 — Collection Wizardry | 10 / 10 | ✅ Complete |
+| World 11 — OOP Evolution | 14 / 14 | ✅ Complete |
 | World 12 — Generic Realm | 0 / 15 | ⬜ Not started |
 | World 13 — Scope Masters | 0 / 10 | ⬜ Not started |
 | World 14 — Sequence Dimension | 0 / 13 | ⬜ Not started |
@@ -46,7 +46,7 @@ markers below is overwritten.
 | World 21 — Performance Lab | 0 / 15 | ⬜ Not started |
 | World 22 — Production Kotlin | 0 / 22 | ⬜ Not started |
 
-**8 of 22 worlds complete by the format that actually ships.** Everything else in `masterCurriculumCatalog.ts` beyond the complete worlds is placeholder metadata (`questionsCount: 0`, no `fiveStageLessonKey`) — this is expected and self-documented in that file, not a bug.
+**11 of 22 worlds complete by the format that actually ships.** Everything else in `masterCurriculumCatalog.ts` beyond the complete worlds is placeholder metadata (`questionsCount: 0`, no `fiveStageLessonKey`) — this is expected and self-documented in that file, not a bug.
 
 <!-- AUTO-GENERATED:FIVE-STAGE-PROGRESS:END -->
 
@@ -89,7 +89,26 @@ The "topic → real world" mapping above is a first-pass guess based on topic ov
 
 ## 4. Next action
 
-Author World 9 (Lambda Lab) as real five-stage content: lambda expressions, anonymous functions, function types, higher-order functions, `it`, function references, returning from lambdas, local returns, inline functions, `noinline`, and `crossinline`. This will need new `kotlinRunner.ts` engine support for function-as-value syntax — lambda literals (`{ x -> x * 2 }`), the implicit single-param `it`, and passing/storing functions as values are all currently unsupported. Follow World 1-8's already-completed lessons as the template.
+Author World 11 (OOP Evolution) as real five-stage content. The pre-authoring
+runner audit is complete:
+
+- Safe for runnable Write & Run/Debug content: single-class inheritance,
+  simple single-interface implementation where the class supplies every
+  method, existing data classes, simple enum classes, and plain `object`
+  declarations. All three representative runnable programs executed through
+  `compileAndRunKotlin` on 2026-09-18.
+- Learn/Explore/Predict only until engine support exists: abstract classes,
+  multiple interface implementation, sealed classes/interfaces, nested/inner
+  classes, companion objects, extension functions/properties, delegation,
+  delegated properties, and visibility/API enforcement. Representative code
+  for multiple interfaces, sealed classes, companion objects, extension
+  functions, and delegated properties was also executed and correctly failed
+  rather than being treated as working support.
+- Keep the required Write & Run authoring standard in `CODEDO_MASTER_PLAN.md`:
+  numbered, blank-line-separated task steps; matching numbered starter-code
+  comments; and solution/output/debug content that performs the exact stated
+  task. Follow World 1-10's five-stage data format and execute every runnable
+  snippet before marking a lesson complete.
 
 ---
 
@@ -117,6 +136,38 @@ Author World 9 (Lambda Lab) as real five-stage content: lambda expressions, anon
 Append one entry per meaningful session, most recent first.
 
 ```text
+## 2026-09-18 (World 9, COMPLETE)
+
+World/Lesson: World 9 — Lambda Lab, all 12 lessons: Lambda Expressions,
+Anonymous Functions, Function Types, Higher-Order Functions, it, Function
+References, Returning from Lambdas, Local Returns, Inline Functions,
+noinline, crossinline, and the Functional Utility Engine boss.
+Completed:
+- Authored all 12 topics as real five-stage content in
+  src/data/curriculum/world9LessonsData.ts, registered every lesson in
+  AVAILABLE_FIVE_STAGE_LESSONS, and replaced all World 9 catalog placeholders
+  with real descriptions, question counts, and fiveStageLessonKey values.
+- The eight runtime-safe topics use Learn, Explore, Predict, Write & Run,
+  Debug, and Mastered. The four compiler-semantic topics (local returns,
+  inline, noinline, and crossinline) use Learn, Predict, and Mastered only;
+  they deliberately do not offer misleading JS-simulator coding exercises.
+Added:
+- Phase 1 function-as-value runner support in kotlinRunner.ts: typed and
+  implicit-`it` single-expression lambdas, function-type annotations,
+  higher-order calls including trailing-lambda syntax, ::function references,
+  and anonymous functions with local returns. The supported scope is explicit:
+  no labelled/non-local returns or compiler-only inline behavior.
+- scripts/test-lambda-runner.ts plus npm run test:lambda-runner, covering five
+  representative callable-value programs.
+Verification:
+- Executed 64 World 9 runnable solution/debug/predict/Explore snippets through
+  compileAndRunKotlin: 0 failures. Every fixed debug program matched its
+  expected output; every broken program executed and produced a distinct
+  result where applicable.
+- npm run audit:output-quotes passed (49 blocks), npx tsc --noEmit passed,
+  npm run build passed, and the existing Stage 4 editor/curriculum regression
+  suite passed all 150 checks.
+
 ## 2026-09-16 (World 8, COMPLETE)
 
 World/Lesson: World 8 — Object Kingdom, all 14 lessons: Classes, Objects,

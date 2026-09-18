@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useEffect, useImperativeHandle } from 'react';
+import React, { forwardRef, useState, useEffect, useLayoutEffect, useImperativeHandle, useRef } from 'react';
 import { AppTheme, UserStats } from '../types';
 import { FiveStageLesson, AVAILABLE_FIVE_STAGE_LESSONS } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
@@ -27,9 +27,9 @@ interface DetailProps {
   onToggleTapToReveal?: () => void;
 }
 
-// Lets the parent (App.tsx) drive stage-by-stage back navigation from the
-// Android hardware back button, without Detail needing its own browser-
-// history hack.
+// Lets the parent (App.tsx) drive stage-stack back navigation from the
+// Android hardware back button without coupling lesson navigation to browser
+// history.
 export interface DetailHandle {
   goBack: () => void;
 }
@@ -122,20 +122,48 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
     ...(lessonData.debug ? (['debug'] as const) : []),
     'mastered',
   ];
-  const [currentStageKey, setCurrentStageKey] = useState<StageKey>(
-    initialStageKey && activeStages.includes(initialStageKey) ? initialStageKey : activeStages[0]
-  );
+  // Stage navigation is an explicit stack rather than an inferred numeric
+  // position. Advancing pushes the next stage; Back pops it. This preserves a
+  // real visit trail when a learner jumps between stages from the stage rail.
+  const [stageStack, setStageStack] = useState<StageKey[]>(() => [
+    initialStageKey && activeStages.includes(initialStageKey) ? initialStageKey : activeStages[0],
+  ]);
+  const currentStageKey = stageStack[stageStack.length - 1];
+  const stageScrollPositions = useRef<Partial<Record<StageKey, number>>>({});
   const currentStageIndex = activeStages.indexOf(currentStageKey);
   const nextStageKey = activeStages[currentStageIndex + 1];
   const nextStageLabel = nextStageKey ? STAGE_CONTINUE_LABELS[nextStageKey] : undefined;
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const saveCurrentStageScroll = () => {
+    const rootEl = document.getElementById('root');
+    stageScrollPositions.current[currentStageKey] = rootEl ? rootEl.scrollTop : window.scrollY;
+  };
+
+  const restoreCurrentStageScroll = () => {
+    const scrollTop = stageScrollPositions.current[currentStageKey] ?? 0;
     const rootEl = document.getElementById('root');
     if (rootEl) {
-      rootEl.scrollTo({ top: 0, behavior: 'smooth' });
+      rootEl.scrollTo({ top: scrollTop, behavior: 'auto' });
+    } else {
+      window.scrollTo({ top: scrollTop, behavior: 'auto' });
     }
   };
+
+  const openDetailedTutorial = () => {
+    saveCurrentStageScroll();
+    setShowDetailedTutorial(true);
+  };
+
+  const closeDetailedTutorial = () => {
+    setShowDetailedTutorial(false);
+    requestAnimationFrame(restoreCurrentStageScroll);
+  };
+
+  // A stage is a nested screen in a lesson. On Back, restore its saved
+  // position; a stage visited for the first time starts at the top.
+  useLayoutEffect(() => {
+    restoreCurrentStageScroll();
+  }, [currentStageKey]);
 
   const scrollToElement = (elementId: string, headerOffset = 120) => {
     const el = document.getElementById(elementId);
@@ -160,8 +188,8 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   const handleNextStage = () => {
     soundFX.playClick();
     if (currentStageIndex < activeStages.length - 1) {
-      setCurrentStageKey(activeStages[currentStageIndex + 1]);
-      scrollToTop();
+      saveCurrentStageScroll();
+      setStageStack((previous) => [...previous, activeStages[currentStageIndex + 1]]);
     } else {
       soundFX.playSuccess();
       onCompleteLesson(lessonData.mastered.xpEarned, lessonData.worldId);
@@ -171,13 +199,16 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   const handlePreviousStage = () => {
     soundFX.playClick();
     if (showDetailedTutorial) {
-      setShowDetailedTutorial(false);
+      closeDetailedTutorial();
       return;
     }
-    if (currentStageIndex > 0) {
-      setCurrentStageKey(activeStages[currentStageIndex - 1]);
-      scrollToTop();
+    if (stageStack.length > 1) {
+      saveCurrentStageScroll();
+      setStageStack((previous) => previous.slice(0, -1));
     } else {
+      // A lesson may open directly on Write & Run from Practice. With no
+      // earlier visited stage to pop, return to the calling screen rather
+      // than inventing an unvisited stage.
       onExit();
     }
   };
@@ -187,7 +218,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   useImperativeHandle(ref, () => ({
     goBack: () => {
       if (showDetailedTutorial) {
-        setShowDetailedTutorial(false);
+        closeDetailedTutorial();
         return;
       }
       handlePreviousStage();
@@ -196,8 +227,13 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
 
   const handleJumpToStage = (key: StageKey) => {
     soundFX.playClick();
-    setCurrentStageKey(key);
-    scrollToTop();
+    saveCurrentStageScroll();
+    setStageStack((previous) => {
+      const existingIndex = previous.lastIndexOf(key);
+      // Selecting a previously visited stage behaves like Back: discard the
+      // forward branch. Selecting a new stage pushes it onto the trail.
+      return existingIndex >= 0 ? previous.slice(0, existingIndex + 1) : [...previous, key];
+    });
   };
 
   const handleRunCode = () => {
@@ -238,7 +274,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
       <DetailedTutorialView
         tutorial={detailedTutorial}
         isDark={isDark}
-        onBack={() => setShowDetailedTutorial(false)}
+        onBack={closeDetailedTutorial}
         onToggleTheme={onToggleTheme}
       />
     );
@@ -433,7 +469,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
                 type="button"
                 onClick={() => {
                   soundFX.playClick();
-                  setShowDetailedTutorial(true);
+                  openDetailedTutorial();
                 }}
                 className={`ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-['Outfit'] font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95 shrink-0 ${
                   isDark
@@ -484,7 +520,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
             tapToRevealEnabled={tapToRevealEnabled}
             lessonId={lessonData.id}
             topicTitle={lessonData.topicTitle}
-            onOpenTutorial={() => setShowDetailedTutorial(true)}
+            onOpenTutorial={openDetailedTutorial}
             hasTutorial={!!detailedTutorial}
           />
         )}

@@ -367,7 +367,7 @@ export const Explore: React.FC<ExploreStageProps> = ({
 
               {/* Code Snippet Container */}
               <div
-                className={`rounded-xl p-3 sm:p-3.5 font-mono text-sm leading-relaxed mb-3 overflow-x-auto ${
+                className={`-mx-3.5 sm:-mx-5 px-3 py-2 sm:px-4 sm:py-2.5 font-mono text-sm leading-relaxed mb-3 overflow-x-auto ${
                   isDark
                     ? 'bg-[#0f131d] border border-[#262c3d] text-slate-200'
                     : 'bg-slate-50 border border-slate-200/70 text-slate-800'

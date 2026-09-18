@@ -7,6 +7,7 @@ import { soundFX } from '../utils/audio';
 interface ListingProps {
   theme: AppTheme;
   initialWorldId?: string;
+  restoreScrollPosition?: boolean;
   userStats?: UserStats;
   onJumpToToday: () => void;
   onStartLesson?: (topic?: string) => void;
@@ -15,6 +16,7 @@ interface ListingProps {
 export const Listing: React.FC<ListingProps> = ({
   theme,
   initialWorldId,
+  restoreScrollPosition = false,
   userStats,
   onJumpToToday,
   onStartLesson,
@@ -64,12 +66,15 @@ export const Listing: React.FC<ListingProps> = ({
   useEffect(() => {
     if (initialWorldId) {
       setSelectedWorldId(initialWorldId);
-      // Scroll root container to top when entering or switching worlds
-      const rootEl = document.getElementById('root');
-      if (rootEl) {
-        rootEl.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+      // A newly opened curriculum route begins at the top. A route restored
+      // from the navigation stack keeps its saved reading position instead.
+      if (!restoreScrollPosition) {
+        const rootEl = document.getElementById('root');
+        if (rootEl) {
+          rootEl.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       }
 
       // Automatically scroll top worlds scroller to the clicked world after render
@@ -78,9 +83,14 @@ export const Listing: React.FC<ListingProps> = ({
       }, 80);
       return () => clearTimeout(timer);
     }
-  }, [initialWorldId]);
+  }, [initialWorldId, restoreScrollPosition]);
 
   const isDark = theme === 'dark';
+  // Temporary curriculum availability rule: a world becomes available once
+  // every catalog lesson is backed by gathered five-stage content. Replace
+  // this with learner-progress unlocking when progression is implemented.
+  const hasCollectedWorldData = (world: MasterWorldEntry) =>
+    world.lessons.length > 0 && world.lessons.every((lesson) => Boolean(lesson.fiveStageLessonKey));
   const selectedWorld: MasterWorldEntry =
     WORLDS_CATALOG.find((w) => w.id === selectedWorldId) || WORLDS_CATALOG[0];
 
@@ -133,6 +143,8 @@ export const Listing: React.FC<ListingProps> = ({
   }, [selectedWorldId]);
 
   const handleWorldSelect = (worldId: string) => {
+    const world = WORLDS_CATALOG.find((entry) => entry.id === worldId);
+    if (!world || !hasCollectedWorldData(world)) return;
     soundFX.playClick();
     setSelectedWorldId(worldId);
     scrollToActiveWorld(worldId);
@@ -193,8 +205,7 @@ export const Listing: React.FC<ListingProps> = ({
             <div className="shrink-0 w-2" aria-hidden="true" />
             {WORLDS_CATALOG.map((w) => {
               const isSelected = w.id === selectedWorldId;
-              const isWorldDone = w.order <= completedWorldsCount;
-              const isWorldActive = w.order === completedWorldsCount + 1;
+              const isWorldAvailable = hasCollectedWorldData(w);
               return (
                 <button
                   key={w.id}
@@ -207,8 +218,12 @@ export const Listing: React.FC<ListingProps> = ({
                     }
                   }}
                   type="button"
+                  disabled={!isWorldAvailable}
                   onClick={() => handleWorldSelect(w.id)}
-                  className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-2xl border text-left transition-all active:scale-95 cursor-pointer ${
+                  aria-label={`${w.title}: ${isWorldAvailable ? 'available' : 'coming soon'}`}
+                  className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-2xl border text-left transition-all ${
+                    isWorldAvailable ? 'active:scale-95 cursor-pointer' : 'cursor-not-allowed opacity-55'
+                  } ${
                     isSelected
                       ? isDark
                         ? 'bg-indigo-950/70 border-indigo-500 text-white shadow-md'
@@ -220,21 +235,19 @@ export const Listing: React.FC<ListingProps> = ({
                 >
                   <span
                     className={`w-6 h-6 rounded-lg flex items-center justify-center font-['Outfit'] text-xs font-bold shrink-0 ${
-                      isWorldDone
-                        ? 'bg-emerald-600 text-white'
-                        : isWorldActive
-                        ? 'bg-purple-600 text-white ring-2 ring-purple-400/40'
-                        : isSelected
-                        ? 'bg-indigo-600 text-white shadow-sm'
+                      isWorldAvailable
+                        ? isSelected
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'bg-emerald-600 text-white'
                         : isDark
-                        ? 'bg-[#0f1420] text-slate-400'
-                        : 'bg-slate-100 text-slate-600'
+                        ? 'bg-[#0f1420] text-slate-500'
+                        : 'bg-slate-100 text-slate-400'
                     }`}
                   >
-                    {isWorldDone ? (
-                      <span className="material-symbols-outlined text-[13px] font-bold">check</span>
-                    ) : (
+                    {isWorldAvailable ? (
                       w.order
+                    ) : (
+                      <span className="material-symbols-outlined text-[13px]">lock_outline</span>
                     )}
                   </span>
                   <div className="flex flex-col min-w-0 pr-1">
@@ -242,7 +255,7 @@ export const Listing: React.FC<ListingProps> = ({
                       {w.title}
                     </span>
                     <span className="text-[10px] text-slate-400">
-                      {w.lessons.length} lessons
+                      {isWorldAvailable ? `${w.lessons.length} lessons` : 'Coming soon'}
                     </span>
                   </div>
                 </button>
@@ -517,21 +530,29 @@ export const Listing: React.FC<ListingProps> = ({
                   const nextOrder = selectedWorld.order + 1;
                   const nextWorld = WORLDS_CATALOG.find((w) => w.order === nextOrder);
                   if (!nextWorld) return null;
+                  const isNextWorldAvailable = hasCollectedWorldData(nextWorld);
                   return (
                     <button
                       type="button"
+                      disabled={!isNextWorldAvailable}
                       onClick={() => handleNextWorldSelect(nextWorld.id)}
-                      className={`px-4 py-2.5 rounded-full border flex items-center gap-2 text-xs font-bold transition-all active:scale-95 ${
+                      className={`px-4 py-2.5 rounded-full border flex items-center gap-2 text-xs font-bold transition-all ${
+                        !isNextWorldAvailable
+                          ? 'cursor-not-allowed opacity-55'
+                          : 'active:scale-95 cursor-pointer'
+                      } ${
                         isDark
                           ? 'bg-[#151b28] border-white/10 text-slate-300 hover:text-white shadow-md'
                           : 'bg-white border-slate-200 text-slate-700 hover:text-indigo-600 shadow-sm'
                       }`}
                     >
                       <span className="material-symbols-outlined text-[16px] text-indigo-500">
-                        explore
+                        {isNextWorldAvailable ? 'explore' : 'lock_outline'}
                       </span>
                       <span className="font-['Outfit'] uppercase tracking-wider text-[11px]">
-                        WORLD {nextWorld.order} • {nextWorld.title}
+                        {isNextWorldAvailable
+                          ? `WORLD ${nextWorld.order} • ${nextWorld.title}`
+                          : `WORLD ${nextWorld.order} • COMING SOON`}
                       </span>
                       <span className="material-symbols-outlined text-[16px]">chevron_right</span>
                     </button>
@@ -546,6 +567,7 @@ export const Listing: React.FC<ListingProps> = ({
             {WORLDS_CATALOG.map((world) => {
               const isWorldDone = world.order <= completedWorldsCount;
               const isWorldActive = world.order === completedWorldsCount + 1;
+              const isWorldAvailable = hasCollectedWorldData(world);
 
               return (
                 <div
@@ -564,7 +586,11 @@ export const Listing: React.FC<ListingProps> = ({
                     <div className="flex items-center gap-2.5">
                       <span
                         className={`w-7 h-7 rounded-xl flex items-center justify-center font-['Outfit'] font-bold text-xs ${
-                          isWorldDone
+                          !isWorldAvailable
+                            ? isDark
+                              ? 'bg-[#0f1420] text-slate-500'
+                              : 'bg-slate-100 text-slate-400'
+                            : isWorldDone
                             ? 'bg-emerald-600 text-white'
                             : isWorldActive
                             ? 'bg-purple-600 text-white ring-2 ring-purple-400/40'
@@ -573,7 +599,9 @@ export const Listing: React.FC<ListingProps> = ({
                             : 'bg-indigo-100 text-indigo-700'
                         }`}
                       >
-                        {isWorldDone ? (
+                        {!isWorldAvailable ? (
+                          <span className="material-symbols-outlined text-[15px]">lock_outline</span>
+                        ) : isWorldDone ? (
                           <span className="material-symbols-outlined text-[15px] font-bold">check</span>
                         ) : (
                           world.order
@@ -584,7 +612,11 @@ export const Listing: React.FC<ListingProps> = ({
                           <h3 className="font-['Outfit'] font-bold text-base">
                             {world.title}
                           </h3>
-                          {isWorldDone ? (
+                          {!isWorldAvailable ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                              Coming soon
+                            </span>
+                          ) : isWorldDone ? (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
                               <span className="material-symbols-outlined text-[11px] font-bold">check</span>
                               Completed
@@ -605,13 +637,19 @@ export const Listing: React.FC<ListingProps> = ({
                     </div>
                     <button
                       type="button"
+                      disabled={!isWorldAvailable}
                       onClick={() => {
+                        if (!isWorldAvailable) return;
                         setSelectedWorldId(world.id);
                         setViewMode('focused');
                       }}
-                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-['Outfit'] text-xs font-bold shadow-sm transition-colors cursor-pointer"
+                      className={`px-3 py-1.5 rounded-xl font-['Outfit'] text-xs font-bold shadow-sm transition-colors ${
+                        isWorldAvailable
+                          ? 'bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
+                      }`}
                     >
-                      View Timeline
+                      {isWorldAvailable ? 'View Timeline' : 'Locked'}
                     </button>
                   </div>
 

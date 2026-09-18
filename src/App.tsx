@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { AppTheme, FontSize, LessonQuestion, TabType, UserStats } from './types';
@@ -29,12 +29,15 @@ import { ProfileView } from './components/ProfileView';
 import { Detail, DetailHandle, StageKey } from './components/Detail';
 import { World1VisualsShowcase } from './components/World1VisualsShowcase';
 
+type AppRoute =
+  | { kind: 'tab'; tab: TabType; worldId?: string; scrollTop?: number }
+  | { kind: 'drill'; scrollTop?: number }
+  | { kind: 'lesson'; lessonKey: string; initialStage?: StageKey; scrollTop?: number }
+  | { kind: 'visuals'; scrollTop?: number };
+
 export default function App() {
   const [theme, setTheme] = useState<AppTheme>(() => StorageManager.getTheme());
-  const [activeTab, setActiveTab] = useState<TabType>('learn');
-  const [isLessonActive, setIsLessonActive] = useState<boolean>(false);
-  const [fiveStageLessonKey, setFiveStageLessonKey] = useState<string | null>(null);
-  const [fiveStageInitialStage, setFiveStageInitialStage] = useState<StageKey | undefined>(undefined);
+  const [navigationStack, setNavigationStack] = useState<AppRoute[]>([{ kind: 'tab', tab: 'learn' }]);
   const [activeQuestionPool, setActiveQuestionPool] = useState<LessonQuestion[]>(LESSON_QUESTIONS);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(1); // Question 2 (Step 2 of 5: val x = 10, val y = 20)
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => StorageManager.getSoundEnabled());
@@ -42,17 +45,73 @@ export default function App() {
 
   // User Stats loaded from storage with daily reset check
   const [userStats, setUserStats] = useState<UserStats>(() => StorageManager.getUserStats());
-  const [curriculumWorldId, setCurriculumWorldId] = useState<string>('world-1');
-  const [showVisualsGallery, setShowVisualsGallery] = useState<boolean>(false);
   const detailRef = useRef<DetailHandle>(null);
+  const currentRoute = navigationStack[navigationStack.length - 1];
+  const activeTab = currentRoute.kind === 'tab' ? currentRoute.tab : 'learn';
+  const curriculumWorldId = currentRoute.kind === 'tab' && currentRoute.tab === 'curriculum' ? currentRoute.worldId || 'world-1' : 'world-1';
+  const isLessonActive = currentRoute.kind === 'drill';
+  const fiveStageLessonKey = currentRoute.kind === 'lesson' ? currentRoute.lessonKey : null;
+  const fiveStageInitialStage = currentRoute.kind === 'lesson' ? currentRoute.initialStage : undefined;
+  const showVisualsGallery = currentRoute.kind === 'visuals';
+
+  const getRootScrollTop = () => {
+    const rootEl = document.getElementById('root');
+    return rootEl ? rootEl.scrollTop : window.scrollY;
+  };
+
+  const pushRoute = (route: AppRoute) => setNavigationStack((previous) => {
+    const current = previous[previous.length - 1];
+    return [...previous.slice(0, -1), { ...current, scrollTop: getRootScrollTop() }, route];
+  });
+  const popRoute = () => setNavigationStack((previous) => previous.length > 1 ? previous.slice(0, -1) : previous);
+
+  // Home is the app's only root. Tabs are destinations from that root, not a
+  // history trail: Back from any tab always returns to Home.
+  const routeFromHome = (route: AppRoute) => setNavigationStack((previous) => {
+    const current = previous[previous.length - 1];
+    const existingHome = previous.find(
+      (entry): entry is Extract<AppRoute, { kind: 'tab' }> => entry.kind === 'tab' && entry.tab === 'learn'
+    );
+    const home = current.kind === 'tab' && current.tab === 'learn'
+      ? { ...current, scrollTop: getRootScrollTop() }
+      : existingHome || { kind: 'tab' as const, tab: 'learn' as TabType };
+    return [home, route];
+  });
+
+  const openTab = (tab: TabType) => {
+    if (tab === 'learn') {
+      setNavigationStack((previous) => {
+        const current = previous[previous.length - 1];
+        const existingHome = previous.find(
+          (entry): entry is Extract<AppRoute, { kind: 'tab' }> => entry.kind === 'tab' && entry.tab === 'learn'
+        );
+        return [
+          current.kind === 'tab' && current.tab === 'learn'
+            ? { ...current, scrollTop: getRootScrollTop() }
+            : existingHome || { kind: 'tab' as const, tab: 'learn' as TabType },
+        ];
+      });
+      return;
+    }
+    routeFromHome({ kind: 'tab', tab });
+  };
+
+  // Each route owns its position in the app's single scroll container. A new
+  // route starts at the top; popping restores the exact place the learner left.
+  useLayoutEffect(() => {
+    const scrollTop = currentRoute.scrollTop ?? 0;
+    const rootEl = document.getElementById('root');
+    if (rootEl) {
+      rootEl.scrollTo({ top: scrollTop, behavior: 'auto' });
+    } else {
+      window.scrollTo({ top: scrollTop, behavior: 'auto' });
+    }
+  }, [currentRoute]);
 
   // Open Curriculum Map with optional target world
   const handleOpenCurriculum = (worldId?: string) => {
     soundFX.playClick();
-    if (worldId) {
-      setCurriculumWorldId(worldId);
-    }
-    setActiveTab('curriculum');
+    routeFromHome({ kind: 'tab', tab: 'curriculum', worldId: worldId || curriculumWorldId });
   };
 
   // Sync sound setting with soundFX utility
@@ -102,7 +161,7 @@ export default function App() {
     soundFX.playClick();
     setActiveQuestionPool(LESSON_QUESTIONS);
     setCurrentQuestionIndex(1); // Step 2 of 5 (matching prompt)
-    setIsLessonActive(true);
+    routeFromHome({ kind: 'drill' });
   };
 
   const handleStartDrill = (drillType?: DrillType) => {
@@ -148,12 +207,12 @@ export default function App() {
         break;
     }
 
-    setIsLessonActive(true);
+    routeFromHome({ kind: 'drill' });
   };
 
   const handleExitLesson = () => {
     soundFX.playClick();
-    setIsLessonActive(false);
+    popRoute();
   };
 
   // Make every screen respect the Android hardware back button instead of the
@@ -167,17 +226,14 @@ export default function App() {
     let removeListener: (() => void) | null = null;
     CapacitorApp.addListener('backButton', () => {
       if (showVisualsGallery) {
-        setShowVisualsGallery(false);
+        popRoute();
       } else if (fiveStageLessonKey) {
         detailRef.current?.goBack();
       } else if (isLessonActive) {
         handleExitLesson();
-      } else if (activeTab === 'curriculum') {
+      } else if (navigationStack.length > 1) {
         soundFX.playClick();
-        setActiveTab('learn');
-      } else if (activeTab !== 'learn') {
-        soundFX.playClick();
-        setActiveTab('learn');
+        popRoute();
       } else {
         CapacitorApp.exitApp();
       }
@@ -192,7 +248,7 @@ export default function App() {
     return () => {
       removeListener?.();
     };
-  }, [showVisualsGallery, fiveStageLessonKey, isLessonActive, activeTab]);
+  }, [showVisualsGallery, fiveStageLessonKey, isLessonActive, navigationStack.length]);
 
   const handleLessonComplete = (earnedXP: number, completedWorldId?: string) => {
     setUserStats((prev) => {
@@ -221,19 +277,21 @@ export default function App() {
       return updated;
     });
 
-    // Check if next step exists in this drill/lesson session
-    if (currentQuestionIndex + 1 < activeQuestionPool.length) {
-      setCurrentQuestionIndex((prev) => prev + 1);
-    } else {
-      setIsLessonActive(false);
+    // A drill owns a multi-question session; a five-stage lesson owns its
+    // own completion transition in the Detail callback below.
+    if (currentRoute.kind === 'drill') {
+      if (currentQuestionIndex + 1 < activeQuestionPool.length) {
+        setCurrentQuestionIndex((prev) => prev + 1);
+      } else {
+        popRoute();
+      }
     }
   };
 
   const handleResetProgress = () => {
     StorageManager.resetAll();
     setUserStats(DEFAULT_USER_STATS);
-    setIsLessonActive(false);
-    setActiveTab('learn');
+    setNavigationStack([{ kind: 'tab', tab: 'learn' }]);
   };
 
   return (
@@ -246,18 +304,19 @@ export default function App() {
             theme={theme}
             activeTab={activeTab}
             onProfileClick={() => {
-              setIsLessonActive(false);
-              setFiveStageLessonKey(null);
-              setActiveTab('profile');
+              openTab('profile');
             }}
             onToggleTheme={toggleTheme}
-            showBack={isLessonActive || activeTab === 'curriculum'}
+            // Tabs stay visually clean; Android Back returns them to Home.
+            // Curriculum is part of the explicit learning path, so it keeps
+            // its visible Back affordance.
+            showBack={activeTab === 'curriculum' && navigationStack.length > 1}
             title={isLessonActive ? 'Active Lesson' : activeTab === 'curriculum' ? 'Curriculum' : undefined}
             onBack={() => {
               if (isLessonActive) {
-                setIsLessonActive(false);
-              } else if (activeTab === 'curriculum') {
-                setActiveTab('learn');
+                popRoute();
+              } else if (navigationStack.length > 1) {
+                popRoute();
               }
             }}
           />
@@ -266,7 +325,7 @@ export default function App() {
         {/* Screen Switcher */}
         <main className={`flex-1 w-full flex flex-col font-size-${fontSize}`}>
           {showVisualsGallery ? (
-            <World1VisualsShowcase theme={theme} onBack={() => setShowVisualsGallery(false)} />
+            <World1VisualsShowcase theme={theme} onBack={popRoute} />
           ) : fiveStageLessonKey ? (
             /* 5-Stage Interactive Lesson Flow (Learn -> Explore -> Predict -> Write & Run -> Mastered) */
             <Detail
@@ -276,13 +335,11 @@ export default function App() {
               initialStageKey={fiveStageInitialStage}
               userStats={userStats}
               onExit={() => {
-                setFiveStageLessonKey(null);
-                setFiveStageInitialStage(undefined);
+                popRoute();
               }}
               onCompleteLesson={(earnedXP, worldId) => {
                 handleLessonComplete(earnedXP, worldId);
-                setFiveStageLessonKey(null);
-                setFiveStageInitialStage(undefined);
+                popRoute();
               }}
               onToggleTheme={toggleTheme}
             />
@@ -300,11 +357,11 @@ export default function App() {
             <Listing
               theme={theme}
               initialWorldId={curriculumWorldId}
+              restoreScrollPosition={typeof currentRoute.scrollTop === 'number'}
               userStats={userStats}
-              onJumpToToday={() => setActiveTab('learn')}
+              onJumpToToday={() => openTab('learn')}
               onStartLesson={(topic) => {
-                setFiveStageLessonKey(topic || 'variables');
-                setFiveStageInitialStage(undefined);
+                pushRoute({ kind: 'lesson', lessonKey: topic || 'variables' });
               }}
             />
           ) : activeTab === 'learn' ? (
@@ -313,8 +370,7 @@ export default function App() {
               theme={theme}
               userStats={userStats}
               onStartLesson={() => {
-                setFiveStageLessonKey('variables');
-                setFiveStageInitialStage(undefined);
+                pushRoute({ kind: 'lesson', lessonKey: 'variables' });
               }}
               onOpenCurriculum={handleOpenCurriculum}
               onSelectWorld={handleOpenCurriculum}
@@ -325,8 +381,7 @@ export default function App() {
               theme={theme}
               onStartDrill={handleStartDrill}
               onOpenCodingChallenge={(lessonKey) => {
-                setFiveStageLessonKey(lessonKey || 'functions');
-                setFiveStageInitialStage('writeRun');
+                routeFromHome({ kind: 'lesson', lessonKey: lessonKey || 'functions', initialStage: 'writeRun' });
               }}
             />
           ) : activeTab === 'leaderboard' ? (
@@ -340,7 +395,7 @@ export default function App() {
             <ProfileView
               theme={theme}
               userStats={userStats}
-              onStartLesson={() => setFiveStageLessonKey('variables')}
+              onStartLesson={() => routeFromHome({ kind: 'lesson', lessonKey: 'variables' })}
               onOpenCurriculum={() => handleOpenCurriculum('world-1')}
               onToggleTheme={toggleTheme}
               soundEnabled={soundEnabled}
@@ -348,7 +403,7 @@ export default function App() {
               fontSize={fontSize}
               onChangeFontSize={changeFontSize}
               onResetProgress={handleResetProgress}
-              onOpenVisualsGallery={() => setShowVisualsGallery(true)}
+              onOpenVisualsGallery={() => routeFromHome({ kind: 'visuals' })}
             />
           )}
         </main>
@@ -359,9 +414,7 @@ export default function App() {
             theme={theme}
             activeTab={activeTab === 'curriculum' ? 'learn' : activeTab}
             onSelectTab={(tab) => {
-              setIsLessonActive(false);
-              setFiveStageLessonKey(null);
-              setActiveTab(tab);
+              openTab(tab);
             }}
           />
         )}

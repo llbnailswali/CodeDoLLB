@@ -2422,6 +2422,26 @@ then **World 2 — Operator Forge must explicitly contain all of them**.
 
 ### Curriculum Integrity Check
 
+### Write & Run Task Authoring Standard — Required
+
+Every runnable Write & Run lesson must use the same learner-facing task
+structure as World 2 — Arithmetic Operators. Do not use a generic one-line
+prompt or a generic `// TODO` in the editor.
+
+1. The task description must state the setup, then list numbered implementation
+   steps separated by blank lines, followed by the exact expected output when
+   applicable.
+2. `initialCode` must preserve useful starter declarations and contain the
+   same numbered `//` comments at the exact locations where the learner writes
+   each step. Leave a blank writable line after every comment.
+3. Every description step and editor comment must name the actual operation,
+   variable, or output being authored — never only “write the transformation.”
+4. The solution, expected output, and Debug exercise must validate the same
+   stated task.
+
+A lesson is not complete merely because it executes; its task guidance and
+starter editor must also meet this standard.
+
 Before finalizing or releasing a curriculum:
 
 1. Extract every topic from the detailed taxonomy.

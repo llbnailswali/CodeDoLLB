@@ -74,7 +74,7 @@ export function findInitialCursorPosition(code: string): number {
 // returned unchanged (this only applies to the TODO-comment convention).
 export function ensureBlankLinesAfterFirstComment(
   code: string,
-  blankLineCount: number = 3
+  blankLineCount: number = 2
 ): { code: string; cursorPosition: number } {
   const lines = code.split('\n');
   const firstCommentLineIdx = lines.findIndex((line) => line.trim().startsWith('//'));
