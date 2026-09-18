@@ -42,7 +42,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
   // Auto-open Task dialog as soon as Editor screen opens
   const [showTaskModal, setShowTaskModal] = useState<boolean>(true);
   const [modalAnimState, setModalAnimState] = useState<'open' | 'closing' | 'opening' | 'closed'>('open');
-  const [genieStyle, setGenieStyle] = useState<React.CSSProperties>({});
+  const [heroStyle, setHeroStyle] = useState<React.CSSProperties>({});
   const [isTaskButtonCatching, setIsTaskButtonCatching] = useState<boolean>(false);
 
   const [cursorArrowsVisible, setCursorArrowsVisible] = useState<boolean>(false);
@@ -54,28 +54,14 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
   const animTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pulseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-open Task dialog when switching challenges
-  useEffect(() => {
-    setShowTaskModal(true);
-    setModalAnimState('open');
-  }, [data]);
-
-  // Clean up animation timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
-      if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
-    };
-  }, []);
-
-  // Compute macOS Genie effect coordinates towards the Top Task button
-  const computeGenieStyle = (forOpening = false): React.CSSProperties => {
+  // Compute Hero transition coordinates between center dialog and Top Task button
+  const computeHeroStyle = (forOpening = false): React.CSSProperties => {
     const btnEl = taskButtonRef.current;
     const modalEl = modalRef.current;
 
     let btnCenterX = 70;
     let btnCenterY = 40;
-    let btnWidth = 72;
+    let btnWidth = 74;
     let btnHeight = 28;
 
     if (btnEl) {
@@ -90,44 +76,51 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
     let modalCenterY = window.innerHeight / 2;
     let modalWidth = Math.min(372, window.innerWidth - 32);
     let modalHeight = Math.min(window.innerHeight * 0.82, 520);
-    let modalLeft = (window.innerWidth - modalWidth) / 2;
 
     if (modalEl && !forOpening) {
       const mRect = modalEl.getBoundingClientRect();
-      modalCenterX = mRect.left + mRect.width / 2;
-      modalCenterY = mRect.top + mRect.height / 2;
-      modalWidth = mRect.width;
-      modalHeight = mRect.height;
-      modalLeft = mRect.left;
+      if (mRect.width > 50 && mRect.height > 50) {
+        modalCenterX = mRect.left + mRect.width / 2;
+        modalCenterY = mRect.top + mRect.height / 2;
+        modalWidth = mRect.width;
+        modalHeight = mRect.height;
+      }
     }
 
     const dx = btnCenterX - modalCenterX;
     const dy = btnCenterY - modalCenterY;
-    const sx = Math.max(0.08, btnWidth / modalWidth);
-    const sy = Math.max(0.04, btnHeight / modalHeight);
-
-    // Calculate where the button sits relative to the modal's top edge (0% - 100%)
-    const pinchX = Math.max(6, Math.min(94, ((btnCenterX - modalLeft) / modalWidth) * 100));
-    // Subtle tilt towards the direction of the button
-    const tilt = dx < 0 ? Math.max(-5, Math.min(-1.5, dx / 45)) : Math.min(5, Math.max(1.5, dx / 45));
+    const scaleX = Math.max(0.06, btnWidth / modalWidth);
+    const scaleY = Math.max(0.04, btnHeight / modalHeight);
 
     return {
-      '--genie-dx': `${dx.toFixed(1)}px`,
-      '--genie-dy': `${dy.toFixed(1)}px`,
-      '--genie-scale-x': `${sx.toFixed(3)}`,
-      '--genie-scale-y': `${sy.toFixed(3)}`,
-      '--genie-pinch-x': `${pinchX.toFixed(1)}%`,
-      '--genie-tilt': `${tilt.toFixed(1)}deg`,
+      '--hero-dx': `${dx.toFixed(1)}px`,
+      '--hero-dy': `${dy.toFixed(1)}px`,
+      '--hero-scale-x': `${scaleX.toFixed(3)}`,
+      '--hero-scale-y': `${scaleY.toFixed(3)}`,
     } as React.CSSProperties;
   };
 
-  // macOS Genie minimization into the Top Task button
+  // Auto-open Task dialog as soon as Editor screen opens
+  useEffect(() => {
+    setShowTaskModal(true);
+    setModalAnimState('open');
+  }, [data]);
+
+  // Clean up animation timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
+      if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
+    };
+  }, []);
+
+  // Hero scale-down into the Top Task button so user sees where it went
   const handleCloseTaskModal = () => {
     if (modalAnimState === 'closing') return;
     soundFX.playClick();
 
-    const style = computeGenieStyle(false);
-    setGenieStyle(style);
+    const style = computeHeroStyle(false);
+    setHeroStyle(style);
     setModalAnimState('closing');
 
     if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
@@ -135,29 +128,29 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
       setShowTaskModal(false);
       setModalAnimState('closed');
 
-      // Trigger the macOS dock-style button catch bounce/glow on the Task button
+      // Trigger the Task button catch bounce and glowing ring
       setIsTaskButtonCatching(true);
       if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
       pulseTimeoutRef.current = setTimeout(() => {
         setIsTaskButtonCatching(false);
       }, 700);
-    }, 490);
+    }, 380);
   };
 
-  // Expand modal out from the Top Task button
+  // Hero scale-up expanding out from the Top Task button
   const handleOpenTaskModal = () => {
     soundFX.playClick();
     if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
 
-    const style = computeGenieStyle(true);
-    setGenieStyle(style);
+    const style = computeHeroStyle(true);
+    setHeroStyle(style);
 
     setShowTaskModal(true);
     setModalAnimState('opening');
 
     animTimeoutRef.current = setTimeout(() => {
       setModalAnimState('open');
-    }, 440);
+    }, 360);
   };
 
   const handleToggleTaskModal = () => {
@@ -168,7 +161,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
     }
   };
 
-  // Escape key closes modal with Genie effect
+  // Escape key closes modal with Hero scale-down effect
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && showTaskModal && modalAnimState === 'open') {
@@ -294,7 +287,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             </svg>
           </button>
 
-          {/* Short & meaningful Task Button with macOS Genie animation */}
+          {/* Short & meaningful Task Button with Hero animation */}
           <button
             ref={taskButtonRef}
             type="button"
@@ -310,7 +303,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                 : 'bg-white hover:bg-slate-100 border-slate-300 text-slate-700'
             }`}
             aria-label="Toggle Task"
-            title="Click to view Task"
+            title="Click to view Task instructions"
           >
             {/* When minimized into the button, show an attractive subtle pulse beacon */}
             {!showTaskModal && (
@@ -500,27 +493,27 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
         isDark={isDark}
       />
 
-      {/* ================= BEGIN: Task Details Modal (macOS Genie Animation) ================= */}
+      {/* ================= BEGIN: Task Details Modal (Hero Scale Animation) ================= */}
       {showTaskModal && (
         <div
           className={`fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 select-text ${
             modalAnimState === 'closing'
-              ? 'animate-genie-backdrop-out'
+              ? 'animate-hero-backdrop-out'
               : modalAnimState === 'opening'
-              ? 'animate-genie-backdrop-in'
-              : 'animate-fadeIn'
+              ? 'animate-hero-backdrop-in'
+              : ''
           }`}
           onClick={handleCloseTaskModal}
         >
           <div
             ref={modalRef}
-            style={genieStyle}
+            style={modalAnimState === 'open' ? undefined : heroStyle}
             className={`w-full max-w-[372px] mx-auto rounded-2xl border shadow-2xl max-h-[82vh] flex flex-col overflow-hidden ${
               modalAnimState === 'closing'
-                ? 'animate-genie-suck'
+                ? 'animate-hero-down'
                 : modalAnimState === 'opening'
-                ? 'animate-genie-expand'
-                : 'animate-scaleUp'
+                ? 'animate-hero-up'
+                : ''
             } ${
               isDark ? 'border-slate-700/80 bg-[#121622] text-slate-100' : 'border-slate-300 bg-white text-slate-900'
             }`}

@@ -199,192 +199,57 @@
 }
 
 /* ==========================================================================
-   macOS Genie Minimization Effect (Task Dialog -> Top Toolbar Button)
+   Hero Dialog Transition (Scale Large / Scale Down into Top Task Button)
    ========================================================================== */
 
-@keyframes genie-suck {
+@keyframes hero-scale-down {
   0% {
-    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
-    clip-path: polygon(
-      0% 0%,
-      100% 0%,
-      100% 35%,
-      100% 70%,
-      100% 100%,
-      50% 100%,
-      0% 100%,
-      0% 70%,
-      0% 35%
-    );
+    transform: translate3d(0, 0, 0) scale(1, 1);
     opacity: 1;
-    filter: brightness(1) drop-shadow(0 25px 30px rgba(0, 0, 0, 0.45));
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);
   }
-  25% {
-    transform: translate3d(calc(var(--genie-dx, -100px) * 0.16), calc(var(--genie-dy, -200px) * 0.14), 0) scale(0.92, 0.94) rotate(calc(var(--genie-tilt, -2deg) * 0.3));
-    clip-path: polygon(
-      calc(var(--genie-pinch-x, 25%) - 28%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 28%) 0%,
-      98% 35%,
-      100% 70%,
-      100% 100%,
-      50% 100%,
-      0% 100%,
-      0% 70%,
-      2% 35%
-    );
+  30% {
     opacity: 0.98;
-    filter: brightness(1.06) drop-shadow(0 15px 22px rgba(99, 102, 241, 0.3));
+    border-radius: 0.9rem;
+    box-shadow: 0 15px 30px -10px rgba(99, 102, 241, 0.35);
   }
-  50% {
-    transform: translate3d(calc(var(--genie-dx, -100px) * 0.46), calc(var(--genie-dy, -200px) * 0.42), 0) scale(0.68, 0.72) rotate(calc(var(--genie-tilt, -2deg) * 0.7));
-    clip-path: polygon(
-      calc(var(--genie-pinch-x, 25%) - 14%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 14%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 34%) 35%,
-      88% 70%,
-      88% 95%,
-      50% 98%,
-      12% 95%,
-      12% 70%,
-      calc(var(--genie-pinch-x, 25%) - 34%) 35%
-    );
-    opacity: 0.95;
-    filter: brightness(1.12) drop-shadow(0 10px 18px rgba(99, 102, 241, 0.45));
+  70% {
+    opacity: 0.65;
+    border-radius: 0.7rem;
+  }
+  100% {
+    transform: translate3d(var(--hero-dx, -120px), var(--hero-dy, -250px), 0) scale(var(--hero-scale-x, 0.19), var(--hero-scale-y, 0.06));
+    opacity: 0;
+    border-radius: 0.5rem;
+    box-shadow: 0 0 14px rgba(99, 102, 241, 0.7);
+  }
+}
+
+@keyframes hero-scale-up {
+  0% {
+    transform: translate3d(var(--hero-dx, -120px), var(--hero-dy, -250px), 0) scale(var(--hero-scale-x, 0.19), var(--hero-scale-y, 0.06));
+    opacity: 0;
+    border-radius: 0.5rem;
+    box-shadow: 0 0 14px rgba(99, 102, 241, 0.8);
+  }
+  30% {
+    opacity: 0.85;
+    border-radius: 0.7rem;
   }
   75% {
-    transform: translate3d(calc(var(--genie-dx, -100px) * 0.78), calc(var(--genie-dy, -200px) * 0.74), 0) scale(0.40, 0.42) rotate(var(--genie-tilt, -2deg));
-    clip-path: polygon(
-      calc(var(--genie-pinch-x, 25%) - 6%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 6%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 18%) 35%,
-      calc(var(--genie-pinch-x, 25%) + 20%) 70%,
-      calc(var(--genie-pinch-x, 25%) + 18%) 90%,
-      calc(var(--genie-pinch-x, 25%) * 1) 94%,
-      calc(var(--genie-pinch-x, 25%) - 18%) 90%,
-      calc(var(--genie-pinch-x, 25%) - 20%) 70%,
-      calc(var(--genie-pinch-x, 25%) - 18%) 35%
-    );
-    opacity: 0.88;
-    filter: brightness(1.22) drop-shadow(0 5px 14px rgba(99, 102, 241, 0.6));
-  }
-  92% {
-    transform: translate3d(calc(var(--genie-dx, -100px) * 0.94), calc(var(--genie-dy, -200px) * 0.93), 0) scale(calc(var(--genie-scale-x, 0.2) * 1.35), calc(var(--genie-scale-y, 0.08) * 1.35)) rotate(calc(var(--genie-tilt, -2deg) * 0.4));
-    clip-path: polygon(
-      calc(var(--genie-pinch-x, 25%) - 2.5%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 2.5%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 5%) 35%,
-      calc(var(--genie-pinch-x, 25%) + 7%) 70%,
-      calc(var(--genie-pinch-x, 25%) + 6%) 85%,
-      calc(var(--genie-pinch-x, 25%) * 1) 88%,
-      calc(var(--genie-pinch-x, 25%) - 6%) 85%,
-      calc(var(--genie-pinch-x, 25%) - 7%) 70%,
-      calc(var(--genie-pinch-x, 25%) - 5%) 35%
-    );
-    opacity: 0.6;
-    filter: brightness(1.35) drop-shadow(0 0 12px rgba(129, 140, 248, 0.85));
+    opacity: 0.98;
+    border-radius: 0.95rem;
   }
   100% {
-    transform: translate3d(var(--genie-dx, -100px), var(--genie-dy, -200px), 0) scale(var(--genie-scale-x, 0.2), var(--genie-scale-y, 0.08)) rotate(0deg);
-    clip-path: polygon(
-      calc(var(--genie-pinch-x, 25%) - 1%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 1%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 1%) 35%,
-      calc(var(--genie-pinch-x, 25%) + 1%) 70%,
-      calc(var(--genie-pinch-x, 25%) + 1%) 100%,
-      calc(var(--genie-pinch-x, 25%) * 1) 100%,
-      calc(var(--genie-pinch-x, 25%) - 1%) 100%,
-      calc(var(--genie-pinch-x, 25%) - 1%) 70%,
-      calc(var(--genie-pinch-x, 25%) - 1%) 35%
-    );
-    opacity: 0;
-    filter: brightness(1.5) drop-shadow(0 0 18px rgba(129, 140, 248, 1));
-  }
-}
-
-@keyframes genie-expand {
-  0% {
-    transform: translate3d(var(--genie-dx, -100px), var(--genie-dy, -200px), 0) scale(var(--genie-scale-x, 0.2), var(--genie-scale-y, 0.08)) rotate(0deg);
-    clip-path: polygon(
-      calc(var(--genie-pinch-x, 25%) - 1%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 1%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 1%) 35%,
-      calc(var(--genie-pinch-x, 25%) + 1%) 70%,
-      calc(var(--genie-pinch-x, 25%) + 1%) 100%,
-      calc(var(--genie-pinch-x, 25%) * 1) 100%,
-      calc(var(--genie-pinch-x, 25%) - 1%) 100%,
-      calc(var(--genie-pinch-x, 25%) - 1%) 70%,
-      calc(var(--genie-pinch-x, 25%) - 1%) 35%
-    );
-    opacity: 0;
-    filter: brightness(1.5) drop-shadow(0 0 18px rgba(129, 140, 248, 1));
-  }
-  15% {
-    transform: translate3d(calc(var(--genie-dx, -100px) * 0.88), calc(var(--genie-dy, -200px) * 0.86), 0) scale(0.35, 0.38) rotate(var(--genie-tilt, -2deg));
-    clip-path: polygon(
-      calc(var(--genie-pinch-x, 25%) - 4%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 4%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 12%) 35%,
-      calc(var(--genie-pinch-x, 25%) + 16%) 70%,
-      calc(var(--genie-pinch-x, 25%) + 14%) 85%,
-      calc(var(--genie-pinch-x, 25%) * 1) 88%,
-      calc(var(--genie-pinch-x, 25%) - 14%) 85%,
-      calc(var(--genie-pinch-x, 25%) - 16%) 70%,
-      calc(var(--genie-pinch-x, 25%) - 12%) 35%
-    );
-    opacity: 0.8;
-    filter: brightness(1.25) drop-shadow(0 0 14px rgba(129, 140, 248, 0.75));
-  }
-  50% {
-    transform: translate3d(calc(var(--genie-dx, -100px) * 0.44), calc(var(--genie-dy, -200px) * 0.40), 0) scale(0.70, 0.74) rotate(calc(var(--genie-tilt, -2deg) * 0.6));
-    clip-path: polygon(
-      calc(var(--genie-pinch-x, 25%) - 14%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 14%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 34%) 35%,
-      88% 70%,
-      88% 95%,
-      50% 98%,
-      12% 95%,
-      12% 70%,
-      calc(var(--genie-pinch-x, 25%) - 34%) 35%
-    );
-    opacity: 0.95;
-    filter: brightness(1.1) drop-shadow(0 10px 18px rgba(99, 102, 241, 0.45));
-  }
-  80% {
-    transform: translate3d(calc(var(--genie-dx, -100px) * 0.12), calc(var(--genie-dy, -200px) * 0.10), 0) scale(0.95, 0.96) rotate(calc(var(--genie-tilt, -2deg) * 0.2));
-    clip-path: polygon(
-      calc(var(--genie-pinch-x, 25%) - 30%) 0%,
-      calc(var(--genie-pinch-x, 25%) + 30%) 0%,
-      98% 35%,
-      100% 70%,
-      100% 100%,
-      50% 100%,
-      0% 100%,
-      0% 70%,
-      2% 35%
-    );
-    opacity: 0.99;
-    filter: brightness(1.04);
-  }
-  100% {
-    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
-    clip-path: polygon(
-      0% 0%,
-      100% 0%,
-      100% 35%,
-      100% 70%,
-      100% 100%,
-      50% 100%,
-      0% 100%,
-      0% 70%,
-      0% 35%
-    );
+    transform: translate3d(0, 0, 0) scale(1, 1);
     opacity: 1;
-    filter: brightness(1) drop-shadow(0 25px 30px rgba(0, 0, 0, 0.45));
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);
   }
 }
 
-@keyframes genie-backdrop-fadeout {
+@keyframes hero-backdrop-fadeout {
   0% {
     opacity: 1;
     backdrop-filter: blur(4px);
@@ -395,7 +260,7 @@
   }
 }
 
-@keyframes genie-backdrop-fadein {
+@keyframes hero-backdrop-fadein {
   0% {
     opacity: 0;
     backdrop-filter: blur(0px);
@@ -412,7 +277,7 @@
     box-shadow: 0 0 0 rgba(99, 102, 241, 0);
   }
   28% {
-    transform: scale(1.22);
+    transform: scale(1.24);
     box-shadow: 0 0 24px rgba(99, 102, 241, 0.95), 0 0 10px rgba(168, 85, 247, 0.75);
     border-color: rgba(129, 140, 248, 0.95);
   }
@@ -421,12 +286,53 @@
     box-shadow: 0 0 14px rgba(99, 102, 241, 0.5);
   }
   78% {
-    transform: scale(1.06);
+    transform: scale(1.08);
   }
   100% {
     transform: scale(1);
     box-shadow: 0 0 0 rgba(99, 102, 241, 0);
   }
+}
+
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-hero-down {
+  animation: hero-scale-down 0.38s cubic-bezier(0.2, 0.85, 0.3, 1) forwards;
+  transform-origin: center center;
+  will-change: transform, opacity, border-radius;
+  pointer-events: none;
+}
+
+.animate-hero-up {
+  animation: hero-scale-up 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center center;
+  will-change: transform, opacity, border-radius;
+}
+
+.animate-hero-backdrop-out {
+  animation: hero-backdrop-fadeout 0.38s cubic-bezier(0.2, 0.85, 0.3, 1) forwards;
+  will-change: opacity;
+  pointer-events: none;
+}
+
+.animate-hero-backdrop-in {
+  animation: hero-backdrop-fadein 0.32s ease-out forwards;
+  will-change: opacity;
+}
+
+.animate-task-catch {
+  animation: task-button-catch 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+}
+
+.animate-bounce-gentle {
+  animation: bounce-gentle 2.2s ease-in-out infinite;
 }
 
 @keyframes modal-scale-up {
@@ -447,34 +353,6 @@
   100% {
     opacity: 1;
   }
-}
-
-.animate-genie-suck {
-  animation: genie-suck 0.5s cubic-bezier(0.2, 0.8, 0.25, 1) forwards;
-  transform-origin: top center;
-  will-change: transform, clip-path, opacity, filter;
-  pointer-events: none;
-}
-
-.animate-genie-expand {
-  animation: genie-expand 0.44s cubic-bezier(0.18, 0.9, 0.3, 1) forwards;
-  transform-origin: top center;
-  will-change: transform, clip-path, opacity, filter;
-}
-
-.animate-genie-backdrop-out {
-  animation: genie-backdrop-fadeout 0.48s cubic-bezier(0.2, 0.8, 0.25, 1) forwards;
-  will-change: opacity;
-  pointer-events: none;
-}
-
-.animate-genie-backdrop-in {
-  animation: genie-backdrop-fadein 0.38s ease-out forwards;
-  will-change: opacity;
-}
-
-.animate-task-catch {
-  animation: task-button-catch 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
 }
 
 .animate-scaleUp {
