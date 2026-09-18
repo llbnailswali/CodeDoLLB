@@ -177,6 +177,14 @@ export const FontThemesView: React.FC<FontThemesViewProps> = ({
     }
   }, [currentIndex]);
 
+  // Touch and swipe gesture management: strictly enforce single swipe at a time
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const touchStartTimeRef = useRef<number>(0);
+  const touchStartIndexRef = useRef<number>(0);
+  const isHorizontalSwipeRef = useRef<boolean | null>(null);
+  const lastWheelTimeRef = useRef<number>(0);
+
   const scrollToIndex = useCallback((index: number, smooth: boolean = true) => {
     const container = viewPagerRef.current;
     if (!container) return;
@@ -205,7 +213,91 @@ export const FontThemesView: React.FC<FontThemesViewProps> = ({
       computedIndex < RECOMMENDED_FONT_COMBOS.length &&
       computedIndex !== currentIndex
     ) {
-      setCurrentIndex(computedIndex);
+      // Strictly clamp momentum to single step at a time
+      const clampedSingleStep =
+        computedIndex > currentIndex ? currentIndex + 1 : currentIndex - 1;
+
+      setCurrentIndex(clampedSingleStep);
+      // If momentum tried to skip multiple pages, cleanly realign to single step
+      if (Math.abs(computedIndex - currentIndex) > 1) {
+        scrollToIndex(clampedSingleStep, true);
+      }
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) return;
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+    touchStartTimeRef.current = Date.now();
+    touchStartIndexRef.current = currentIndex;
+    isHorizontalSwipeRef.current = null;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = Math.abs(currentX - touchStartXRef.current);
+    const diffY = Math.abs(currentY - touchStartYRef.current);
+
+    if (isHorizontalSwipeRef.current === null && (diffX > 8 || diffY > 8)) {
+      isHorizontalSwipeRef.current = diffX > diffY;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartXRef.current === null || !isHorizontalSwipeRef.current) {
+      touchStartXRef.current = null;
+      touchStartYRef.current = null;
+      isHorizontalSwipeRef.current = null;
+      return;
+    }
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const deltaX = touchStartXRef.current - touchEndX;
+    const deltaTime = Math.max(1, Date.now() - touchStartTimeRef.current);
+    const velocityX = Math.abs(deltaX) / deltaTime;
+
+    const container = viewPagerRef.current;
+    const containerWidth = container ? container.clientWidth : window.innerWidth;
+    const threshold = Math.min(50, containerWidth * 0.12);
+    const isFastSwipe = velocityX > 0.25;
+
+    const startIndex = touchStartIndexRef.current;
+    let targetIndex = startIndex;
+
+    if (deltaX > threshold || (deltaX > 20 && isFastSwipe)) {
+      // Exactly one swipe forward (+1)
+      targetIndex = Math.min(startIndex + 1, RECOMMENDED_FONT_COMBOS.length - 1);
+    } else if (deltaX < -threshold || (deltaX < -20 && isFastSwipe)) {
+      // Exactly one swipe backward (-1)
+      targetIndex = Math.max(startIndex - 1, 0);
+    } else {
+      // Snap back to current page
+      targetIndex = startIndex;
+    }
+
+    scrollToIndex(targetIndex, true);
+
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    isHorizontalSwipeRef.current = null;
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    // Intercept horizontal trackpad flicks to strictly enforce 1 page per flick
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 30) {
+      const now = Date.now();
+      if (now - lastWheelTimeRef.current < 450) {
+        return;
+      }
+      lastWheelTimeRef.current = now;
+      if (e.deltaX > 0) {
+        handleNext();
+      } else {
+        handlePrev();
+      }
     }
   };
 
@@ -478,7 +570,11 @@ export const FontThemesView: React.FC<FontThemesViewProps> = ({
       <div
         ref={viewPagerRef}
         onScroll={handleViewPagerScroll}
-        className="flex-1 w-full flex flex-row overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onWheel={handleWheel}
+        className="flex-1 w-full flex flex-row overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       >
         {RECOMMENDED_FONT_COMBOS.map((combo, comboIdx) => {
           const isSelected = activeCombo.id === combo.id;
@@ -490,6 +586,7 @@ export const FontThemesView: React.FC<FontThemesViewProps> = ({
             ['--font-tutorial' as any]: combo.tutorialFont,
             ['--font-code' as any]: combo.codeFont,
             fontFamily: combo.bodyFont,
+            scrollSnapStop: 'always',
           };
 
           return (
@@ -500,7 +597,7 @@ export const FontThemesView: React.FC<FontThemesViewProps> = ({
               }}
               onScroll={() => handlePageVerticalScroll(comboIdx)}
               style={pageContainerStyle}
-              className="w-full min-w-full flex-shrink-0 snap-start h-full overflow-y-auto px-3 sm:px-6 py-4 pb-28"
+              className="w-full min-w-full flex-shrink-0 snap-start snap-always h-full overflow-y-auto px-3 sm:px-6 py-4 pb-28"
             >
               <div className="max-w-3xl mx-auto w-full space-y-4">
                 {/* 1. Combo Specification & Apply Banner Card */}
