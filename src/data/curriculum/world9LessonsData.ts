@@ -286,11 +286,66 @@ export const RETURNING_FROM_LAMBDAS_LESSON = runnableLesson({
   hints: ['The last expression should add the shipping amount.', 'The subtotal must increase by 4.', 'Use subtotal + 4.'],
 });
 
-export const LOCAL_RETURNS_LESSON = conceptualLesson('local-returns', 'Local returns', 'Return From the Intended Boundary', 'A labelled return such as return@forEach exits the lambda only; an ordinary non-local return can exit the surrounding inline call. This compiler-level boundary is taught conceptually here.', ['items.forEach { item ->', '    if (item < 0) return@forEach', '    println(item)', '}'], [
+const LOCAL_RETURNS_CONCEPT = conceptualLesson('local-returns', 'Local returns', 'Return From the Intended Boundary', 'A labelled return such as return@forEach exits the lambda only; an ordinary non-local return in an inline lambda exits the enclosing function. Both return boundaries are supported in the learning editor.', ['items.forEach { item ->', '    if (item < 0) return@forEach', '    println(item)', '}'], [
   { prompt: 'What does return@forEach target?', answer: 'Only the lambda passed to forEach, then the surrounding loop continues.', detail: 'The label makes the return local to that lambda invocation.' },
   { prompt: 'Why use a labelled return?', answer: 'To make the return boundary explicit when a lambda is nested in other code.', detail: 'It prevents confusing the lambda boundary with an outer function boundary.' },
-  { prompt: 'Why is this not graded in the in-app runner?', answer: 'Its precise behavior depends on Kotlin compiler control-flow rules, not a plain JavaScript callback.', detail: 'The lesson avoids a misleading JavaScript approximation.' },
+  { prompt: 'What does a bare return inside a forEach lambda exit?', answer: 'The enclosing function, because forEach allows non-local returns.', detail: 'Use return@forEach to skip only the current callback. A bare return exits the surrounding function instead.' },
 ]);
+
+const SUM_POSITIVE_DECLARATION = `fun sumPositive(values: List<Int>): Int {
+    var total = 0
+    values.forEach {
+        if (it < 0) return@forEach
+        total += it
+    }
+    return total
+}
+
+fun main() {
+    println(sumPositive(listOf(1, -1, 2, -2, 4)))
+}`;
+
+export const LOCAL_RETURNS_LESSON: FiveStageLesson = {
+  ...LOCAL_RETURNS_CONCEPT,
+  learn: { ...LOCAL_RETURNS_CONCEPT.learn, codeSnippet: SUM_POSITIVE_DECLARATION.split('\n'),
+    explanation: 'Each negative value returns from just that forEach invocation. Later values are still visited, so 1 + 2 + 4 produces 7. A bare return total would exit sumPositive at the first negative value instead.' },
+  writeRun: {
+    challengeNumber: 1, totalChallenges: 1, xpReward: 20,
+    title: 'Skip Negatives Without Stopping the Sum',
+    description: 'Complete sumPositive(values) using forEach.\n\n1. Start total at 0.\n\n2. For a negative item, use return@forEach to skip only that item.\n\n3. Add other items to total, then return total after the loop. The provided main must print 7.',
+    requirements: { name: 'sumPositive', params: 'values: List<Int>', returns: 'Int' },
+    fileName: 'LocalReturns.kt',
+    initialCode: `fun sumPositive(values: List<Int>): Int {
+    var total = 0
+    values.forEach {
+        // 1. Skip negative items with a labelled return.
+        // 2. Add the remaining items to total.
+    }
+    return total
+}
+
+fun main() {
+    println(sumPositive(listOf(1, -1, 2, -2, 4)))
+}`,
+    solutionCode: SUM_POSITIVE_DECLARATION, sampleInput: 'main()', expectedOutput: '7',
+    testCase: { call: '', expected: '7' },
+  },
+  debug: {
+    title: 'Fix the Return That Stops the Whole Sum',
+    subtitle: 'The sum stops at the first negative value and reports 1 instead of 7.',
+    challengeNumber: 1, totalChallenges: 1, difficulty: 'medium', bugType: 'logic', bugLabel: 'Wrong Return Boundary',
+    brokenCode: SUM_POSITIVE_DECLARATION.replace('return@forEach', 'return total'),
+    fixedCode: SUM_POSITIVE_DECLARATION, expectedOutput: '7',
+    hints: ['Decide whether a negative item should end one callback or the whole function.', 'A bare return inside inline forEach exits sumPositive.', 'Replace return total inside the if with return@forEach. Keep the final return total after the loop.'],
+    explanation: 'return total exits sumPositive when -1 is encountered. return@forEach skips that callback only, allowing 2 and 4 to be added later.',
+  },
+  mastered: { ...LOCAL_RETURNS_CONCEPT.mastered,
+    summary: 'You can choose between a local labelled return and a non-local return, and repair a return that exits the wrong boundary.',
+    verificationItems: [...LOCAL_RETURNS_CONCEPT.mastered.verificationItems,
+      { title: 'Code written & executed', subtitle: 'Skipped negative items while continuing the sum' },
+      { title: 'Bug diagnosed & repaired', subtitle: 'Replaced an unintended non-local return with return@forEach' }],
+  },
+};
 
 export const INLINE_FUNCTIONS_LESSON = conceptualLesson('inline-functions', 'Inline functions', 'Ask the Compiler to Inline a Higher-Order Function', 'inline asks the Kotlin compiler to substitute a function body at call sites, reducing some lambda allocation overhead and enabling specific control-flow rules.', ['inline fun use(value: Int, operation: (Int) -> Int): Int {', '    return operation(value)', '}'], [
   { prompt: 'Who performs inlining?', answer: 'The Kotlin compiler, before the program runs.', detail: 'inline is not a runtime loop or a visual formatting change.' },

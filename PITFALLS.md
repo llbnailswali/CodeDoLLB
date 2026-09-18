@@ -748,3 +748,49 @@ directly (`transpileOOPDeclarations` was temporarily exported for this,
 then reverted) to see exactly what JS a given piece of Kotlin produced.
 Reading the regex/string-building code was not enough to predict any of
 these three failures.
+
+## Function values: parse scopes before lowering to JavaScript
+
+The function/lambda pass now lives in `src/utils/kotlinFunctions.ts`. Do not
+restore the old single-line lambda regexes: they lose multiline bodies, nested
+function signatures, lexical receivers, and the destination of a return.
+
+Supported and regression-tested behavior includes:
+
+- Multiline/multiple-statement lambdas, closures, nested `it`, last-expression
+  results (including `if` and subject-based `when`), and trailing lambda calls.
+- Anonymous functions with expression or block bodies, local early returns,
+  inferred parameters in a typed context, and receiver functions.
+- Nested, nullable, named-parameter, receiver, and aliased function types;
+  function arguments/results; ordinary and `invoke` calls; generic higher-order
+  examples. A nullable function type differs from a nullable return type.
+- Top-level/local, bound/unbound member, constructor, and extension function
+  references. A bound receiver is evaluated once and retains that instance.
+- Implicit and explicit return labels; non-local returns through supported
+  standard inline callbacks and user-defined inline function parameters.
+  `noinline` and `crossinline` disallow non-local returns. Anonymous functions
+  establish their own ordinary-return boundary.
+- Basic function-signature checks before execution: known parameter/result
+  types, argument/parameter counts, function-reference compatibility, nullable
+  invocation, and invalid return targets. Diagnostics retain source line numbers.
+
+Non-local returns use per-invocation target objects. Only the matching lexical
+boundary catches its return; other boundaries rethrow it. User catch blocks must
+also rethrow these internal transfers, while finally blocks still run. Never
+replace a non-local return with a JavaScript callback's ordinary `return`.
+
+Verification:
+
+- `npm run test:lambda-runner` checks valid results and compiler-style rejections.
+- `npm run test:lambda-kotlin` independently compiles/runs the shared fixtures
+  with real Kotlin. Set `KOTLIN_COMPILER_CLASSPATH` to an installed Kotlin JVM
+  compiler and its dependency JARs; optionally set `KOTLIN_RUNTIME_CLASSPATH`.
+  This test does not install or download a compiler.
+- Existing Stage 4 and typing/program suites exercise the rest of the runner.
+
+This remains a browser teaching runner. The signature checks do not implement
+Kotlin's complete type system, overload resolution, reflection, suspend functions,
+or JVM inlining/performance. Do not grade those compiler/runtime guarantees as
+if they were simulated. Execute each new lesson's particular code before marking
+it supported in `CodeDo_Editor_capacity_per_lesson_status.xlsx`. The deleted
+`CODEDO_EDITOR_CAPACITY.md` must not be recreated as a second capacity tracker.

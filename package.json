@@ -10,6 +10,7 @@
     "clean": "rm -rf dist server.js",
     "audit:output-quotes": "node scripts/audit-output-quotes.mjs",
     "test:world11-content": "tsx scripts/test-world11-content.ts",
+    "test:lambda-kotlin": "tsx scripts/test-lambda-kotlin.ts",
     "test:lambda-runner": "tsx scripts/test-lambda-runner.ts",
     "update-progress": "node scripts/update-data-gathering-progress.mjs",
     "lint": "tsc --noEmit"

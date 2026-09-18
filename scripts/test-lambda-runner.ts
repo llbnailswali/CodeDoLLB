@@ -1,3 +1,5 @@
+import { LOCAL_RETURNS_LESSON } from '../src/data/curriculum/world9LessonsData';
+import { functionCases, invalidFunctionCases } from './lambda-runner-cases';
 import { compileAndRunKotlin } from '../src/utils/kotlinRunner';
 
 const cases: Array<{ name: string; code: string; expected: string }> = [
@@ -56,7 +58,7 @@ fun main() {
 async function main() {
   let failures = 0;
 
-  for (const test of cases) {
+  for (const test of [...cases, ...functionCases]) {
     const result = await compileAndRunKotlin(test.code);
     if (!result.success || result.output !== test.expected) {
       failures++;
@@ -68,8 +70,28 @@ async function main() {
     console.log(`✓ ${test.name}`);
   }
 
+  for (const test of invalidFunctionCases) {
+    const result = await compileAndRunKotlin(test.code);
+    if (result.success || result.error?.type !== 'compiler_error' || !result.error.message.includes(test.error)) {
+      failures++;
+      console.error(`${test.name}: expected compiler rejection containing ${test.error}, got ${JSON.stringify(result)}`);
+    } else console.log(`✓ rejects ${test.name}`);
+  }
+  const lesson = LOCAL_RETURNS_LESSON;
+  for (const [name, code, expected] of [
+    ['local-return writing solution', lesson.writeRun!.solutionCode, '7'],
+    ['local-return debug repair', lesson.debug!.fixedCode, '7'],
+    ['local-return broken program exposes early exit', lesson.debug!.brokenCode, '1'],
+    ['local-return starter does not pass', lesson.writeRun!.initialCode, '0'],
+  ]) {
+    const result = await compileAndRunKotlin(code);
+    if (!result.success || result.output !== expected) {
+      failures++;
+      console.error(`${name}: ${JSON.stringify(result)}`);
+    } else console.log(`✓ ${name}`);
+  }
   if (failures > 0) process.exit(1);
-  console.log(`Lambda runner audit passed: ${cases.length} cases.`);
+  console.log(`Lambda runner audit passed: ${cases.length + functionCases.length + invalidFunctionCases.length + 4} cases.`);
 }
 
 void main();

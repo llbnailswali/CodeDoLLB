@@ -1,3 +1,5 @@
+import { lowerKotlinFunctions, KotlinFunctionError } from './kotlinFunctions';
+
 /**
  * Kotlin In-Browser Compilation & Execution Engine
  * Evaluates Kotlin code safely, enforces val immutability, type constraints,
@@ -744,86 +746,6 @@ function cleanKotlinParams(params: string): string {
     .join(', ');
 }
 
-/**
- * Removes function-type annotations before the line-oriented function and
- * declaration transforms run. At runtime both Kotlin function types and JS
- * functions are simply callable values, so retaining `(Int) -> Int` would
- * only leave invalid JavaScript behind. This deliberately handles the
- * simple non-generic signatures used by the Phase 1 Lambda Lab exercises.
- */
-function stripFunctionTypeAnnotations(code: string): string {
-  return code.replace(
-    /\(\s*(?:[A-Za-z_][A-Za-z0-9_<>?]*(?:\s*,\s*[A-Za-z_][A-Za-z0-9_<>?]*)*)?\s*\)\s*->\s*[A-Za-z_][A-Za-z0-9_<>?]*/g,
-    'Function'
-  );
-}
-
-function cleanLambdaParams(params: string): string {
-  return splitTopLevelCommas(params)
-    .map((param) => param.trim().match(/^([A-Za-z_][A-Za-z0-9_]*)/)?.[1] || '')
-    .filter(Boolean)
-    .join(', ');
-}
-
-/**
- * Converts the intentionally small Phase 1 lambda subset into JavaScript:
- *
- *   { value: Int -> value * 2 }  -> (value) => (value * 2)
- *   { it * 2 }                   -> (it) => (it * 2)
- *   apply(4) { it * 2 }          -> apply(4, (it) => (it * 2))
- *   ::double                     -> double
- *
- * Lambdas are restricted to a single expression on one physical line.
- * Labelled/non-local returns and compiler-only inline semantics are
- * deliberately outside this runner's supported subset.
- */
-function transformTrailingLambdas(line: string): string {
-  // Kotlin's trailing-lambda call syntax must be normalized before the
-  // generic lambda replacements below. This runs before the OOP declaration
-  // pass, while the source still contains Kotlin (rather than generated JS
-  // class methods such as `area() { return ... }`).
-  line = line.replace(
-    /\b([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+)\s*\{\s*([A-Za-z_][A-Za-z0-9_]*(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?]*)?(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?]*)?)*)\s*->\s*([^{}\n]+?)\s*\}/g,
-    (_whole, name, params, body) => `${name}((${cleanLambdaParams(params)}) => (${body.trim()}))`
-  );
-  line = line.replace(
-    /\b([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+)\s*\{\s*([^{}\n]+?)\s*\}/g,
-    (_whole, name, body) => `${name}((it) => (${body.trim()}))`
-  );
-  line = line.replace(
-    /\b([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*\(([^(){}\n]*)\)\s*\{\s*([A-Za-z_][A-Za-z0-9_]*(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?]*)?(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?]*)?)*)\s*->\s*([^{}\n]+?)\s*\}/g,
-    (_whole, name, args, params, body) => `${name}(${args.trim()}${args.trim() ? ', ' : ''}(${cleanLambdaParams(params)}) => (${body.trim()}))`
-  );
-  line = line.replace(
-    /\b([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*\(([^(){}\n]*)\)\s*\{\s*([^{}\n]+?)\s*\}/g,
-    (_whole, name, args, body) => `${name}(${args.trim()}${args.trim() ? ', ' : ''}(it) => (${body.trim()}))`
-  );
-
-  return line;
-}
-
-function transformLambdaExpressions(line: string): string {
-
-  // Explicit-parameter lambda literals may appear in an assignment or as a
-  // regular call argument. The arrow token makes this safe to distinguish
-  // from ordinary Kotlin blocks.
-  line = line.replace(
-    /\{\s*([A-Za-z_][A-Za-z0-9_]*(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?]*)?(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?]*)?)*)\s*->\s*([^{}\n]+?)\s*\}/g,
-    (_whole, params, body) => `(${cleanLambdaParams(params)}) => (${body.trim()})`
-  );
-
-  // Kotlin supplies `it` for a one-parameter lambda with no explicit
-  // parameter list. Only recognize a lambda where an expression is expected
-  // (`=`, `(`, or `,`) so an ordinary block is never reinterpreted.
-  line = line.replace(
-    /([=(,]\s*)\{\s*([^{}\n]+?)\s*\}/g,
-    (_whole, prefix, body) => `${prefix}(it) => (${body.trim()})`
-  );
-
-  // A plain function reference is the same callable value in JavaScript.
-  return line.replace(/::([A-Za-z_][A-Za-z0-9_]*)\b/g, '$1');
-}
-
 /** Finds variables initialized with mapOf/mutableMapOf so only their square
  * bracket access is translated into JavaScript Map.get/Map.set calls. */
 function inferMapVars(code: string): Set<string> {
@@ -1301,8 +1223,7 @@ function transpileOOPDeclarations(code: string): string {
  */
 function transpileKotlinToJS(kotlinCode: string): string {
   kotlinCode = stripCollectionGenerics(kotlinCode);
-  kotlinCode = stripFunctionTypeAnnotations(kotlinCode);
-  kotlinCode = kotlinCode.split('\n').map(transformTrailingLambdas).join('\n');
+  kotlinCode = lowerKotlinFunctions(kotlinCode);
   kotlinCode = transpileMapDeclarations(kotlinCode);
   kotlinCode = transpileOOPDeclarations(kotlinCode);
   kotlinCode = transpileWhenBlocks(kotlinCode);
@@ -1359,12 +1280,6 @@ function transpileKotlinToJS(kotlinCode: string): string {
     line = transformElvisOperator(line);
     line = transformNonNullAssertion(line);
 
-    // Function values: lambda literals, trailing lambdas, and `::function`
-    // references. This comes before val/var and function rewriting so the
-    // resulting JavaScript arrows and callable values flow through the
-    // existing pipeline unchanged.
-    line = transformLambdaExpressions(line);
-
     // Replace Kotlin val -> const, var -> let
     // Handle: val name: Type = expr -> const name = expr
     // The type char class includes `?` so a nullable declared type
@@ -1382,13 +1297,6 @@ function transpileKotlinToJS(kotlinCode: string): string {
     // fun foo(a: Int, b: String): String { -> function foo(a, b) {
     line = line.replace(/\bfun\s+([a-zA-Z0-9_]+)\s*\((.*?)\)(?:\s*:\s*[a-zA-Z0-9_<>?]+)?\s*\{/g, (_, name, params) => {
       return `function ${name}(${cleanKotlinParams(params)}) {`;
-    });
-
-    // Anonymous Kotlin functions are callable values too. Unlike lambdas,
-    // their ordinary `return` is local to the function, which maps directly
-    // to a JS function expression.
-    line = line.replace(/\bfun\s*\((.*?)\)(?:\s*:\s*[a-zA-Z0-9_<>?]+)?\s*\{/g, (_, params) => {
-      return `function (${cleanKotlinParams(params)}) {`;
     });
 
     // Handle single-expression functions: fun sum(a: Int, b: Int) = a + b
@@ -1487,7 +1395,7 @@ export async function compileAndRunKotlin(
       logs: [],
       error: {
         message: `Compilation error: ${err?.message || 'Failed to parse Kotlin code'}`,
-        line: 1,
+        line: err instanceof KotlinFunctionError ? err.line : 1,
         type: 'compiler_error',
       },
       executionTimeMs: elapsed,
@@ -1680,6 +1588,14 @@ export async function compileAndRunKotlin(
       const __kt_check_loop = () => {
         if (++__kt_loop_iter > 250000 || Date.now() - __kt_loop_start > ${timeoutMs}) {
           throw new Error('Execution timed out (possible infinite loop)');
+        }
+      };
+
+      const __kt_run = (action) => action();
+      const __kt_repeat = (times, action) => {
+        for (let index = 0; index < times; index++) {
+          __kt_check_loop();
+          action(index);
         }
       };
 
