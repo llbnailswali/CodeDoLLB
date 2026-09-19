@@ -1225,7 +1225,7 @@ export const SUM_AVERAGE_ANY_ALL_NONE_LESSON = createCollectionLesson({
         'println(scores.average())',
       ],
       whatItMeans: [{ label: 'Aggregates', description: '10 + 20 + 30 = 60; 60 / 3 = 20.0.' }],
-      whatChanged: 'Printed 60 followed by 20.',
+      whatChanged: 'Printed 60 followed by 20.0.',
     },
     {
       title: 'Testing Predicates with any, all, none',
@@ -1642,3 +1642,203 @@ export const WORLD_10_LESSONS: FiveStageLesson[] = [
   FIRST_FIND_PIPELINES_LESSON,
   WORLD_10_BOSS_LESSON,
 ];
+
+export type World10Outcome = { output: string; error?: 'compiler_error' | 'runtime_error' };
+export const WORLD_10_ADDED_EXAMPLE_OUTCOMES: Record<string, World10Outcome> = {};
+export const WORLD_10_ADDED_PREDICTION_OUTCOMES: Record<string, World10Outcome> = {};
+
+function addCoverage(
+  lesson: FiveStageLesson,
+  title: string,
+  explanation: string,
+  exampleCode: string,
+  exampleOutcome: World10Outcome | undefined,
+  predictionCode: string,
+  predictionOutcome: World10Outcome,
+  distractors: string[],
+) {
+  const key = lesson.id.replace('world-10-', '');
+  if (exampleOutcome) {
+    const cards = lesson.explore!.cards;
+    const id = `${key}-explore-${cards.length + 1}`;
+    cards.push({
+      id,
+      number: String(cards.length + 1).padStart(2, '0'),
+      title,
+      language: 'Kotlin',
+      subtitle: explanation,
+      code: exampleCode.split('\n'),
+      whatItMeans: [{ label: title, description: explanation }],
+      whatChanged: exampleOutcome.error ? 'This operation stops with the stated runtime error.' : `Expected output:\n${exampleOutcome.output}`,
+    });
+    WORLD_10_ADDED_EXAMPLE_OUTCOMES[id] = exampleOutcome;
+  }
+  const questions = lesson.predict!.questions;
+  const id = `${key}-predict-${questions.length + 1}`;
+  const answer = predictionOutcome.error ? 'Runtime error' : predictionOutcome.output;
+  questions.push({
+    id,
+    questionNumber: questions.length + 1,
+    totalQuestions: 0,
+    title,
+    topicMeta: lesson.topicTitle,
+    language: 'Kotlin',
+    code: predictionCode.split('\n'),
+    prompt: predictionOutcome.error ? 'What happens when this code runs?' : 'What will this code print?',
+    options: [answer, ...distractors].map((label, index) => ({
+      id: ['A', 'B', 'C', 'D'][index] as 'A' | 'B' | 'C' | 'D',
+      label,
+      isCorrect: index === 0,
+    })),
+    explanation: { codeRef: title, detail: explanation },
+  });
+  WORLD_10_ADDED_PREDICTION_OUTCOMES[id] = predictionOutcome;
+  lesson.learn.keyIdeas.push({ number: lesson.learn.keyIdeas.length + 1, title, description: explanation });
+}
+
+addCoverage(MAP_MAPNOTNULL_FILTER_LESSON,
+  'Empty input stays empty',
+  'filter, map, and mapNotNull preserve order and produce an empty result when no element survives; they never invent a placeholder value.',
+  'val values = emptyList<Int>()\nprintln(values.filter { it > 0 }.map { it * 2 })', { output: '[]' },
+  'val values = listOf(-2, -1)\nprintln(values.mapNotNull { if (it > 0) it * 10 else null })', { output: '[]' },
+  ['[null, null]', '[0, 0]', 'Runtime error']);
+
+addCoverage(FILTERNOT_FILTERISINSTANCE_FLATMAP_LESSON,
+  'Type filtering works for declared classes',
+  'filterIsInstance can retain instances of a declared class while discarding values of unrelated types. Numeric subtype and generic reified filters remain outside the editor scope.',
+  'class Item(val code: Int)\nval mixed = listOf(Item(4), "skip", Item(7))\nprintln(mixed.filterIsInstance<Item>().map { it.code })', { output: '[4, 7]' },
+  'class Note(val text: String)\nval mixed = listOf("plain", Note("A"), 9, Note("B"))\nprintln(mixed.filterIsInstance<Note>().map { it.text })', { output: '[A, B]' },
+  ['[plain, 9]', '[Note, Note]', '[]']);
+addCoverage(FILTERNOT_FILTERISINSTANCE_FLATMAP_LESSON,
+  'flatMap may produce no values for one input',
+  'Each flatMap callback returns a collection. An empty returned collection contributes nothing, while later inputs still contribute their values.',
+  'val values = listOf(1, 2, 3)\nprintln(values.flatMap { if (it == 2) emptyList<Int>() else listOf(it, it * 10) })', { output: '[1, 10, 3, 30]' },
+  'val words = listOf("go", "", "up")\nprintln(words.flatMap { if (it == "") emptyList<String>() else listOf(it, it.uppercase()) })', { output: '[go, GO, up, UP]' },
+  ['[go, GO, , up, UP]', '[[go, GO], [], [up, UP]]', '[GO, UP]']);
+
+addCoverage(FLATTEN_REDUCE_FOLD_LESSON,
+  'fold can change the accumulator type',
+  'The explicit seed defines the accumulator type, so a list of numbers can fold into a String report as well as another number.',
+  'val values = listOf(2, 4, 6)\nprintln(values.fold("items") { text, value -> text + ":" + value })', { output: 'items:2:4:6' },
+  'val values = listOf(3, 5)\nprintln(values.fold("start") { text, value -> text + "-" + value })', { output: 'start-3-5' },
+  ['8', '[3, 5]', 'start']);
+addCoverage(FLATTEN_REDUCE_FOLD_LESSON,
+  'reduce requires at least one element',
+  'reduce has no explicit seed and therefore cannot start on an empty collection; Kotlin throws instead of returning zero or null.',
+  '', undefined,
+  'val values = emptyList<Int>()\nprintln(values.reduce { acc, value -> acc + value })', { output: '', error: 'runtime_error' },
+  ['0', 'null', '[]']);
+
+addCoverage(GROUPBY_ASSOCIATE_PARTITION_LESSON,
+  'partition evaluates its predicate once per item',
+  'partition creates both output lists in one pass. Side effects in predicates are usually best avoided, but a counter makes the single evaluation observable.',
+  'var calls = 0\nval split = listOf(1, 2, 3).partition { calls++; it > 1 }\nprintln(split.first)\nprintln(split.second)\nprintln(calls)', { output: '[2, 3]\n[1]\n3' },
+  'var checks = 0\nval split = listOf(2, 5, 8, 9).partition { checks++; it % 2 == 0 }\nprintln(split.first)\nprintln(checks)', { output: '[2, 8]\n4' },
+  ['[2, 8]\n2', '[5, 9]\n4', '[2, 8]\n8']);
+addCoverage(GROUPBY_ASSOCIATE_PARTITION_LESSON,
+  'A missing grouped key returns null',
+  'groupBy creates entries only for produced keys. Looking up a category with no members returns null, just like another missing map key.',
+  'val groups = listOf("ant", "bee").groupBy { it.length }\nprintln(groups[4])', { output: 'null' },
+  'val groups = listOf(1, 3, 5).groupBy { it % 2 }\nprintln(groups[0])', { output: 'null' },
+  ['[]', '[1, 3, 5]', '0']);
+
+addCoverage(ZIP_CHUNKED_WINDOWED_LESSON,
+  'Partial windows and a transform',
+  'partialWindows = true keeps the final short window, step controls the next start, and the trailing lambda transforms each window.',
+  'val values = listOf(1, 2, 3, 4, 5)\nprintln(values.windowed(3, step = 2, partialWindows = true) { it.sum() })', { output: '[6, 12, 5]' },
+  'val values = listOf(2, 4, 6, 8)\nprintln(values.windowed(3, step = 2, partialWindows = true) { it.sum() })', { output: '[12, 14]' },
+  ['[12]', '[12, 18]', '[[2, 4, 6], [6, 8]]']);
+addCoverage(ZIP_CHUNKED_WINDOWED_LESSON,
+  'Batch and window sizes must be positive',
+  'A zero size cannot advance through the input, so Kotlin rejects it at runtime instead of looping or returning empty batches.',
+  '', undefined,
+  'println(listOf(1, 2).chunked(0))', { output: '', error: 'runtime_error' },
+  ['[]', '[[1, 2]]', '[[1], [2]]']);
+
+addCoverage(DISTINCT_SORTED_LESSON,
+  'Nested lists use structural equality',
+  'distinct compares list contents, so two different inner lists containing the same values count as duplicates; the first occurrence is kept.',
+  'val rows = listOf(listOf(1), listOf(1), listOf(2))\nprintln(rows.distinct())', { output: '[[1], [2]]' },
+  'val rows = listOf(listOf(2, 3), listOf(2, 3), listOf(3, 2))\nprintln(rows.distinct())', { output: '[[2, 3], [3, 2]]' },
+  ['[[2, 3]]', '[[2, 3], [2, 3], [3, 2]]', '[[3, 2], [2, 3]]']);
+
+addCoverage(SORTEDBY_MIN_MAX_LESSON,
+  'sortedBy is stable for equal keys',
+  'When selector keys are equal, sortedBy preserves the original relative order, which matters when records share a derived key.',
+  'val words = listOf("bb", "aa", "c", "dd")\nprintln(words.sortedBy { it.length })', { output: '[c, bb, aa, dd]' },
+  'val words = listOf("sun", "cat", "a", "dog")\nprintln(words.sortedBy { it.length })', { output: '[a, sun, cat, dog]' },
+  ['[a, cat, dog, sun]', '[a, dog, cat, sun]', '[sun, cat, dog, a]']);
+addCoverage(SORTEDBY_MIN_MAX_LESSON,
+  'Throwing extrema need non-empty input',
+  'min() and max() require an element, while minOrNull() and maxOrNull() express the empty case as null.',
+  '', undefined,
+  'val values = emptyList<Int>()\nprintln(values.max())', { output: '', error: 'runtime_error' },
+  ['null', '0', '[]']);
+
+addCoverage(SUM_AVERAGE_ANY_ALL_NONE_LESSON,
+  'average returns a Double and empty average is NaN',
+  'average uses floating-point division even for Int elements. With no elements there is no divisor, so the result is NaN.',
+  'println(listOf(1, 2).average())\nprintln(emptyList<Int>().average())', { output: '1.5\nNaN' },
+  'println(listOf(2, 3, 5).average())\nprintln(emptyList<Int>().sum())', { output: '3.3333333333333335\n0' },
+  ['3\n0', '10\n0', '3.0\nNaN']);
+addCoverage(SUM_AVERAGE_ANY_ALL_NONE_LESSON,
+  'none with a predicate means zero matches',
+  'none { condition } is true only when every element fails the condition; it is the zero-match counterpart to any.',
+  'val values = listOf(2, 4, 6)\nprintln(values.none { it < 0 })\nprintln(values.none { it > 5 })', { output: 'true\nfalse' },
+  'val values = listOf("red", "blue")\nprintln(values.none { it.length < 3 })\nprintln(values.none { it.length == 3 })', { output: 'true\nfalse' },
+  ['false\ntrue', 'true\ntrue', 'false\nfalse']);
+
+addCoverage(FIRST_FIND_PIPELINES_LESSON,
+  'firstOrNull handles an empty source',
+  'firstOrNull returns null when the source is empty or no predicate match exists, so Elvis can supply an explicit application fallback.',
+  'val values = emptyList<Int>()\nprintln(values.firstOrNull() ?: -1)', { output: '-1' },
+  'val names = listOf("cat", "dog")\nprintln(names.firstOrNull { it.length > 5 } ?: "missing")', { output: 'missing' },
+  ['null', 'cat', 'Runtime error']);
+
+addCoverage(WORLD_10_BOSS_LESSON,
+  'Group and aggregate a report',
+  'A realistic pipeline can filter records, group them by a derived key, and aggregate each group. This adds reporting structure beyond a single filter-map-sum chain.',
+  'val sales = listOf(12, 25, 18, 31)\nval grouped = sales.filter { it >= 15 }.groupBy { if (it < 25) "standard" else "premium" }\nprintln(grouped["standard"]?.sum() ?: 0)\nprintln(grouped["premium"]?.sum() ?: 0)', { output: '18\n56' },
+  'val values = listOf(5, 14, 22, 7)\nval groups = values.filter { it >= 10 }.groupBy { if (it < 20) "small" else "large" }\nprintln(groups["small"]?.sum() ?: 0)\nprintln(groups["large"]?.sum() ?: 0)', { output: '14\n22' },
+  ['14\n0', '19\n22', '[14]\n[22]']);
+addCoverage(WORLD_10_BOSS_LESSON,
+  'Choose an empty-result policy',
+  'Terminal operations have different empty behavior. sum returns zero, while a lookup may need firstOrNull plus an explicit fallback.',
+  'val selected = listOf(1, 2).filter { it > 10 }\nprintln(selected.sum())\nprintln(selected.firstOrNull() ?: -1)', { output: '0\n-1' },
+  'val selected = listOf(3, 4).filter { it < 0 }.map { it * 10 }\nprintln(selected.sum())\nprintln(selected.firstOrNull() ?: 99)', { output: '0\n99' },
+  ['null\nnull', '0\nnull', 'Runtime error']);
+
+for (const [lessonIndex, lesson] of WORLD_10_LESSONS.entries()) {
+  const questions = lesson.predict!.questions;
+  questions.forEach((question, index) => {
+    question.questionNumber = index + 1;
+    question.totalQuestions = questions.length;
+    const shift = (lessonIndex + index) % question.options.length;
+    const options = question.options.slice(shift).concat(question.options.slice(0, shift));
+    question.options = options.map((option, optionIndex) => ({
+      ...option,
+      id: ['A', 'B', 'C', 'D'][optionIndex] as 'A' | 'B' | 'C' | 'D',
+    }));
+  });
+  lesson.mastered.passedCount = `${questions.length} / ${questions.length} PASSED`;
+  const explored = lesson.mastered.verificationItems.find(item => item.title === 'Examples explored');
+  if (explored) explored.subtitle = `${lesson.explore!.cards.length} distinct collection scenarios traced`;
+  const predicted = lesson.mastered.verificationItems.find(item => item.title === 'Predictions completed');
+  if (predicted) predicted.subtitle = `${questions.length}/${questions.length} prediction questions answered`;
+}
+
+// The original temperature Debug only diagnosed arithmetic, not a collection
+// misconception. This independent scenario repairs a filter/map ordering fault.
+Object.assign(MAP_MAPNOTNULL_FILTER_LESSON.debug!, {
+  title: 'Filter After Normalizing Sensor Values',
+  subtitle: 'The alert threshold must be checked after calibration, but the broken pipeline filters raw values first.',
+  brokenCode: 'fun main() {\n    val readings = listOf(8, 12, 15)\n    val alerts = readings.filter { it >= 10 }.map { it - 5 }\n    println(alerts)\n}',
+  fixedCode: 'fun main() {\n    val readings = listOf(8, 12, 15)\n    val alerts = readings.map { it - 5 }.filter { it >= 10 }\n    println(alerts)\n}',
+  expectedOutput: '[10]',
+  hints: [
+    'The threshold applies to calibrated values, not raw readings.',
+    'The current filter runs before subtracting the calibration offset.',
+    'Map with it - 5 first, then filter values >= 10.',
+  ],
+  explanation: 'Filtering first keeps raw 12 and 15, which become 7 and 10. Calibrating first and applying the threshold afterwards keeps only 10.',
+});

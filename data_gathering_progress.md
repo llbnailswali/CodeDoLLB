@@ -20,6 +20,18 @@ files; see each review for status and remaining work.
 World 7: **Audit in progress** — all 11 lessons reviewed, engine/content fixes
 and execution evidence in [WORLD_7_CONTENT_REVIEW.md](WORLD_7_CONTENT_REVIEW.md).
 Browser QA and hardcode-resistance checks remain open; this is not Verified.
+World 9: **Audit in progress** — all 12 lessons re-audited; coverage, practice
+and engine repairs are in [WORLD_9_CONTENT_REVIEW.md](WORLD_9_CONTENT_REVIEW.md).
+Browser QA and assessment hardening remain open.
+World 10: **Audit in progress** — all runnable lesson activities have exact
+execution evidence and the collection runner was repaired; browser QA,
+hardcode-resistance assessment, and optional real-Kotlin comparison remain
+open. See [WORLD_10_CONTENT_REVIEW.md](WORLD_10_CONTENT_REVIEW.md).
+World 11: **Changes required** — 14 lessons are authored, while the runner now
+has exact evidence for inheritance, interfaces, data classes/enums, object
+declarations, and the Boss. Companion objects, nested/inner classes, extension
+properties, delegation, delegated properties, and visibility diagnostics remain
+engine work. See [WORLD_11_CONTENT_REVIEW.md](WORLD_11_CONTENT_REVIEW.md).
 Later worlds are not certified under this standard by this audit. Earlier reviews
 remain useful evidence but do not automatically establish acceptance.
 
@@ -103,26 +115,23 @@ The "topic → real world" mapping above is a first-pass guess based on topic ov
 
 ## 4. Next action
 
-Author World 11 (OOP Evolution) as real five-stage content. The pre-authoring
-runner audit is complete:
+The next un-authored curriculum world is **World 12 — Generic Realm** (`0 / 15`).
+Before authoring it, finish the World 11 OOP capabilities that World 12 relies
+on, beginning with companion objects, then nested/inner classes. Each runner
+feature must have direct regression cases and exact checks against the actual
+World 11 Learn, Explore, and Predict activity arrays.
 
-- Safe for runnable Write & Run/Debug content: single-class inheritance,
-  simple single-interface implementation where the class supplies every
-  method, existing data classes, simple enum classes, and plain `object`
-  declarations. All three representative runnable programs executed through
-  `compileAndRunKotlin` on 2026-09-18.
-- Learn/Explore/Predict only until engine support exists: abstract classes,
-  multiple interface implementation, sealed classes/interfaces, nested/inner
-  classes, companion objects, extension functions/properties, delegation,
-  delegated properties, and visibility/API enforcement. Representative code
-  for multiple interfaces, sealed classes, companion objects, extension
-  functions, and delegated properties was also executed and correctly failed
-  rather than being treated as working support.
-- Keep the required Write & Run authoring standard in `CODEDO_MASTER_PLAN.md`:
-  numbered, blank-line-separated task steps; matching numbered starter-code
-  comments; and solution/output/debug content that performs the exact stated
-  task. Follow World 1-10's five-stage data format and execute every runnable
-  snippet before marking a lesson complete.
+In parallel, close the non-engine acceptance work already identified:
+
+- World 10: browser visual QA, hardcode-resistance assessment, and optional
+  real-Kotlin comparison.
+- World 11: per-activity capability classification, remaining OOP engine work,
+  browser QA, and hardcode-resistance review for existing Write/Debug tasks.
+
+Use [LESSON_QUALITY_STANDARD.md](LESSON_QUALITY_STANDARD.md), not the master
+plan, for activity selection, counts, stage acceptance, and audit status. Do
+not declare a world quality-verified solely because its authored inventory is
+complete.
 
 ---
 
@@ -695,6 +704,48 @@ Reused (from legacy bank):
 Gaps found:
 - ...
 ```
+
+## 2026-09-19 — World 12 data gathering started
+
+Completed:
+- Created [WORLD_12_CONTENT_REVIEW.md](WORLD_12_CONTENT_REVIEW.md) with the
+  15 catalog lessons, authoritative capacity decisions, legacy-bank inventory,
+  and pre-authoring findings.
+- Added generic-class erasure for declarations and explicit constructor calls.
+  `npm run test:world12-runner` verifies six exact runtime cases: generic
+  classes/functions, multiple parameters, aliases, APIs, and the Boss shape.
+
+Reused (from legacy bank):
+- Identified 31 generic-programming questions in `world7_generics.ts` as
+  source material only. They require lesson-by-lesson remapping and runner or
+  real-Kotlin verification before they count as World 12 activities.
+
+Gaps found:
+- The representative `inline reified` / `is T` probe also fails; do not author
+  reified runnable activities until a narrow supported subset exists.
+- Constraints, variance, projections, and star projections require
+  compiler-reference evidence rather than simulator execution claims.
+
+## 2026-09-19 — Quality tracking and World 11 runner repairs
+
+Completed:
+- Replaced the stale World 11 pre-authoring queue with the active World 11
+  capability work and World 12 authoring priority.
+- Recorded World 10 and World 11 quality states separately from their complete
+  authored-inventory rows.
+- Updated `CODEDO_MASTER_PLAN.md` so `LESSON_QUALITY_STANDARD.md` exclusively
+  governs activity counts, stage selection, evidence, and acceptance.
+
+Added:
+- World 11 runner support and exact audit checks for data-class `copy()` and
+  value equality, abstract inheritance, multiple interfaces, interface default
+  methods, and qualified interface `super` calls.
+
+Gaps found:
+- World 11 still needs companion objects, nested/inner classes, extension
+  properties, delegation, delegated properties, and visibility diagnostics.
+- World 10 still needs browser QA, hardcode-resistance assessment, and optional
+  real-Kotlin comparison before it can be Verified.
 
 ## 2026-09-19 — World 10 editor capacity
 

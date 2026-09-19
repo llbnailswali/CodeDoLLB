@@ -11,11 +11,31 @@ const seen = new Set<string>();
 let checks = 0, predictions = 0, examples = 0;
 const diagnostics: string[] = [];
 
-const runnableIds = new Set([
+const exactExecutionIds = new Set([
+  'world-11-inheritance-abstract-classes',
+  'world-11-interfaces-multiple-interface-implementation',
   'world-11-data-classes-domain-modeling-enum-classes',
   'world-11-object-declarations',
   'world-11-boss',
 ]);
+const practiceIds = new Set([
+  'world-11-data-classes-domain-modeling-enum-classes',
+  'world-11-object-declarations',
+  'world-11-boss',
+]);
+let exactExecutions = 0;
+
+async function verifyExact(name: string, code: string, expected: string, compilerError = false) {
+  const result = await compileAndRunKotlin(code);
+  if (compilerError) {
+    assert.equal(result.success, false, `${name}: expected compiler rejection`);
+    assert.equal(result.error?.type, 'compiler_error', `${name}: expected compiler diagnostic`);
+  } else {
+    assert.equal(result.success, true, `${name}: ${result.error?.message}`);
+    assert.equal(result.output, expected, `${name}: output mismatch`);
+  }
+  exactExecutions++;
+}
 
 for (const entry of world.lessons) {
   const lesson = AVAILABLE_FIVE_STAGE_LESSONS[entry.fiveStageLessonKey!];
@@ -42,8 +62,22 @@ for (const entry of world.lessons) {
     assert.ok(question.explanation.detail.length > 20, `${question.id}: explanation too brief`);
   }
 
-  assert.equal(Boolean(lesson.writeRun), runnableIds.has(lesson.id), `${lesson.id}: unexpected writeRun stage`);
-  assert.equal(Boolean(lesson.debug), runnableIds.has(lesson.id), `${lesson.id}: unexpected debug stage`);
+  if (exactExecutionIds.has(lesson.id)) {
+    const learnOutput = cards[0].whatItMeans.find(item => item.label === 'Output')!.description;
+    await verifyExact(`${lesson.id}/learn`, lesson.learn.codeSnippet.join('\n'), learnOutput);
+    for (const card of cards) {
+      const output = card.whatItMeans.find(item => item.label === 'Output')!.description;
+      await verifyExact(card.id, card.code.join('\n'), output);
+    }
+    for (const question of questions) {
+      const correct = question.options.find(option => option.isCorrect)!;
+      const compilerError = question.prompt.includes('compile');
+      await verifyExact(question.id, question.code!.join('\n'), correct.label, compilerError);
+    }
+  }
+
+  assert.equal(Boolean(lesson.writeRun), practiceIds.has(lesson.id), `${lesson.id}: unexpected writeRun stage`);
+  assert.equal(Boolean(lesson.debug), practiceIds.has(lesson.id), `${lesson.id}: unexpected debug stage`);
 
   const write = lesson.writeRun;
   const debug = lesson.debug;
@@ -74,6 +108,6 @@ for (const entry of world.lessons) {
   console.log(`${lesson.id}: ${cards.length} Explore, ${questions.length} Predict; writing ${!!write}, debugging ${!!debug}`);
 }
 
-console.log(`Evidence: ${seen.size} catalog lessons, ${examples} examples, ${predictions} predictions, ${checks} execution checks passed.`);
+console.log(`Evidence: ${seen.size} catalog lessons, ${examples} examples, ${predictions} predictions, ${checks} writing/debug executions, ${exactExecutions} exact Learn/Explore/Predict checks passed.`);
 for (const diagnostic of diagnostics) console.log(`OPEN DIAGNOSTIC DEFECT: ${diagnostic}`);
 console.log('This checks existing activities, capability gating, and verified editor execution. Quality status: see WORLD_11_CONTENT_REVIEW.md.');

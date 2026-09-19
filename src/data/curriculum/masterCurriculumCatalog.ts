@@ -1092,7 +1092,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Create compact function values with { parameters -> result } and invoke them later.",
-        "questionsCount": 5,
+        "questionsCount": 7,
         "fiveStageLessonKey": "world-9-lambda-expressions"
       },
       {
@@ -1103,7 +1103,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use unnamed fun expressions as callable values, including explicit local returns.",
-        "questionsCount": 4,
+        "questionsCount": 6,
         "fiveStageLessonKey": "world-9-anonymous-functions"
       },
       {
@@ -1114,7 +1114,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Read and declare callable contracts such as (Int) -> Int.",
-        "questionsCount": 3,
+        "questionsCount": 6,
         "fiveStageLessonKey": "world-9-function-types"
       },
       {
@@ -1125,7 +1125,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Pass functions into reusable functions and call those operations with real values.",
-        "questionsCount": 3,
+        "questionsCount": 5,
         "fiveStageLessonKey": "world-9-higher-order-functions"
       },
       {
@@ -1136,7 +1136,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use Kotlin's implicit it parameter for clear single-parameter lambdas.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-9-it"
       },
       {
@@ -1147,7 +1147,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Pass a named function as a value with the :: function-reference syntax.",
-        "questionsCount": 3,
+        "questionsCount": 5,
         "fiveStageLessonKey": "world-9-function-references"
       },
       {
@@ -1158,7 +1158,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use a lambda's final expression as its returned result.",
-        "questionsCount": 3,
+        "questionsCount": 5,
         "fiveStageLessonKey": "world-9-returning-from-lambdas"
       },
       {
@@ -1169,7 +1169,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Understand labelled lambda returns and their compiler-enforced boundaries.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-9-local-returns"
       },
       {
@@ -1180,7 +1180,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Understand how the Kotlin compiler can inline higher-order function bodies.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-9-inline-functions"
       },
       {
@@ -1191,7 +1191,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Keep a selected lambda as a function value inside an inline function.",
-        "questionsCount": 3,
+        "questionsCount": 5,
         "fiveStageLessonKey": "world-9-noinline"
       },
       {
@@ -1202,7 +1202,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Prevent unsafe non-local returns from a lambda used in another execution boundary.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-9-crossinline"
       },
       {
@@ -1213,7 +1213,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 10,
         "xpReward": 50,
         "description": "Build reusable operations using higher-order functions and function types.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "isBoss": true,
         "fiveStageLessonKey": "world-9-boss"
       }
@@ -1237,7 +1237,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "functional-collection-operations",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Transform, discard null results, and select values with collection lambdas.", "questionsCount": 4, "fiveStageLessonKey": "world-10-map-mapnotnull-filter"
+        "description": "Transform, discard null results, and select values with collection lambdas.", "questionsCount": 5, "fiveStageLessonKey": "world-10-map-mapnotnull-filter"
       },
       {
         "id": "world-10-filternot-filterisinstance-flatmap",
@@ -1246,7 +1246,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "functional-collection-operations",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Exclude values, select types conceptually, and flatten transformed collections.", "questionsCount": 3, "fiveStageLessonKey": "world-10-filternot-filterisinstance-flatmap"
+        "description": "Exclude values, select types conceptually, and flatten transformed collections.", "questionsCount": 5, "fiveStageLessonKey": "world-10-filternot-filterisinstance-flatmap"
       },
       {
         "id": "world-10-flatten-reduce-fold",
@@ -1255,7 +1255,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "functional-collection-operations",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Flatten nested lists and accumulate values with reduce or fold.", "questionsCount": 3, "fiveStageLessonKey": "world-10-flatten-reduce-fold"
+        "description": "Flatten nested lists and accumulate values with reduce or fold.", "questionsCount": 5, "fiveStageLessonKey": "world-10-flatten-reduce-fold"
       },
       {
         "id": "world-10-groupby-associate-partition",
@@ -1264,7 +1264,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "functional-collection-operations",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Group, associate, and divide collection values into useful result structures.", "questionsCount": 3, "fiveStageLessonKey": "world-10-groupby-associate-partition"
+        "description": "Group, associate, and divide collection values into useful result structures.", "questionsCount": 5, "fiveStageLessonKey": "world-10-groupby-associate-partition"
       },
       {
         "id": "world-10-zip-chunked-windowed",
@@ -1273,7 +1273,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "functional-collection-operations",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Pair, batch, and slide across collection values.", "questionsCount": 4, "fiveStageLessonKey": "world-10-zip-chunked-windowed"
+        "description": "Pair, batch, and slide across collection values.", "questionsCount": 6, "fiveStageLessonKey": "world-10-zip-chunked-windowed"
       },
       {
         "id": "world-10-distinct-sorted",
@@ -1282,7 +1282,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "functional-collection-operations",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Remove duplicates and order collection values.", "questionsCount": 3, "fiveStageLessonKey": "world-10-distinct-sorted"
+        "description": "Remove duplicates and order collection values.", "questionsCount": 4, "fiveStageLessonKey": "world-10-distinct-sorted"
       },
       {
         "id": "world-10-sortedby-min-max",
@@ -1291,7 +1291,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "functional-collection-operations",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Order by a selected key and safely find minimum or maximum values.", "questionsCount": 3, "fiveStageLessonKey": "world-10-sortedby-min-max"
+        "description": "Order by a selected key and safely find minimum or maximum values.", "questionsCount": 5, "fiveStageLessonKey": "world-10-sortedby-min-max"
       },
       {
         "id": "world-10-sum-average-any-all-none",
@@ -1300,7 +1300,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "functional-collection-operations",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Aggregate numeric values and test whether collection predicates hold.", "questionsCount": 3, "fiveStageLessonKey": "world-10-sum-average-any-all-none"
+        "description": "Aggregate numeric values and test whether collection predicates hold.", "questionsCount": 5, "fiveStageLessonKey": "world-10-sum-average-any-all-none"
       },
       {
         "id": "world-10-first-find-collection-pipelines-and-chai",
@@ -1309,7 +1309,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "functional-collection-operations",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Find a value and chain collection transformations into a pipeline.", "questionsCount": 3, "fiveStageLessonKey": "world-10-first-find-collection-pipelines-and-chai"
+        "description": "Find a value and chain collection transformations into a pipeline.", "questionsCount": 4, "fiveStageLessonKey": "world-10-first-find-collection-pipelines-and-chai"
       },
       {
         "id": "world-10-boss",
@@ -1319,7 +1319,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 10,
         "xpReward": 50,
         "description": "Transform and analyze a realistic dataset using multiple collection operations.",
-        "questionsCount": 3, "isBoss": true, "fiveStageLessonKey": "world-10-boss"
+        "questionsCount": 5, "isBoss": true, "fiveStageLessonKey": "world-10-boss"
       }
     ]
   },

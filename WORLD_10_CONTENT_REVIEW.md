@@ -1,27 +1,28 @@
 # World 10 quality audit
 
 Authority: [LESSON_QUALITY_STANDARD.md](LESSON_QUALITY_STANDARD.md).
-Date: 2026-09-19. Status: **Audit completed** -- full curriculum implemented, all 10 lessons audited with zero open diagnostic defects, zero example execution gaps, and zero scenario duplication.
+Date: 2026-09-19. Status: **Audit in progress**.
 
 ## Scope and evidence
 
-Reviewed all 10 catalog-linked lessons in Collection Wizardry against [LESSON_QUALITY_STANDARD.md](LESSON_QUALITY_STANDARD.md) Section 1:
-- *Quality principle*: Activity counts are derived strictly from a concept-by-concept coverage map based on lesson complexity, rejecting rigid fixed quotas.
-- For lessons covering broader sub-concept ground:
-  - `world-10-map-mapnotnull-filter`: Calibrated to 4 Explore cards and 4 Predict questions to independently cover (1) filter-then-map pipelines, (2) `mapNotNull` null-discarding transformations, (3) `filterNotNull` for pre-existing nullable lists, and (4) collection immutability preservation.
-  - `world-10-zip-chunked-windowed`: Calibrated to 4 Explore cards and 4 Predict questions to independently cover (1) standard `zip` pairing, (2) `zip` with inline transformation lambdas, (3) `chunked` batching with remainder handling, and (4) `windowed` sliding frames.
-- Focused 3-concept topics (`flatten-reduce-fold`, `groupby-associate-partition`, `distinct-sorted`, etc.) maintain 3 focused examples and checks without artificial filler or duplication.
+Reopened the previous “Audit completed” report. The former audit only checked whether examples ran, logged incorrect prediction outputs without failing, and did not execute Learn snippets. It also declared activity counts that no longer matched the lesson data. The replacement audit uses explicit hand-traced outcomes, asserts output equality, and fails on every mismatch.
 
-1. `world-10-map-mapnotnull-filter` (map & mapNotNull & filter) -- 4 Explore, 4 Predict
-2. `world-10-filternot-filterisinstance-flatmap` (filterNot & filterIsInstance & flatMap) -- 3 Explore, 3 Predict
-3. `world-10-flatten-reduce-fold` (flatten & reduce & fold) -- 3 Explore, 3 Predict
-4. `world-10-groupby-associate-partition` (groupBy & associate & partition) -- 3 Explore, 3 Predict
-5. `world-10-zip-chunked-windowed` (zip & chunked & windowed) -- 4 Explore, 4 Predict
-6. `world-10-distinct-sorted` (distinct & sorted) -- 3 Explore, 3 Predict
-7. `world-10-sortedby-min-max` (sortedBy & min / max) -- 3 Explore, 3 Predict
-8. `world-10-sum-average-any-all-none` (sum / average & any / all / none) -- 3 Explore, 3 Predict
-9. `world-10-first-find-collection-pipelines-and-chai` (first / find & Collection pipelines and chaining) -- 3 Explore, 3 Predict
-10. `world-10-boss` (Boss: Data Transformation Engine) -- 3 Explore, 3 Predict
+Activity counts come from the coverage map in [WORLD_10_CAPACITY_AUDIT.md](WORLD_10_CAPACITY_AUDIT.md), not a fixed quota. The additions cover empty results, declared-class filtering, flattening, reduce/fold boundaries, missing map keys, transformed `zip`, partial stepped windows, equality/order, stable derived-key sorting, empty extrema, numeric and logical identities, nullable lookup, and an integrated grouped-report Boss pipeline.
+
+| Lesson | Explore | Predict |
+| --- | ---: | ---: |
+| `map-mapnotnull-filter` | 5 | 5 |
+| `filternot-filterisinstance-flatmap` | 5 | 5 |
+| `flatten-reduce-fold` | 4 | 5 |
+| `groupby-associate-partition` | 5 | 5 |
+| `zip-chunked-windowed` | 5 | 6 |
+| `distinct-sorted` | 4 | 4 |
+| `sortedby-min-max` | 4 | 5 |
+| `sum-average-any-all-none` | 5 | 5 |
+| `first-find-collection-pipelines-and-chai` | 4 | 4 |
+| `boss` | 5 | 5 |
+
+Final activity totals: **46 Explore, 49 Predict, 10 Write & Run, and 10 Debug** tasks. The audit treats every Learn, Explore, and runnable Predict snippet as an exact-output test; it also checks each starter, solution, broken Debug version, and repair.
 
 Source: `src/data/curriculum/world10LessonsData.ts`.
 
@@ -30,14 +31,14 @@ Source: `src/data/curriculum/world10LessonsData.ts`.
 - Supported operations run directly on `KotlinList` eagerly inside `src/utils/kotlinCollections.ts` without relying on browser Array prototypes or external runtimes.
 - Rejection cases documented in `WORLD_10_CAPACITY_AUDIT.md` (e.g. non-positive step sizes, empty list `first()` / `reduce()`, unsupported reified types) are fully respected across all lesson snippets.
 
-`npm run audit:world10-quality` checks catalog registration, stage configuration, question counts, executes all 32 Explore code examples, and verifies all 10 Write & Run (starter failure, solution success) and 10 Debug (broken code failure, repaired code success) pairs through `compileAndRunKotlin`.
+`npm run audit:world10-quality` checks catalog registration, unique activity IDs, stage configuration, question counts, answer keys, exact Learn/Explore/Predict outcomes, and all Write & Run and Debug failure/success pairs through `compileAndRunKotlin`.
 
 **Audit execution results:**
 - 10 catalog lessons verified
-- 32 Explore examples executed and passed
-- 32 Predict questions executed and verified with exact matching outputs and detailed explanations
-- 20 Write & Run / Debug execution pairs tested and passed
-- 0 open diagnostic defects or unclosed syntax gaps
+- 10 Learn snippets, 46 Explore examples, and 49 Predict questions executed with exact expected outcomes
+- 40 Write & Run / Debug executions tested: starters and broken programs fail; solutions and repairs pass with exact output
+- 0 execution failures in the current audit run
+- Browser QA and hardcode-resistance assessment remain open; this does not establish a Verified status
 
 ## Collection engine capacity & simulator alignment
 
@@ -46,9 +47,9 @@ As analyzed in `WORLD_10_CAPACITY_AUDIT.md`:
 2. **Reified Type Filtering**: `filterIsInstance<T>()` in the simulator handles standard types (`String`, `Number`, `Boolean`, and user-declared class names). Lessons use supported types without complex generic projections.
 3. **Empty Collection Semantics**: `reduce` and `first` throw `NoSuchElementException` on empty collections, while `fold`, `minOrNull`, `maxOrNull`, and `find` handle empty collections safely without throwing. These semantics are taught and tested in the curriculum.
 4. **Batching & Sliding Windows**: `chunked` and `windowed` correctly produce nested lists and validate positive chunk/window sizes.
+5. **Map-producing trailing lambdas**: `groupBy { ... }`, `associate { ... }`, `associateBy { ... }`, and `associateWith { ... }` are recognized as Maps before lambda lowering. This prevents a String-key lookup such as `groups["premium"]?.sum() ?: 0` from silently taking the zero fallback through JavaScript property access.
 
-Automated behavioral harness verified:
-`npm run test:collection-runner`: 31 behavioral cases, 5 rejection cases, 20 lesson solutions passing.
+Automated behavioral harness verified: `npm run test:collection-runner`: 31 behavioral cases, 5 rejection cases, and 20 lesson solutions passing. The grouped-report regression is also part of the World 10 exact-output audit.
 
 ## Write & Run / Debug scenario independence: zero duplicates (100% compliant)
 
@@ -77,10 +78,12 @@ All tasks conform to single-concept, single-fault pedagogical boundaries:
 
 ## Predict question quality
 
-All 30 Predict questions adhere to quality standards:
+All 49 Predict questions adhere to structural quality checks:
 - 4 multiple-choice options per question (`A`, `B`, `C`, `D`) with exactly one correct option.
 - Distractors reflect realistic learner misconceptions (e.g. unflattened nested lists, inverted partition halves, lexicographical vs numeric sorting, vacuous truth on empty collections, pipeline evaluation order).
 - Detailed explanations reference the exact execution flow and Kotlin language rules.
+
+The audit does not yet prove that each distractor is pedagogically effective or that a learner cannot hardcode a required answer; those are acceptance tasks below.
 
 ## Verification commands
 
@@ -88,3 +91,11 @@ All 30 Predict questions adhere to quality standards:
 - `npm run test:collection-runner`: Kotlin simulator collection behavioral tests and rejection cases.
 - `npm run lint`: TypeScript type-checking across the codebase.
 - `npm run build`: Vite production bundle compilation.
+
+## Remaining audit work
+
+1. Browser visual QA: verify code wrapping, stage navigation, feedback, and mobile layout for the added activities.
+2. Hardcode resistance and required-construct assessment: vary inputs and confirm Write & Run assessment requires the taught collection operations rather than only the displayed output.
+3. Optional real-Kotlin comparison: `npm run test:world10-kotlin` compares exported runnable reference cases when local compiler JARs are supplied through `KOTLIN_COMPILER_CLASSPATH`.
+
+Status remains **Audit in progress**, not Verified. Successful simulator execution is evidence only for the documented eager-list teaching scope, not for arbitrary Kotlin programs.

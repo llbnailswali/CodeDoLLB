@@ -82,11 +82,7 @@ function runnableLesson(config: RunnableConfig): FiveStageLesson {
       language: 'Kotlin',
       codeSnippet: config.example,
       explanation: config.learnText,
-      keyIdeas: [
-        { number: 1, title: 'Functions are first-class values', description: 'A function can be stored in a variable, passed as an argument, and invoked later with parentheses.' },
-        { number: 2, title: 'Behavior is configurable', description: 'Higher-order functions separate control flow from logic, allowing callers to supply custom operations.' },
-        { number: 3, title: 'Precise return boundaries', description: 'Lambdas return their last expression, anonymous functions return locally, and inline functions permit non-local returns.' },
-      ],
+      keyIdeas: [{ number: 1, title: config.learnTitle, description: config.takeaway }],
       keyTakeaway: config.takeaway,
     },
     explore: {
@@ -180,11 +176,7 @@ function reasoningLesson(config: ReasoningConfig): FiveStageLesson {
       language: 'Kotlin',
       codeSnippet: config.example,
       explanation: config.learnText,
-      keyIdeas: [
-        { number: 1, title: 'Compile-time code generation', description: 'Modifiers like inline, noinline, and crossinline instruct the Kotlin compiler how to transform call sites.' },
-        { number: 2, title: 'Performance vs. code size', description: 'Inlining eliminates closure object allocations at call sites, but inlining huge functions inflates bytecode size.' },
-        { number: 3, title: 'Control-flow boundaries', description: 'Non-local returns are only safe in truly inlined contexts; crossinline and noinline preserve boundaries.' },
-      ],
+      keyIdeas: [{ number: 1, title: config.learnTitle, description: config.takeaway }],
       keyTakeaway: config.takeaway,
     },
     explore: {
@@ -707,7 +699,7 @@ export const IT_LESSON = runnableLesson({
   key: 'it',
   topic: 'it',
   learnTitle: 'Use Kotlin’s Implicit Lambda Parameter',
-  learnText: 'When a lambda has exactly one parameter, Kotlin lets you omit the parameter declaration and -> arrow entirely and refer to the argument as it.',
+  learnText: 'When the context supplies a function type with exactly one parameter, Kotlin lets you omit the parameter declaration and -> arrow entirely and refer to the argument as it.',
   takeaway: 'Use it when a single parameter is obvious from context; use an explicit name when clarity or nesting requires it.',
   example: [
     'fun main() {',
@@ -1143,7 +1135,7 @@ export const INLINE_FUNCTIONS_LESSON = reasoningLesson({
   key: 'inline-functions',
   topic: 'Inline functions',
   learnTitle: 'Ask the Compiler to Inline a Function',
-  learnText: 'The inline modifier requests the Kotlin compiler to copy the function body and its lambda parameters directly into call sites, eliminating function object allocation and allowing non-local returns.',
+  learnText: 'The inline modifier requests the Kotlin compiler to copy the function body and its lambda parameters directly into call sites, which can avoid lambda allocation at those call sites and permit non-local returns from eligible lambda arguments. The editor checks behavior, not JVM bytecode or performance.',
   takeaway: 'Mark higher-order functions inline when they take function parameters and you want to avoid lambda allocation overhead or permit non-local returns.',
   example: [
     'inline fun execute(action: () -> Unit) {',
@@ -1309,7 +1301,7 @@ export const NOINLINE_LESSON = reasoningLesson({
         { id: 'C', label: 'It makes the parameter accept only primitive numbers.', isCorrect: false },
         { id: 'D', label: 'It converts the lambda into an anonymous class at compile time only.', isCorrect: false },
       ],
-      detail: 'noinline instructs the compiler to generate a normal closure object for that parameter.',
+      detail: 'noinline retains an ordinary callable value. It does not guarantee a fresh allocation on every call; backend optimizations can differ.',
     },
     {
       code: [
@@ -1438,7 +1430,7 @@ export const CROSSINLINE_LESSON = reasoningLesson({
         { id: 'C', label: 'Throw a RuntimeException.', isCorrect: false },
         { id: 'D', label: 'Local returns are impossible in Kotlin lambdas.', isCorrect: false },
       ],
-      detail: 'A labelled return exits only the lambda itself, which is always safe.',
+      detail: 'A return to the current lambda label exits that invocation; it does not attempt a non-local return.',
     },
   ],
 });
@@ -1545,3 +1537,183 @@ export const WORLD_9_BOSS_LESSON = runnableLesson({
   ],
   debugExplanation: 'The function returned number without executing operation(number). Calling operation(number) applies the square and addTen operations, yielding 16 and 14.',
 });
+
+// Coverage additions planned in WORLD_9_CONTENT_REVIEW.md. Outputs are independently
+// checked by audit-world9-quality and the optional real Kotlin reference audit.
+export const WORLD_9_LESSONS = [LAMBDA_EXPRESSIONS_LESSON, ANONYMOUS_FUNCTIONS_LESSON,
+ FUNCTION_TYPES_LESSON, HIGHER_ORDER_FUNCTIONS_LESSON, IT_LESSON, FUNCTION_REFERENCES_LESSON,
+ RETURNING_FROM_LAMBDAS_LESSON, LOCAL_RETURNS_LESSON, INLINE_FUNCTIONS_LESSON,
+ NOINLINE_LESSON, CROSSINLINE_LESSON, WORLD_9_BOSS_LESSON];
+export const WORLD_9_ADDED_OUTPUTS: Record<string, string> = {};
+export const WORLD_9_COMPILE_ERRORS = new Set<string>();
+function addCoverage(lesson: FiveStageLesson, title: string, explanation: string,
+ example: string, output: string, prediction: string, answer: string, distractors: string[], compilerError = false) {
+ const key = lesson.id.replace('world-9-', '');
+ const cards = lesson.explore!.cards;
+ if (example) {
+  const id = `${key}-explore-${cards.length + 1}`;
+  cards.push({ id, number: String(cards.length + 1).padStart(2, '0'), title, subtitle: explanation,
+   language: 'Kotlin', code: example.split('\n'), whatItMeans: [{ label: title, description: explanation }],
+   whatChanged: `Expected output:\n${output}` });
+  WORLD_9_ADDED_OUTPUTS[id] = output;
+ }
+ const questions = lesson.predict!.questions;
+ const id = `${key}-predict-${questions.length + 1}`;
+ questions.push({ id, questionNumber: questions.length + 1, totalQuestions: 0, title,
+  topicMeta: lesson.topicTitle, language: 'Kotlin', code: prediction.split('\n'),
+  prompt: compilerError ? 'Does this code compile, and what happens?' : 'What will this code print?',
+  options: [answer, ...distractors].map((label, i) => ({id: ['A','B','C','D'][i] as 'A'|'B'|'C'|'D', label, isCorrect: i === 0})),
+  explanation: { codeRef: title, detail: explanation + (compilerError ? ' This program is rejected at compilation.' : ` The prediction prints:\n${answer}`) } });
+ if (compilerError) WORLD_9_COMPILE_ERRORS.add(id);
+ lesson.learn.keyIdeas.push({number: lesson.learn.keyIdeas.length + 1, title, description: explanation});
+}
+addCoverage(WORLD_9_LESSONS[0], "Captured state changes on invocation", "A callback can update a captured var. Declaring the lambda does not run its body.", "var visits = 0\nval record: () -> Unit = { visits += 1 }\nrecord()\nrecord()\nprintln(visits)", "2", "var hits = 1\nval visit: () -> Unit = { hits += 2 }\nprintln(hits)\nvisit()\nprintln(hits)", "1\n3", ["3\n5", "1\n1", "3"]);
+addCoverage(WORLD_9_LESSONS[0], "Ignore an unused parameter", "Use _ for an unused declared parameter; its position still belongs to the callable contract.", "val keep: (Int, String) -> String = { _, text -> text }\nprintln(keep(9, \"ready\"))", "ready", "val choose: (String, Int) -> Int = { _, count -> count + 1 }\nprintln(choose(\"ignored\", 6))", "7", ["6", "ignored", "Compilation error"]);
+addCoverage(WORLD_9_LESSONS[1], "A guard returns from the anonymous function", "A bare return inside fun exits that anonymous function. Its caller continues afterwards.", "", "", "val normalize = fun(n: Int): Int {\n    if (n < 0) return 0\n    return n + 2\n}\nprintln(normalize(-4))\nprintln(normalize(5))\nprintln(\"done\")", "0\n7\ndone", ["0", "0\n7", "-2\n7\ndone"]);
+addCoverage(WORLD_9_LESSONS[1], "Infer parameters from the expected type", "An expected function type can supply parameter types. An expression body infers its result; a non-Unit block body needs an explicit return type.", "val wrap: (String) -> String = fun(word) = \"[\" + word + \"]\"\nprintln(wrap(\"sun\"))", "[sun]", "val increase: (Int) -> Int = fun(value) = value + 4\nprintln(increase(9))", "13", ["9", "4", "Compilation error"]);
+addCoverage(WORLD_9_LESSONS[2], "Unit callbacks and invoke", "(String) -> Unit describes an action, not a text result. f.invoke(x) and f(x) invoke the same callable.", "val log: (String) -> Unit = { message -> println(message) }\nlog.invoke(\"saved\")", "saved", "val announce: (Int) -> Unit = { println(it + 3) }\nannounce.invoke(8)\nprintln(\"end\")", "11\nend", ["8\nend", "11", "kotlin.Unit\nend"]);
+addCoverage(WORLD_9_LESSONS[2], "Nullable callable versus nullable result", "((Int) -> String)? may have no function; (Int) -> String? always has a callable but may return null. Invoke a nullable callback with ?.invoke.", "val absent: ((Int) -> String)? = null\nval lookup: (Int) -> String? = { null }\nprintln(absent?.invoke(2) ?: \"no callback\")\nprintln(lookup(2) ?: \"no result\")", "no callback\nno result", "val optional: ((Int) -> Int)? = { it * 3 }\nval missing: (Int) -> Int? = { null }\nprintln(optional?.invoke(4) ?: -1)\nprintln(missing(4) ?: -2)", "12\n-2", ["-1\n-2", "12\nnull", "Compilation error"]);
+addCoverage(WORLD_9_LESSONS[2], "Function literal with receiver", "String.(Int) -> String supplies this as the String receiver and one explicit Int parameter. Invoke it with receiver.function(argument).", "val label: String.(Int) -> String = { number -> this + number }\nprintln(\"Box-\".label(4))", "Box-4", "val tag: String.(Int) -> String = { number -> this + \":\" + number }\nprintln(\"Shelf\".tag(7))", "Shelf:7", ["7:Shelf", "Shelf", "Compilation error"]);
+addCoverage(WORLD_9_LESSONS[3], "Return configured behavior", "A higher-order function can return a lambda that captures its configuration. Calling the factory and invoking its returned function are separate steps.", "fun makeAdder(amount: Int): (Int) -> Int {\n    return { value -> value + amount }\n}\nval addFive = makeAdder(5)\nprintln(addFive(8))", "13", "fun makeScale(factor: Int): (Int) -> Int {\n    return { value -> value * factor }\n}\nval twice = makeScale(2)\nval triple = makeScale(3)\nprintln(twice(4))\nprintln(triple(4))", "8\n12", ["12\n12", "8\n8", "2\n3"]);
+addCoverage(WORLD_9_LESSONS[3], "An algorithm controls callback invocations", "A () -> Unit callback supplies an action. The higher-order function decides how often to call it.", "fun twice(action: () -> Unit) {\n    action()\n    action()\n}\ntwice { println(\"tick\") }", "tick\ntick", "fun twice(action: () -> Unit) {\n    action()\n    action()\n}\nvar count = 0\ntwice { count += 3 }\nprintln(count)", "6", ["3", "0", "9"]);
+addCoverage(WORLD_9_LESSONS[4], "Name the outer input when nesting", "Each one-parameter lambda has its own it. Give the outer parameter a name to use both inputs unambiguously. map returns one transformed result per element.", "val result = listOf(2, 3).map { outer ->\n    listOf(10, 20).map { outer + it }\n}\nprintln(result)", "[[12, 22], [13, 23]]", "val result = listOf(4, 5).map { row ->\n    listOf(1, 2).map { row * it }\n}\nprintln(result)", "[[4, 8], [5, 10]]", ["[[1, 4], [1, 4]]", "[[5, 6], [6, 7]]", "Compilation error"]);
+addCoverage(WORLD_9_LESSONS[5], "Bound and unbound member references", "instance::method retains its receiver; Type::method takes a receiver as its first argument. These forms reuse the World 8 member-function model.", "class Meter(val offset: Int) {\n    fun read(value: Int): Int = offset + value\n}\nval meter = Meter(5)\nval bound: (Int) -> Int = meter::read\nval unbound: (Meter, Int) -> Int = Meter::read\nprintln(bound(2))\nprintln(unbound(Meter(10), 2))", "7\n12", "class Scale(val factor: Int) {\n    fun apply(value: Int): Int = factor * value\n}\nval bound: (Int) -> Int = Scale(3)::apply\nval open: (Scale, Int) -> Int = Scale::apply\nprintln(bound(4))\nprintln(open(Scale(2), 4))", "12\n8", ["8\n12", "12\n12", "Compilation error"]);
+addCoverage(WORLD_9_LESSONS[5], "Constructor references create values", "::ClassName is a callable that constructs an instance. Creating the reference does not construct an instance until invocation.", "class Ticket(val code: Int)\nval create: (Int) -> Ticket = ::Ticket\nprintln(create(42).code)", "42", "class Parcel(val weight: Int)\nval factory: (Int) -> Parcel = ::Parcel\nprintln(factory(8).weight)", "8", ["Parcel", "0", "Compilation error"]);
+addCoverage(WORLD_9_LESSONS[6], "A when expression can be the result", "The chosen when branch supplies the last-expression result. Keep an else branch when it is required to cover all inputs.", "val category: (Int) -> String = { score ->\n    when (score) {\n        0 -> \"none\"\n        1 -> \"one\"\n        else -> \"many\"\n    }\n}\nprintln(category(3))", "many", "val state: (Int) -> String = { n ->\n    when (n) {\n        0 -> \"empty\"\n        2 -> \"pair\"\n        else -> \"other\"\n    }\n}\nprintln(state(2))\nprintln(state(7))", "pair\nother", ["other\nother", "pair", "Compilation error"]);
+addCoverage(WORLD_9_LESSONS[6], "Printing is an action, not the computed result", "A callback declared to return Unit performs an action. To return a computed value, keep that value as the final expression of a value-returning lambda.", "val show: (Int) -> Unit = { value -> println(value * 2) }\nshow(5)\nprintln(\"done\")", "10\ndone", "val show: (Int) -> Unit = { println(it + 6) }\nshow(2)\nprintln(\"after\")", "8\nafter", ["2\nafter", "8", "kotlin.Unit\nafter"]);
+addCoverage(WORLD_9_LESSONS[7], "Explicit labels can return a value", "return@label value finishes this labelled lambda invocation with that result; later invocations still run.", "", "", "val fee: (Int) -> Int = charge@ { age ->\n    if (age < 5) return@charge 0\n    12\n}\nprintln(fee(3))\nprintln(fee(8))", "0\n12", ["0", "12\n12", "Compilation error"]);
+addCoverage(WORLD_9_LESSONS[8], "A non-inline callback cannot return from its caller", "An ordinary higher-order callback does not allow a bare return from the enclosing function. Use a local label or an eligible inline parameter.", "", "", "fun execute(action: () -> Unit) { action() }\nfun answer(): Int {\n    execute { return 9 }\n    return 0\n}\nfun main() { println(answer()) }", "Compilation error", ["9", "0", "9\n0"], true);
+addCoverage(WORLD_9_LESSONS[9], "A noinline callback can escape for later use", "noinline permits returning the callback as an ordinary function value. It can then be invoked after the setup call returns.", "inline fun retain(noinline action: (Int) -> Int): (Int) -> Int {\n    return action\n}\nval next = retain { it + 1 }\nprintln(next(6))", "7", "inline fun keep(noinline action: (Int) -> Int): (Int) -> Int {\n    return action\n}\nval action = keep { it * 4 }\nprintln(action(3))", "12", ["3", "4", "Compilation error"]);
+addCoverage(WORLD_9_LESSONS[9], "noinline forbids non-local return", "noinline keeps a callback value that cannot jump back out of its enclosing caller. A return to the current lambda label remains legal.", "", "", "inline fun call(noinline action: () -> Unit) { action() }\nfun answer(): Int {\n    call { return 8 }\n    return 0\n}\nfun main() { println(answer()) }", "Compilation error", ["8", "0", "8\n0"], true);
+addCoverage(WORLD_9_LESSONS[10], "crossinline forbids non-local return", "A wrapped crossinline callback may finish locally with return@label, but cannot return from its enclosing function.", "", "", "inline fun wrapped(crossinline action: () -> Unit) {\n    val task = { action() }\n    task()\n}\nfun answer(): Int {\n    wrapped { return 7 }\n    return 0\n}\nfun main() { println(answer()) }", "Compilation error", ["7", "0", "7\n0"], true);
+addCoverage(WORLD_9_LESSONS[11], "Composition order with a named function", "A reusable pipeline applies its first operation before its second. A named reference and a lambda can fill the same function-type contract.", "fun double(n: Int): Int = n * 2\nfun pipe(n: Int, first: (Int) -> Int, second: (Int) -> Int): Int = second(first(n))\nprintln(pipe(4, ::double, { it + 3 }))", "11", "fun addTwo(n: Int): Int = n + 2\nfun pipe(n: Int, first: (Int) -> Int, second: (Int) -> Int): Int = second(first(n))\nprintln(pipe(5, ::addTwo, { it * 3 }))", "21", ["17", "15", "7"]);
+
+for (const [lessonIndex, lesson] of WORLD_9_LESSONS.entries()) {
+ const questions = lesson.predict!.questions;
+ questions.forEach((question, index) => {
+  question.totalQuestions = questions.length;
+  const shift = (index + lessonIndex) % question.options.length;
+  const options = question.options.slice(shift).concat(question.options.slice(0, shift));
+  question.options = options.map((option, i) => ({...option, id: ['A','B','C','D'][i] as 'A'|'B'|'C'|'D'}));
+ });
+ lesson.mastered.passedCount = `${questions.length} / ${questions.length} PASSED`;
+ const summary = lesson.mastered.verificationItems.find(item => item.title === 'Predictions completed');
+ if (summary) summary.subtitle = `${questions.length} prediction checks completed`;
+ if (lesson.writeRun) lesson.writeRun.description += `\n\nExpected output:\n${lesson.writeRun.expectedOutput}`;
+}
+
+// Repair practice to assess callable semantics, with independent Debug scenarios.
+function repairDebug(lesson: FiveStageLesson, title: string, subtitle: string, broken: string, fixed: string, expected: string, hints: string[], explanation: string) {
+ Object.assign(lesson.debug!, {title, subtitle, brokenCode: broken, fixedCode: fixed,
+  expectedOutput: expected, hints, explanation});
+}
+repairDebug(WORLD_9_LESSONS[0], "Invoke the Saved Callback", "The program should record one launch, but the counter stays at zero.", "fun main() {\nvar launches = 0\nval record: () -> Unit = { launches += 1 }\nrecord\nprintln(launches)\n}", "fun main() {\nvar launches = 0\nval record: () -> Unit = { launches += 1 }\nrecord()\nprintln(launches)\n}", "1", ["Check whether the callback body executes.", "Reading a function value is different from calling it.", "Use record() to invoke the saved lambda."], "The expression record only reads the function value. record() executes its body and updates the captured counter.");
+repairDebug(WORLD_9_LESSONS[1], "Return Early From the Anonymous Function", "Missing stock should report zero; positive stock should include two reserve items.", "fun main() {\nval available = fun(stock: Int): Int {\n    if (stock < 0) 0\n    return stock + 2\n}\nprintln(available(-5))\nprintln(available(4))\n}", "fun main() {\nval available = fun(stock: Int): Int {\n    if (stock < 0) return 0\n    return stock + 2\n}\nprintln(available(-5))\nprintln(available(4))\n}", "0\n6", ["Trace whether the negative-stock branch stops the function.", "Evaluating 0 alone does not return from a block-bodied anonymous function.", "Add return before 0 in the guard."], "return 0 exits only available for missing stock. Without return the guard value is discarded and stock + 2 still runs.");
+repairDebug(WORLD_9_LESSONS[2], "Match the Function Result Contract", "The callback must return a String receipt, but its body returns an Int.", "fun main() {\nval receipt: (Int) -> String = { count -> count + 2 }\nprintln(receipt(6))\n}", "fun main() {\nval receipt: (Int) -> String = { count -> \"Items: \" + count }\nprintln(receipt(6))\n}", "Items: 6", ["Compare the declared result type with the body result.", "(Int) -> String requires text, not an Int calculation.", "Return \"Items: \" + count."], "A typed function value must match its declared result contract. The repaired lambda returns text containing the item count.");
+repairDebug(WORLD_9_LESSONS[4], "Keep the Outer Row Value", "Each row should add its row number to every column, but the inner lambda doubles each column.", "fun main() {\nval grid = listOf(10, 20).map { row ->\n    listOf(1, 3).map { it + it }\n}\nprintln(grid)\n}", "fun main() {\nval grid = listOf(10, 20).map { row ->\n    listOf(1, 3).map { row + it }\n}\nprintln(grid)\n}", "[[11, 13], [21, 23]]", ["Trace which value the inner it represents.", "The inner it is a column; row names the outer input.", "Use row + it in the inner lambda."], "Each lambda introduces its own input. Naming the outer value row allows the inner callback to combine both values.");
+repairDebug(WORLD_9_LESSONS[11], "Restore Pipeline Order", "Apply the adjustment first, then the multiplier. The pipeline currently reverses the two steps.", "fun process(n: Int, adjust: (Int) -> Int, multiply: (Int) -> Int): Int {\n    return adjust(multiply(n))\n}\nfun main() {\n    println(process(6, { it + 4 }, { it * 3 }))\n}", "fun process(n: Int, adjust: (Int) -> Int, multiply: (Int) -> Int): Int {\n    return multiply(adjust(n))\n}\nfun main() {\n    println(process(6, { it + 4 }, { it * 3 }))\n}", "30", ["Work out the value after the first required step.", "The innermost call executes first.", "Use multiply(adjust(n)) to apply the adjustment before multiplying."], "Function composition is ordered: (6 + 4) * 3 is 30, while (6 * 3) + 4 is 22. Only the nesting order needs repair.");
+
+FUNCTION_TYPES_LESSON.debug!.bugType = 'syntax';
+FUNCTION_TYPES_LESSON.debug!.bugLabel = 'Compiler Error: Function Result Type Mismatch';
+Object.assign(HIGHER_ORDER_FUNCTIONS_LESSON.writeRun!, {
+ title: 'Return a Configured Fee Calculator',
+ description: 'Complete makeFee(extra) so it returns a lambda adding extra to its Int input. The provided calls must print 13 then 23. Each returned function keeps its own extra value.',
+ initialCode: 'fun makeFee(extra: Int): (Int) -> Int {\n    // Return a lambda that adds extra to its input.\n}\nfun main() {\n    val smallFee = makeFee(3)\n    val largeFee = makeFee(13)\n    println(smallFee(10))\n    println(largeFee(10))\n}',
+ solutionCode: 'fun makeFee(extra: Int): (Int) -> Int {\n    return { price -> price + extra }\n}\nfun main() {\n    val smallFee = makeFee(3)\n    val largeFee = makeFee(13)\n    println(smallFee(10))\n    println(largeFee(10))\n}',
+ expectedOutput: '13\n23', testCase: {call: '', expected: '13\n23'}
+});
+// Declaration-only cards now show an actual invocation, with inline declarations
+// outside main (Kotlin does not allow local inline function declarations).
+NOINLINE_LESSON.explore!.cards[2].code.push('fun main() { process { println("ready") } }');
+CROSSINLINE_LESSON.explore!.cards[2].code.push('fun main() { schedule { println("scheduled") } }');
+for (const lesson of WORLD_9_LESSONS) {
+ for (const card of lesson.explore!.cards) {
+  const code = card.code.join('\n');
+  if (code.startsWith('inline fun') && !code.includes('fun main(')) {
+   let depth = 0, end = 0;
+   for (let i = code.indexOf('{'); i < code.length; i++) {
+    if (code[i] === '{') depth++;
+    if (code[i] === '}' && --depth === 0) { end = i + 1; break; }
+   }
+   card.code = (code.slice(0, end) + '\nfun main() {\n' + code.slice(end).trim() + '\n}').split('\n');
+  }
+ }
+}
+WORLD_9_LESSONS[8].writeRun = {"challengeNumber": 1, "totalChallenges": 1, "xpReward": 20, "title": "Run an Inline Action", "description": "Complete inline fun perform(action: () -> Unit) by invoking action. The provided callback prints start, followed by done in main.\n\nExpected output:\nstart\ndone", "requirements": {"name": "main", "params": "(none)", "returns": "Unit"}, "fileName": "Callbacks.kt", "initialCode": "inline fun perform(action: () -> Unit) {\n    // Invoke action.\n}\nfun main() {\n    perform { println(\"start\") }\n    println(\"done\")\n}", "solutionCode": "inline fun perform(action: () -> Unit) {\n    action()\n}\nfun main() {\n    perform { println(\"start\") }\n    println(\"done\")\n}", "sampleInput": "main()", "expectedOutput": "start\ndone", "testCase": {"call": "", "expected": "start\ndone"}};
+WORLD_9_LESSONS[8].debug = {"title": "Enable the Intended Return Boundary", "subtitle": "This callback is intended to return 5 from result, but its higher-order function is missing a modifier.", "challengeNumber": 1, "totalChallenges": 1, "difficulty": "medium", "bugType": "syntax", "bugLabel": "Compiler Error: Return Boundary", "brokenCode": "fun visit(action: () -> Unit) { action() }\nfun result(): Int {\n    visit { return 5 }\n    return 2\n}\nfun main() { println(result()) }", "fixedCode": "inline fun visit(action: () -> Unit) { action() }\nfun result(): Int {\n    visit { return 5 }\n    return 2\n}\nfun main() { println(result()) }", "expectedOutput": "5", "hints": ["Identify which function return 5 is trying to exit.", "An ordinary callback cannot perform that non-local return.", "Mark visit inline to permit this direct callback return."], "explanation": "The eligible inline callback may return from result. The ordinary non-inline declaration rejects this control flow."};
+WORLD_9_LESSONS[8].mastered.summary = "You practiced the callback and return rules. This editor does not measure JVM inlining, allocations, or performance.";
+WORLD_9_LESSONS[9].writeRun = {"challengeNumber": 1, "totalChallenges": 1, "xpReward": 20, "title": "Keep a Callback for Later", "description": "Complete save so it returns its noinline callback. Invoke the retained action with 7 using the provided main.\n\nExpected output:\n15", "requirements": {"name": "main", "params": "(none)", "returns": "Unit"}, "fileName": "Callbacks.kt", "initialCode": "inline fun save(noinline action: (Int) -> Int): (Int) -> Int {\n    // Return the callback value without invoking it.\n}\nfun main() {\n    val saved = save { it + 8 }\n    println(saved(7))\n}", "solutionCode": "inline fun save(noinline action: (Int) -> Int): (Int) -> Int {\n    return action\n}\nfun main() {\n    val saved = save { it + 8 }\n    println(saved(7))\n}", "sampleInput": "main()", "expectedOutput": "15", "testCase": {"call": "", "expected": "15"}};
+WORLD_9_LESSONS[9].debug = {"title": "Invoke the Retained Callback", "subtitle": "The saved callback should set ready to true, but reading the callback leaves it false.", "challengeNumber": 1, "totalChallenges": 1, "difficulty": "medium", "bugType": "logic", "bugLabel": "Logic Bug: Callback Not Invoked", "brokenCode": "inline fun dispatch(noinline action: () -> Unit) {\n    val saved = action\n    saved\n}\nfun main() {\n    var ready = false\n    dispatch { ready = true }\n    println(ready)\n}", "fixedCode": "inline fun dispatch(noinline action: () -> Unit) {\n    val saved = action\n    saved()\n}\nfun main() {\n    var ready = false\n    dispatch { ready = true }\n    println(ready)\n}", "expectedOutput": "true", "hints": ["Does the saved callback execute?", "Saving a callback preserves a value; it does not run its body.", "Invoke saved with saved()."], "explanation": "noinline permits storing the callback, but calling it still requires parentheses."};
+WORLD_9_LESSONS[9].mastered.summary = "You practiced the callback and return rules. This editor does not measure JVM inlining, allocations, or performance.";
+WORLD_9_LESSONS[10].writeRun = {"challengeNumber": 1, "totalChallenges": 1, "xpReward": 20, "title": "Wrap a Crossinline Callback", "description": "Complete runTask by creating a helper lambda that invokes action(6), then return helper(). Keep crossinline because action is called inside a stored lambda.\n\nExpected output:\n42", "requirements": {"name": "main", "params": "(none)", "returns": "Unit"}, "fileName": "Callbacks.kt", "initialCode": "inline fun runTask(crossinline action: (Int) -> Int): Int {\n    // Create helper and return its result.\n}\nfun main() { println(runTask { it * 7 }) }", "solutionCode": "inline fun runTask(crossinline action: (Int) -> Int): Int {\n    val helper = { action(6) }\n    return helper()\n}\nfun main() { println(runTask { it * 7 }) }", "sampleInput": "main()", "expectedOutput": "42", "testCase": {"call": "", "expected": "42"}};
+WORLD_9_LESSONS[10].debug = {"title": "Return Only From the Wrapped Callback", "subtitle": "The callback should produce zero for negative input and allow answer to continue, but its bare return is forbidden.", "challengeNumber": 1, "totalChallenges": 1, "difficulty": "medium", "bugType": "syntax", "bugLabel": "Compiler Error: Return Boundary", "brokenCode": "inline fun wrap(crossinline action: (Int) -> Int): Int {\n    val task = { action(-3) }\n    return task()\n}\nfun answer(): Int {\n    val value = wrap { if (it < 0) return 0; it }\n    return value + 9\n}\nfun main() { println(answer()) }", "fixedCode": "inline fun wrap(crossinline action: (Int) -> Int): Int {\n    val task = { action(-3) }\n    return task()\n}\nfun answer(): Int {\n    val value = wrap { if (it < 0) return@wrap 0; it }\n    return value + 9\n}\nfun main() { println(answer()) }", "expectedOutput": "9", "hints": ["Which boundary should finish when the input is negative?", "crossinline disallows returning from answer through this callback.", "Use return@wrap 0 to finish just the current callback."], "explanation": "The labelled return yields zero to wrap without leaving answer. answer then adds nine. A bare return would attempt a forbidden non-local exit."};
+WORLD_9_LESSONS[10].mastered.summary = "You practiced the callback and return rules. This editor does not measure JVM inlining, allocations, or performance.";
+// Inline declarations must stay at file scope in complete prediction programs.
+for (const lesson of WORLD_9_LESSONS) {
+ for (const question of lesson.predict!.questions) {
+  const code = question.code?.join('\n') ?? '';
+  if (code.startsWith('inline fun') && !code.includes('fun main(')) {
+   let depth = 0, end = 0;
+   for (let i = code.indexOf('{'); i < code.length; i++) {
+    if (code[i] === '{') depth++;
+    if (code[i] === '}' && --depth === 0) { end = i + 1; break; }
+   }
+   question.code = (code.slice(0, end) + '\nfun main() {\n' + code.slice(end).trim() + '\n}').split('\n');
+  }
+ }
+}
+repairDebug(NOINLINE_LESSON,
+ 'Retain the Selected Callback',
+ 'The setup should keep the selected formatter for later, but returns its fallback formatter instead.',
+ 'inline fun select(noinline chosen: (String) -> String, noinline fallback: (String) -> String): (String) -> String {\n    return fallback\n}\nfun main() {\n    val format = select({ "Selected: " + it }, { "Fallback: " + it })\n    println(format("report"))\n}',
+ 'inline fun select(noinline chosen: (String) -> String, noinline fallback: (String) -> String): (String) -> String {\n    return chosen\n}\nfun main() {\n    val format = select({ "Selected: " + it }, { "Fallback: " + it })\n    println(format("report"))\n}',
+ 'Selected: report',
+ ['Which callback value survives after setup finishes?', 'Compare the parameter returned by select with the requested selection.', 'Return chosen instead of fallback.'],
+ 'Both noinline parameters can be retained as function values. Returning the selected value preserves its behavior for the later invocation.');
+NOINLINE_LESSON.debug!.bugLabel = 'Logic Bug: Wrong Callback Retained';
+FUNCTION_REFERENCES_LESSON.debug!.hints = [
+ 'Compare the assigned callable with the tax behavior defined above it.',
+ 'The identity lambda bypasses the named tax calculation.',
+ 'Assign ::calculateTax to taxFunc.'
+];
+HIGHER_ORDER_FUNCTIONS_LESSON.debug!.hints = [
+ 'Trace what happens to the policy argument after the function receives it.',
+ 'The returned value currently does not depend on policy.',
+ 'Return policy(score) to invoke the supplied operation.'
+];
+for (const lesson of WORLD_9_LESSONS) {
+ lesson.mastered.summary = `You practiced the ${lesson.topicTitle.toLowerCase()} scenarios in this lesson. Continue applying them with different inputs.`;
+ if (lesson.mastered.verificationItems.every(item => item.title !== 'Code written & executed')) {
+  lesson.mastered.verificationItems.push(
+   {title:'Code written & executed', subtitle:'Practiced callback behavior; JVM performance is not measured'},
+   {title:'Bugs diagnosed & repaired', subtitle:'Repaired one independent callback fault'}
+  );
+ }
+}
+// Replace redundant arithmetic forecasts with the behavior the matching Explore
+// card teaches. IDs stay stable; these are replacements, not count inflation.
+function revisePrediction(lesson: FiveStageLesson, index: number, title: string, code: string, answer: string, wrong: string[], detail: string) {
+ const question = lesson.predict!.questions[index];
+ question.title = title;
+ question.code = code.split('\n');
+ const labels = [answer, ...wrong];
+ const shift = index % labels.length;
+ question.options = labels.slice(shift).concat(labels.slice(0, shift)).map((label, i) =>
+  ({id: ['A','B','C','D'][i] as 'A'|'B'|'C'|'D', label, isCorrect: label === answer}));
+ question.explanation = {codeRef: title, detail};
+}
+revisePrediction(LAMBDA_EXPRESSIONS_LESSON, 3, 'The Last Expression Wins',
+ 'val total = { base: Int ->\n    val doubled = base * 2\n    doubled + 3\n}\nprintln(total(6))', '15', ['12','6','3'],
+ 'The intermediate doubled value is 12. The final expression adds 3, so total returns 15.');
+revisePrediction(ANONYMOUS_FUNCTIONS_LESSON, 1, 'Expression-Body Result',
+ 'val magnitude = fun(n: Int) = if (n < 0) -n else n\nprintln(magnitude(-7))', '7', ['-7','kotlin.Unit','Compilation error'],
+ 'The anonymous function has an expression body, so the selected if branch supplies its inferred Int result.');
+revisePrediction(HIGHER_ORDER_FUNCTIONS_LESSON, 1, 'The Caller Chooses Each Operation',
+ 'fun run(value: Int, op: (Int) -> Int): Int = op(value)\nfun main() {\n    println(run(8) { it + 2 })\n    println(run(8) { it * 2 })\n}', '10\n16', ['10\n10','16\n16','8\n8'],
+ 'Each call supplies a new operation: the first adds two and the second doubles the same input.');
+revisePrediction(IT_LESSON, 2, 'A Predicate at Its Boundary',
+ 'val isPositive: (Int) -> Boolean = { it > 0 }\nprintln(isPositive(0))\nprintln(isPositive(3))', 'false\ntrue', ['true\ntrue','false\nfalse','0\n3'],
+ 'it is the argument of each invocation. Zero is not strictly greater than zero; three is.');
+revisePrediction(WORLD_9_BOSS_LESSON, 2, 'Caller-Defined Selection',
+ 'fun countMatches(values: List<Int>, accepts: (Int) -> Boolean): Int {\n    var count = 0\n    for (value in values) {\n        if (accepts(value)) count++\n    }\n    return count\n}\nfun main() { println(countMatches(listOf(1, 4, 6, 9)) { it % 2 == 0 }) }', '2', ['4','10','0'],
+ 'The utility invokes the supplied predicate on every element. Only 4 and 6 match, so it returns a count of two.');

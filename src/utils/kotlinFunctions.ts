@@ -4,7 +4,7 @@
  * This is a teaching subset, not a replacement for Kotlin compiler diagnostics.
  */
 type Token = { text: string; start: number; end: number };
-type Type = { mutable?: boolean; runtimeName?: string; name: string; nullable?: boolean; params?: Type[]; result?: Type; receiver?: Type };
+type Type = { inlineOwner?: Frame; inlineMode?: 'inline' | 'crossinline'; mutable?: boolean; runtimeName?: string; name: string; nullable?: boolean; params?: Type[]; result?: Type; receiver?: Type };
 type Parameter = { name: string; type?: Type; mode?: string; defaultCode?: string };
 type Signature = { params: Parameter[]; result?: Type; inline: boolean; receiver?: Type };
 type Frame = { token: string; label?: string; kind: 'function' | 'lambda'; inline: boolean; used: boolean; result?: Type };
@@ -250,7 +250,7 @@ export function lowerKotlinFunctions(source: string): string {
     const ref = top(a, b, '::');
     if (ref >= 0) {
       const sig = functions.get(at(ref + 1));
-      if (sig) return { name: 'Function', params: ((classes.has(at(a)) || sig.receiver?.name === at(a)) && ref > a ? [sig.receiver ?? { name: at(a) }] : []).concat(sig.params.map(p => p.type ?? unknown)), result: sig.result ?? unknown };
+      if (sig) return { name: 'Function', params: ((classes.has(at(a)) || sig.receiver?.name === at(a)) && ref === a + 1 ? [sig.receiver ?? { name: at(a) }] : []).concat(sig.params.map(p => p.type ?? unknown)), result: sig.result ?? unknown };
       if (classes.has(at(ref + 1))) return { name: 'Function', params: constructors.get(at(ref + 1)) ?? [], result: { name: at(ref + 1) } };
     }
     if (at(a) === '{') {
@@ -275,6 +275,7 @@ export function lowerKotlinFunctions(source: string): string {
     if (at(b - 1) === ')' && at(b - 2) === '(' && at(b - 4) === '.') {
       const conversions: Record<string, string> = { toLong: 'Long', toInt: 'Int', toFloat: 'Float', toDouble: 'Double', trimIndent: 'String' };
       if (conversions[at(b - 3)]) return { name: conversions[at(b - 3)] };
+      if (at(b - 3) === 'average') return { name: 'Double' };
     }
     if (at(b - 1) === 'length' || at(b - 1) === 'size') return { name: 'Int' };
     if (at(a).startsWith('"')) return { name: 'String' };
@@ -359,10 +360,13 @@ export function lowerKotlinFunctions(source: string): string {
     const signature = variable?.name === 'Function' ? { params: (variable.receiver ? [variable.receiver, ...variable.params!] : variable.params!).map((type, i) => ({ name: `p${i}`, type })), result: variable.result, inline: false } : functions.get(name) ?? (!['.', '?.'].includes(at(open - 2)) && !(ctx.receiver && name === 'repeat') ? builtins.get(name) : undefined);
     return { signature, name, inline: signature?.inline ?? ['forEach', 'map', 'filter', 'fold', 'flatMap', 'mapNotNull', 'filterNot', 'run', 'let', 'also', 'apply', 'repeat'].includes(name) };
   }
-  function lower(a: number, b: number, ctx: Context, expected?: Type, callLabel?: string, inline = false): string {
+  function lower(a: number, b: number, ctx: Context, expected?: Type, callLabel?: string, inline = false, allowInlineValue = false): string {
     if (a >= b) return '';
     const expression = !['val', 'var', 'fun', 'return', 'if', 'for', 'while', 'when', 'class', 'throw'].includes(at(a)) && expressionEnd(a, b) === b;
     if (expression) {
+      if (b === a + 1 && ctx.vars.get(at(a))?.inlineOwner && !allowInlineValue) {
+        fail(`Inline parameter ${at(a)} cannot be stored or returned as a value; use noinline`, a);
+      }
       const elvis = top(a, b, '?:');
       const assertion = lastOperator(a, b, ['!!']);
       const cast = top(a, b, 'as');
@@ -430,9 +434,10 @@ export function lowerKotlinFunctions(source: string): string {
         const sig = h.signature;
         const fnExpected = h.anonymous ? expected : undefined;
         const params = sig.params.map((p, index) => ({ ...p, type: p.type ?? fnExpected?.params?.[index] ?? unknown }));
-        params.forEach(p => inner.vars.set(p.name, p.type));
         const result = sig.result ?? fnExpected?.result ?? (at(h.body) === '{' ? unit : undefined);
         const f = frame('function', result, h.name); inner.frames.push(f);
+        params.forEach(p => inner.vars.set(p.name, sig.inline && p.type.name === 'Function' && p.mode !== 'noinline'
+          ? {...p.type, inlineOwner: f, inlineMode: p.mode === 'crossinline' ? 'crossinline' : 'inline'} : p.type));
         let receiverParam = '';
         if (sig.receiver || fnExpected?.receiver) {
           receiverParam = `__kt_receiver_${++serial}`;
@@ -565,6 +570,11 @@ ${lower(body + 1, end, child(ctx))}
         const trailingStart = at(close + 1) === '{' ? close + 1 : at(close + 2) === '@' && at(close + 3) === '{' ? close + 3 : -1;
         const trailing = callable && trailingStart >= 0 && trailingStart < b && !declarationBodies.has(trailingStart);
         const args = split(i + 1, close);
+        const inlineParameter = ctx.vars.get(info.name);
+        if (callable && inlineParameter?.inlineOwner && inlineParameter.inlineMode !== 'crossinline') {
+          const crossed = ctx.frames.slice(ctx.frames.indexOf(inlineParameter.inlineOwner) + 1);
+          if (crossed.some(f => !f.inline)) fail(`Inline parameter ${info.name} is captured across a non-inline boundary; use crossinline or noinline`, i);
+        }
         if (callable && info.signature) {
           const required = info.signature.params.filter(p => !p.defaultCode && p.mode !== 'vararg').length;
           if (args.length + Number(trailing) < required || (!info.signature.params.some(p => p.mode === 'vararg') && args.length + Number(trailing) > info.signature.params.length)) fail(`Wrong argument count for ${info.name}: expected ${info.signature.params.length}`, i);
@@ -581,7 +591,11 @@ ${lower(body + 1, end, child(ctx))}
         let rendered = args.map(([x, y], index) => {
           const param = info.signature?.params[index];
           if (!['{', 'fun'].includes(at(x))) check(param?.type, infer(x, y, ctx), x);
-          return lower(names && at(x + 1) === '=' ? x + 2 : x, y, ctx, param?.type, callable ? info.name : undefined, info.inline && !param?.mode);
+          const start = names && at(x + 1) === '=' ? x + 2 : x;
+          const sourceParam = ctx.vars.get(at(start));
+          const forwarding = info.inline && param?.mode !== 'noinline' &&
+            (param?.mode !== 'crossinline' || sourceParam?.inlineMode === 'crossinline');
+          return lower(start, y, ctx, param?.type, callable ? info.name : undefined, info.inline && !param?.mode, forwarding);
         });
         if (['println', 'print'].includes(info.name) && !functions.has(info.name)) {
           rendered = rendered.map((value, index) => ['Float', 'Double'].includes(infer(args[index][0], args[index][1], ctx).name) ? `__kt_decimalText(${value})` : value);

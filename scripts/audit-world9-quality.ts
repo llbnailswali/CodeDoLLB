@@ -1,91 +1,76 @@
-/** Execution/structure evidence only. Editorial acceptance lives in WORLD_9_CONTENT_REVIEW.md. */
+/** Exact execution evidence; browser QA and assessment hardening remain separate. */
 import assert from 'node:assert/strict';
+import { world9InlineValidationCases } from './world9-inline-validation-cases';
+import { writeFileSync } from 'node:fs';
 import { AVAILABLE_FIVE_STAGE_LESSONS } from '../src/data/lessonStagesData';
 import { CODEDO_MASTER_WORLDS } from '../src/data/curriculum/masterCurriculumCatalog';
+import { WORLD_9_ADDED_OUTPUTS, WORLD_9_COMPILE_ERRORS } from '../src/data/curriculum/world9LessonsData';
 import { compileAndRunKotlin } from '../src/utils/kotlinRunner';
-
 const world = CODEDO_MASTER_WORLDS.find(w => w.id === 'world-9')!;
-assert.ok(world, 'world-9 missing in catalog');
-
-const seen = new Set<string>();
-let checks = 0, predictions = 0, examples = 0;
-const diagnostics: string[] = [];
-const exampleGaps: string[] = [];
-
-for (const entry of world.lessons) {
-  const lesson = AVAILABLE_FIVE_STAGE_LESSONS[entry.fiveStageLessonKey!];
-  assert.ok(lesson, `${entry.id}: missing registered lesson for key ${entry.fiveStageLessonKey}`);
-  assert.ok(!seen.has(lesson.id), `${entry.id}: repeated catalog lesson`);
-  seen.add(lesson.id);
-
-  const questions = lesson.predict?.questions ?? [];
-  const cards = lesson.explore?.cards ?? [];
-  predictions += questions.length;
-  examples += cards.length;
-
-  for (const card of cards) {
-    const fragment = card.code.join('\n');
-    const code = fragment.includes('fun main(') ? fragment : `fun main() {\n${fragment}\n}`;
-    const result = await compileAndRunKotlin(code);
-    if (!result.success) {
-      exampleGaps.push(`${lesson.id}/${card.id}: ${result.error?.message}`);
-    }
-  }
-
-  assert.equal(entry.questionsCount, questions.length, `${entry.id}: stale question count`);
-  for (const question of questions) {
-    assert.equal(question.options.filter(o => o.isCorrect).length, 1, `${question.id}: answer key must have exactly one correct option`);
-    assert.equal(question.totalQuestions, questions.length, `${question.id}: stale totalQuestions count`);
-
-    // Verify runnable prediction questions if code is provided
-    if (question.code && question.code.length > 0) {
-      const frag = question.code.join('\n');
-      const pcode = frag.includes('fun main(') ? frag : `fun main() {\n${frag}\n}`;
-      const pres = await compileAndRunKotlin(pcode);
-      if (!pres.success) {
-        diagnostics.push(`${lesson.id}/${question.id} predict code failed: ${pres.error?.message}`);
-      } else {
-        const correctOpt = question.options.find(o => o.isCorrect)!;
-        if (pres.output !== correctOpt.label) {
-          diagnostics.push(`${lesson.id}/${question.id} predict output mismatch: got "${pres.output}", correct option is "${correctOpt.label}"`);
-        }
-      }
-    }
-  }
-
-  const write = lesson.writeRun;
-  const debug = lesson.debug;
-
-  if (write && debug) {
-    // Audit task-scope rule: debug.fixedCode must NOT duplicate writeRun.solutionCode
-    const normWrite = write.solutionCode.replace(/\s+/g, ' ').trim();
-    const normDebug = debug.fixedCode.replace(/\s+/g, ' ').trim();
-    assert.notEqual(normWrite, normDebug, `${lesson.id}: debug fixedCode duplicates writeRun solutionCode`);
-  }
-
-  for (const [stage, code, expected, shouldPass] of [
-    ['write solution', write?.solutionCode, write?.expectedOutput, true],
-    ['unfinished starter', write?.initialCode, write?.expectedOutput, false],
-    ['debug repair', debug?.fixedCode, debug?.expectedOutput, true],
-    ['broken debug', debug?.brokenCode, debug?.expectedOutput, false],
-  ] as const) {
-    if (!code) continue;
-    const result = await compileAndRunKotlin(code);
-    assert.equal(
-      result.success && result.output === expected,
-      shouldPass,
-      `${lesson.id} ${stage}: expected pass=${shouldPass}, result=${JSON.stringify(result)}`
-    );
-    if (result.error?.message.includes('Cannot read properties')) {
-      diagnostics.push(`${lesson.id}: ${result.error.message}`);
-    }
-    checks++;
-  }
-
-  console.log(`${lesson.id}: ${cards.length} Explore, ${questions.length} Predict; writing ${!!write}, debugging ${!!debug}`);
+const learn = ['12','12','10','12','16','10','12','7','Inlined execution!','12','20','12'];
+const originalOutputs = [
+ ['Welcome, Mina','42','PONG','25','10\n15'], ['4\n0','[Kotlin]','36','[2, 4, 6]'],
+ ['Level 5','PONG','8\n14'], ['12','12\n50','4'], ['[10, 20, 30]','HELLO!','true\nfalse'],
+ ['true\nfalse','27','Hello, Alex'], ['11','neg\npos','true\nfalse'], ['1\n3\n5','4','0\n10'],
+ ['Running directly!','Early exit','16'], ['12','13','ready'], ['20','0','scheduled'], ['15','16','2']
+];
+const reference: {name: string; code: string; outcome: {output: string; error?: string}}[] = [];
+const seen = new Set<string>(), ids = new Set<string>();
+let failures = 0, examples = 0, predictions = 0, checks = 0;
+const program = (code: string) => code.includes('fun main(') ? code : `fun main() {\n${code}\n}`;
+async function verify(name: string, source: string, expected: string, error = false) {
+ const code = program(source), result = await compileAndRunKotlin(code);
+ if (error ? result.success || result.error?.type !== 'compiler_error' : !result.success || result.output !== expected) {
+  failures++; console.error(name, {expected, error}, result);
+ }
+ reference.push({name, code, outcome: {output: error ? '' : expected, ...(error ? {error:'compiler_error'} : {})}});
 }
-
-console.log(`Evidence: ${seen.size} catalog lessons, ${examples} examples, ${predictions} predictions, ${checks} execution checks passed.`);
-for (const diagnostic of diagnostics) console.log(`OPEN DIAGNOSTIC DEFECT: ${diagnostic}`);
-for (const gap of exampleGaps) console.log(`OPEN EXAMPLE EXECUTION GAP: ${gap}`);
-console.log('This checks existing activities, not concept coverage, all prediction semantics, UI quality or Kotlin compiler equivalence. Quality status: see WORLD_9_CONTENT_REVIEW.md.');
+for (const [index, entry] of world.lessons.entries()) {
+ const lesson = AVAILABLE_FIVE_STAGE_LESSONS[entry.fiveStageLessonKey!];
+ assert.ok(lesson); assert.equal(lesson.worldId, world.id);
+ assert.ok(!seen.has(lesson.id)); seen.add(lesson.id);
+ await verify(`${lesson.id}/Learn`, lesson.learn.codeSnippet.join('\n'), learn[index]);
+ for (const [i, card] of lesson.explore!.cards.entries()) {
+  assert.ok(!ids.has(card.id)); ids.add(card.id);
+  const expected = WORLD_9_ADDED_OUTPUTS[card.id] ?? originalOutputs[index][i];
+  assert.notEqual(expected, undefined, `${card.id}: missing independent output`);
+  await verify(card.id, card.code.join('\n'), expected); examples++;
+ }
+ const questions = lesson.predict!.questions;
+ assert.equal(entry.questionsCount, questions.length, `${entry.id}: catalog count`);
+ for (const [i, q] of questions.entries()) {
+  assert.ok(!ids.has(q.id)); ids.add(q.id);
+  assert.equal(q.questionNumber, i + 1); assert.equal(q.totalQuestions, questions.length);
+  assert.equal(q.options.filter(o => o.isCorrect).length, 1);
+  assert.equal(new Set(q.options.map(o => o.id)).size, q.options.length);
+  assert.equal(new Set(q.options.map(o => o.label)).size, q.options.length);
+  if (q.code?.length) await verify(q.id, q.code.join('\n'), q.options.find(o => o.isCorrect)!.label, WORLD_9_COMPILE_ERRORS.has(q.id));
+  predictions++;
+ }
+ const write = lesson.writeRun, debug = lesson.debug;
+ if (write && debug) assert.notEqual(write.solutionCode.replace(/\s+/g,''), debug.fixedCode.replace(/\s+/g,''), `${lesson.id}: duplicate practice`);
+ for (const [name, code, expected, pass] of [
+  ['write',write?.solutionCode,write?.expectedOutput,true], ['starter',write?.initialCode,write?.expectedOutput,false],
+  ['repair',debug?.fixedCode,debug?.expectedOutput,true], ['broken',debug?.brokenCode,debug?.expectedOutput,false]
+ ] as const) {
+  if (!code) continue;
+  const result = await compileAndRunKotlin(code);
+  if ((result.success && result.output === expected) !== pass) {failures++;console.error(lesson.id,name,result);}
+  if (pass) reference.push({name:`${lesson.id}/${name}`,code,outcome:{output:expected!}});
+  checks++;
+ }
+ if (write) assert.equal(write.testCase.expected,write.expectedOutput);
+ console.log(`${lesson.id}: ${lesson.explore!.cards.length} Explore, ${questions.length} Predict`);
+}
+let capabilityGaps = 0;
+for (const test of world9InlineValidationCases) {
+ const result = await compileAndRunKotlin(test.code);
+ if (result.success || result.error?.type !== 'compiler_error') {
+  capabilityGaps++; console.log(`OPEN CAPABILITY GAP: ${test.name}`);
+ }
+ reference.push({name: test.name, code: test.code, outcome: {output: '', error: 'compiler_error'}});
+}
+if (process.env.WORLD9_REFERENCE_EXPORT) writeFileSync(process.env.WORLD9_REFERENCE_EXPORT, JSON.stringify(reference,null,2));
+console.log(`World 9: ${seen.size} lessons, ${examples} Explore, ${predictions} Predict, ${checks} writing/debug executions; ${failures} failures.`);
+console.log(`Status: ${capabilityGaps ? 'Changes required' : 'Audit in progress'}. ${capabilityGaps} inline-parameter capability gaps; browser QA and hardcode resistance remain open.`);
+assert.equal(failures + capabilityGaps,0);

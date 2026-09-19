@@ -797,6 +797,21 @@ it supported in `CodeDo_Editor_capacity_per_lesson_status.xlsx`. The deleted
 
 ### World 10 collections
 
+#### Re-audit: trailing-lambda Map producers were not recognized for bracket lookup
+
+The runner identifies variables initialized by `groupBy`/`associate` so Kotlin
+`groups[key]` becomes JavaScript `groups.get(key)`. That detector required an
+opening parenthesis after the operation name. Idiomatic Kotlin normally writes
+`items.groupBy { ... }`, so the result printed as a valid Map while a following
+String-key bracket lookup silently returned null through JavaScript property
+access. In `groups["key"]?.sum() ?: 0`, it ran successfully and printed a
+plausible but wrong zero.
+
+Accept either `(` or `{` after Map-producing collection operations. The World
+10 exact-output audit exercises grouped String keys in a filter/group/sum
+pipeline; real-Kotlin comparison verifies the same values. Keep Map-result
+detection in sync with every supported trailing-lambda Map producer.
+
 Use `KotlinList` for list factories and transformation results so chained operations retain Kotlin behavior. Do not reinstall collection helpers on native Array.prototype. Pair is an iterable object with `.first`/`.second`; JS Map constructors require conversion to two-element arrays. Partition must evaluate its predicate once per element. Validate chunk/window size and step before entering synchronous loops.
 
 Run `npm run test:collection-runner`; optionally compare the shared fixtures against a local Kotlin compiler with `npm run test:collection-kotlin`. See [WORLD_10_CAPACITY_AUDIT.md](WORLD_10_CAPACITY_AUDIT.md) for numeric type filtering, equality, formatting and content-coverage limits. Keep those limits in the existing XLSX tracker.
@@ -1136,3 +1151,32 @@ When a lambda contained an explicit parameter arrow (`item ->`), the lookup chec
 
 Fixed in `src/utils/kotlinFunctions.ts` by prioritizing `trailing` lambdas over `literal` lambdas when both match a token index (`const lambda = trailing ?? literal`). This ensures trailing lambdas with explicit parameter arrows are correctly associated with their call site, allowing implicit labels like `@forEach` to resolve properly. Verified via `npm run test:lambda-runner` (119/119 passing), `npm run audit:world9-quality`, and cross-world regression tests.
 
+
+## World 9 re-audit: constructor-expression references are bound
+
+`val action: (Int) -> Int = Scale(3)::apply` was rejected as if its type
+were `(Scale, Int) -> Int`. The inference pass identified an unbound
+reference merely because the receiver started with a class name; lowering
+correctly treated the full constructor expression as an instance. Require
+`::` immediately after the type token when inferring an unbound receiver,
+matching the lowering decision. `Scale::apply` still takes the instance as
+an argument; `Scale(3)::apply` captures the constructed instance. Regression:
+`constructor expression produces a bound member reference` in
+`lambda-runner-cases.ts`, plus the authored World 9 member-reference prediction.
+
+### World 9 inline-parameter validation: storing and capturing require modifiers
+
+The runner checked forbidden non-local returns at call sites but accepted
+`inline fun keep(action: () -> Unit): () -> Unit { return action }` without
+`noinline`, and accepted capturing plain `action` inside a stored helper
+lambda without `crossinline`/`noinline`. Real Kotlin rejects both.
+
+Track an inline parameter's declaring function frame and modifier in lexical
+type context. Reject using an inlinable parameter as a standalone stored or
+returned value; require `noinline`. Reject invoking an ordinary inline
+parameter across a non-inline function/lambda boundary; allow `crossinline`.
+Forwarding to compatible inline parameters remains supported; forwarding to
+an ordinary/noinline parameter needs a storable callback. Regression cases
+live in `scripts/world9-inline-validation-cases.ts`, and both the World 9
+runner audit and real-Kotlin reference test require compilation rejection.
+This is scoped validation of these forms, not complete Kotlin escape analysis.

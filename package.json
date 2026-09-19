@@ -10,6 +10,7 @@
     "clean": "rm -rf dist server.js",
     "audit:output-quotes": "node scripts/audit-output-quotes.mjs",
     "test:world11-content": "tsx scripts/test-world11-content.ts",
+    "test:world12-runner": "tsx scripts/test-world12-runner.ts",
     "test:lambda-kotlin": "tsx scripts/test-lambda-kotlin.ts",
     "test:lambda-runner": "tsx scripts/test-lambda-runner.ts",
     "update-progress": "node scripts/update-data-gathering-progress.mjs",
@@ -27,7 +28,9 @@
     "audit:world8-quality": "tsx scripts/audit-world8-quality.ts",
     "audit:world9-quality": "tsx scripts/audit-world9-quality.ts",
     "audit:world10-quality": "tsx scripts/audit-world10-quality.ts",
-    "audit:world11-quality": "tsx scripts/audit-world11-quality.ts"
+    "test:world10-kotlin": "tsx scripts/test-world10-kotlin.ts",
+    "audit:world11-quality": "tsx scripts/audit-world11-quality.ts",
+    "test:world9-kotlin": "tsx scripts/test-world9-kotlin.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.1",

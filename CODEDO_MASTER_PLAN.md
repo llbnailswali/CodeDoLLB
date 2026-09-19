@@ -1,7 +1,7 @@
 # CodeDo Master Curriculum & Learning Framework Plan
 
-> **Single Source of Truth Document**
-> This file contains the complete, authoritative specification and master curriculum plan for CodeDo. All ongoing development, curriculum structuring, exercise counts, and feature progression must strictly align with this document.
+> **Curriculum Scope Document**
+> This file defines CodeDo's curriculum scope and progression. `LESSON_QUALITY_STANDARD.md` is authoritative for lesson quality, activity selection, counts, evidence, and acceptance.
 
 ## Required Authoring Rule — Analyze Coverage Before Choosing Counts
 
@@ -24,9 +24,11 @@ The curriculum should feel like a coherent learning journey rather than a collec
 
 ---
 
-# 🎯 CodeDo's 6-Step Topic Mastery Program
+# 🎯 CodeDo Activity Framework
 
-Every Kotlin topic in CodeDo should follow the same six-step learning loop.
+CodeDo offers six activity types. Select the activities that the lesson's
+coverage map needs; their order below is a common learning path, not a
+mandatory sequence or completion checklist.
 
 ```text
 ┌──────────────────────┐
@@ -36,14 +38,14 @@ Every Kotlin topic in CodeDo should follow the same six-step learning loop.
            ↓
 ┌──────────────────────┐
 │ 2. EXPLORE           │
-│ 5–6 practical        │
-│ examples             │
+│ Distinct examples    │
+│ from coverage map    │
 └──────────┬───────────┘
            ↓
 ┌──────────────────────┐
 │ 3. PREDICT OUTPUT    │
-│ 5–6 challenges       │
-│ Predict before run   │
+│ Independent reasoning│
+│ when applicable      │
 └──────────┬───────────┘
            ↓
 ┌──────────────────────┐
@@ -69,19 +71,18 @@ Every Kotlin topic in CodeDo should follow the same six-step learning loop.
 | Step | Purpose | Learner skill |
 |---|---|---|
 | **1. Learn** | Explain the concept clearly | Understand |
-| **2. Explore** | Show 5–6 practical examples | Recognize |
-| **3. Predict Output** | Give 5–6 code snippets and ask for the output | Reason |
+| **2. Explore** | Show distinct coverage-driven examples | Recognize |
+| **3. Predict Output** | Ask independent code-reasoning questions where applicable | Reason |
 | **4. Write & Run** | Ask the learner to write and execute code | Create |
 | **5. Debug Program** | Give broken programs to diagnose and fix | Diagnose |
 | **6. Mastered** | Confirm the learner can apply the concept | Demonstrate |
 
 ### Important principle
 
-The six steps are not six different lesson types that are used optionally.
-
-> **Every core topic should pass through all six steps before it is considered mastered.**
-
-This gives CodeDo a consistent learning system across the entire Kotlin curriculum.
+The stage-selection and mastery rules are defined by
+[LESSON_QUALITY_STANDARD.md](LESSON_QUALITY_STANDARD.md). A non-executable
+orientation lesson may omit editor stages with a recorded reason; a practical
+lesson needs only the stages that meaningfully assess its mapped skills.
 
 ---
 
@@ -372,7 +373,7 @@ Every topic uses **topic-aware activity selection** rather than a mandatory six-
 
 > **Use only the activities that meaningfully prove understanding.**
 
-Exercise counts are **coverage-driven**. Applicable Explore/Predict/MCQ activities have a minimum baseline (normally **at least 3**), but complex topics may require many more.
+Exercise counts are coverage-driven with no numeric quota. Use the lesson quality standard's concept map to justify every activity.
 
 ## 1. Advanced Functions
 
@@ -530,7 +531,8 @@ The challenge should require:
 - Null safety
 - Error handling
 
-Include at least one intentionally broken requirement that the learner must debug before completing the boss.
+Include a Debug activity when the Boss coverage map identifies a focused,
+reproducible fault worth diagnosing.
 
 ---
 
@@ -542,7 +544,7 @@ Every topic uses **topic-aware activity selection** rather than a mandatory six-
 
 > **Use only the activities that meaningfully prove understanding.**
 
-Exercise counts are **coverage-driven**. Applicable Explore/Predict/MCQ activities have a minimum baseline (normally **at least 3**), but complex topics may require many more.
+Exercise counts are coverage-driven with no numeric quota. Use the lesson quality standard's concept map to justify every activity.
 
 ## 1. Coroutines ⭐⭐⭐
 
@@ -707,7 +709,8 @@ Give the learner a large dataset and require them to:
 - Use appropriate collections
 - Optimize performance
 
-The boss should contain at least one deliberately broken component that the learner must debug.
+Add Boss debugging only when a focused, reproducible fault is part of its
+coverage map.
 
 This distinguishes an experienced Kotlin developer from someone who only knows advanced syntax.
 
@@ -728,8 +731,8 @@ World
  │
  ├── Topic 1
  │    ├── Learn
- │    ├── Explore (minimum 3 when applicable; coverage-driven)
- │    ├── Predict (minimum 3 when applicable; coverage-driven)
+ │    ├── Explore (coverage-driven when applicable)
+ │    ├── Predict (coverage-driven when applicable)
  │    ├── Write & Run
  │    ├── Debug
  │    └── Mastered
@@ -1184,7 +1187,8 @@ A comprehensive production-grade Kotlin challenge combining:
 - Testing
 - Production engineering
 
-The Grandmaster challenge should include at least one deliberately broken component that the learner must diagnose and fix.
+Add Grandmaster debugging when the coverage map identifies a focused,
+reproducible fault worth diagnosing.
 
 A comprehensive production-grade Kotlin challenge combining:
 
@@ -1230,7 +1234,7 @@ Explain:
 - `?:`
 - `!!`
 
-### 2. Explore — 5–6 Examples
+### 2. Explore — Coverage-Driven Examples
 
 Show progressively more realistic examples:
 
@@ -1241,7 +1245,7 @@ Show progressively more realistic examples:
 5. Nullable collection value
 6. Combining multiple null-safe operations
 
-### 3. Predict Output — 5–6 Challenges
+### 3. Predict Output — Coverage-Driven Challenges
 
 Show code and ask:
 
@@ -1963,33 +1967,14 @@ For Predict specifically:
 
 > **Every meaningful code behavior/detail that can be tested through prediction should be exercised adequately.**
 
-A complex topic can therefore have 10, 15, 20, or more prediction challenges when required. A simple topic may need only the minimum.
+A complex topic can therefore have 10, 15, 20, or more prediction challenges when required. A simple topic may need fewer when its coverage map demonstrates that the relevant behavior is adequately taught and assessed.
 
-### Prompt 4 — There Is a Minimum
-Flexibility does not mean an arbitrary single example is enough.
+### Prompt 4 — Evidence, Not Minimums
 
-Default minimums:
-
-| Activity | Minimum | Maximum |
-|---|---:|---|
-| Explore Examples | 3 | No fixed maximum |
-| Predict Output / Behavior | 3 | No fixed maximum |
-| MCQ / Check Understanding | 3 | No fixed maximum |
-| Write & Run | Topic-dependent | No fixed maximum |
-| Debug | Topic-dependent | No fixed maximum |
-
-The minimum applies **only when that activity is applicable to the topic**.
-
-### Final Formula
-
-```text
-Actual Exercise Count
-=
-MAX(
-    Minimum Required,
-    Exercises Needed for Concept Coverage
-)
-```
+Do not use a numerical baseline to decide whether a topic has enough practice.
+Use the concept-level coverage map required by
+[LESSON_QUALITY_STANDARD.md](LESSON_QUALITY_STANDARD.md): each activity must
+cover a distinct common behavior, variation, boundary, or misconception.
 
 Then:
 
@@ -2048,27 +2033,10 @@ https://roadmap.sh/pdfs/roadmaps/kotlin.pdf
 
 # 📏 Exercise Count Strategy
 
-CodeDo should have **minimum quality guarantees without imposing artificial maximums**.
-
-The number of activities should be determined by the complexity and concept coverage of the topic.
-
-## Core Rule
-
-> **Minimum Required Exercises + Topic-Driven Additional Exercises**
-
-There should be a minimum number of exercises for applicable activity types, but no fixed maximum.
-
-### Recommended minimums
-
-| Activity | Minimum | Maximum |
-|---|---:|---:|
-| 🔍 Explore Examples | **3** | No fixed maximum |
-| 🧠 Predict Output / Behavior | **3** | No fixed maximum |
-| 💻 Write & Run | Topic-dependent | No fixed maximum |
-| 🐞 Debug Program | Topic-dependent | No fixed maximum |
-| ❓ MCQ / Check Understanding | **3** for applicable topics | No fixed maximum |
-
-These are **minimum requirements, not target counts**.
+The number of activities is determined by the lesson's prerequisite and
+concept coverage map. There is no count formula, minimum, or maximum. Add an
+activity only when it supplies distinct evidence that a mapped behavior is
+taught or assessed.
 
 ---
 
@@ -2082,36 +2050,16 @@ Instead:
 
 > **"Have we covered all important concepts, behaviors, variations, and meaningful edge cases of this topic?"**
 
-The exercise count should therefore follow:
-
-```text
-Exercise Count =
-MAX(Minimum Required, Exercises Needed for Concept Coverage)
-```
-
-For example:
-
-```text
-Simple topic
-→ Minimum = 3
-→ Coverage requires 3
-→ Create 3
-
-Complex topic
-→ Minimum = 3
-→ Coverage requires 12
-→ Create 12
-```
-
-There is **no artificial maximum**.
+Counts are finalized after the map is reviewed, and revised when new gaps
+emerge. A short topic may need a small number of activities; a complex topic
+may need many. Neither number alone establishes quality.
 
 ---
 
 # 🔍 Explore Examples — Coverage Driven
 
-Every applicable topic should have at least **3 examples**.
-
-Beyond that, add as many examples as necessary to build a complete mental model.
+Examples must be distinct and sufficient to build a complete mental model for
+the mapped common behaviors and variations.
 
 Examples should progressively cover:
 
@@ -2125,13 +2073,8 @@ Examples should progressively cover:
 
 ### Example: `println()`
 
-A simple topic may need:
-
-```text
-3 examples
-```
-
-For example:
+A simple topic may need only the examples required to establish its relevant
+behaviors. For example:
 
 ```kotlin
 println("Hello")
@@ -2166,17 +2109,14 @@ The exact count is determined by coverage, not by a fixed quota.
 
 # 🧠 Predict Output / Behavior — Coverage Driven
 
-Every applicable topic should have at least **3 prediction challenges**.
-
-Beyond the minimum, prediction exercises should cover the important behaviors of the topic.
+Prediction exercises should cover the important behaviors of the topic with
+independent reasoning scenarios.
 
 The goal is:
 
 > **The learner should exercise every important detail that can meaningfully be tested by predicting code behavior.**
 
 ### Example: `when`
-
-A minimum of 3 predictions is required, but 3 may not be enough.
 
 Possible coverage:
 
@@ -2247,9 +2187,10 @@ The number of questions is secondary to whether the learner has exercised the im
 
 ---
 
-# 🔄 Minimum + Adaptive Expansion
+# 🔄 Adaptive Expansion
 
-The minimum count should act as a baseline.
+The mapped core activities establish the baseline. Adaptive practice adds
+targeted activities only when learner evidence shows a specific gap.
 
 CodeDo can eventually support adaptive expansion based on learner performance.
 
@@ -2287,9 +2228,10 @@ This allows CodeDo to eventually personalize practice without changing the under
 
 ---
 
-# ❗ Minimums Apply Only to Applicable Activities
+# ❗ Activity Selection Must Fit the Topic
 
-Minimum exercise counts should **not** force activities onto topics where they do not make sense.
+Activities must not be forced onto topics where they do not meaningfully
+assess the mapped outcome.
 
 For example:
 
@@ -2298,7 +2240,7 @@ For example:
 ```text
 Learn
   ↓
-MCQ ≥ 3
+Appropriate comprehension checks
   ↓
 Mastered
 ```
@@ -2316,9 +2258,9 @@ activities should be created.
 ```text
 Learn
   ↓
-Explore ≥ 3
+Coverage-driven Explore
   ↓
-Predict ≥ 3
+Coverage-driven Predict
   ↓
 Write & Run
   ↓
@@ -2336,7 +2278,7 @@ Learn
   ↓
 Explore / Visual Explanation
   ↓
-MCQ ≥ 3
+Appropriate comprehension checks
   ↓
 Mastered
 ```
@@ -2351,8 +2293,8 @@ For every topic:
 1. Identify the topic type
 2. Identify its knowledge points
 3. Select applicable activities
-4. Apply minimum exercise requirements
-5. Expand exercises until meaningful concept coverage is achieved
+4. Derive activities from the concept-level coverage map
+5. Add or revise activities until meaningful concept coverage is achieved
 6. Evaluate learner performance
 7. Add adaptive exercises when useful
 8. Mark the topic Mastered when mastery criteria are satisfied
@@ -2360,8 +2302,8 @@ For every topic:
 
 This creates a system that is:
 
-- **Consistent** — every applicable topic has a meaningful minimum
-- **Flexible** — complex topics can have many more exercises
+- **Consistent** — every activity has a documented coverage purpose
+- **Flexible** — complex topics can have as many activities as coverage needs
 - **Efficient** — simple topics are not padded unnecessarily
 - **Comprehensive** — important details are not skipped
 - **Adaptive** — struggling learners can receive targeted practice
@@ -2371,7 +2313,7 @@ This creates a system that is:
 
 # ⭐ Updated CodeDo Principle
 
-> **Minimums provide consistency. Concept coverage determines depth. Learner performance determines additional practice.**
+> **Coverage determines depth. Learner performance determines additional practice.**
 
 This should replace any fixed rule such as:
 
@@ -2379,7 +2321,7 @@ This should replace any fixed rule such as:
 
 The correct product rule is:
 
-> **Every applicable topic has at least 3 examples/questions, and additional exercises are created as needed to cover the topic completely.**
+> **Every applicable topic has the distinct examples and assessments its coverage map requires.**
 
 
 ---
@@ -2861,7 +2803,7 @@ Another learner may demonstrate strong understanding and need no additional exer
 
 This creates:
 
-> **Minimum baseline + concept coverage + adaptive practice**
+> **Mapped core coverage + adaptive practice**
 
 ---
 
@@ -2884,7 +2826,7 @@ Identify knowledge points
       ↓
 Select applicable activities
       ↓
-Meet minimum requirements
+Review the coverage map
       ↓
 Achieve sufficient concept coverage
       ↓
@@ -2991,11 +2933,7 @@ For example:
     "write_run",
     "debug",
     "mcq"
-  ],
-  "minimums": {
-    "explore": 3,
-    "predict": 3
-  }
+  ]
 }
 ```
 
@@ -3010,10 +2948,7 @@ A conceptual topic could be:
   "activities": [
     "learn",
     "mcq"
-  ],
-  "minimums": {
-    "mcq": 3
-  }
+  ]
 }
 ```
 
@@ -3098,10 +3033,9 @@ An applied topic may be:
 Learn → Explore → Write & Run → Debug → Mastered
 ```
 
-And the number of Explore and Predict exercises should be:
-
-> **At least 3 when applicable, then as many as required for meaningful concept coverage.**
+Explore and Predict counts must be derived separately from the concept-level
+coverage map, with no numeric quota.
 
 ### The final product rule
 
-> **Minimums provide consistency. Concept coverage determines depth. Learner performance determines additional practice. The learning framework stays consistent across programming languages.**
+> **Concept coverage determines depth. Learner performance determines additional practice. The learning framework stays consistent across programming languages.**

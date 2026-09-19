@@ -416,3 +416,38 @@ functionCases.push(
     }
 }`, expected: '0\n1\n3' },
 );
+functionCases.push({ name: 'constructor expression produces a bound member reference', code: `class Gauge(val offset: Int) {
+    fun read(value: Int): Int = offset + value
+}
+fun main() {
+    val read: (Int) -> Int = Gauge(7)::read
+    val unbound: (Gauge, Int) -> Int = Gauge::read
+    println(read(3))
+    println(unbound(Gauge(2), 3))
+}`, expected: '10\n5' });
+functionCases.push(
+ { name: 'forward inline parameter to compatible inline callee', code: `inline fun invokeNow(action: () -> Unit) { action() }
+inline fun forward(action: () -> Unit) { invokeNow(action) }
+fun main() { forward { println("forwarded") } }`, expected: 'forwarded' },
+ { name: 'forward crossinline parameter to wrapped callee', code: `inline fun wrapped(crossinline action: () -> Unit) {
+    val task = { action() }
+    task()
+}
+inline fun forward(crossinline action: () -> Unit) { wrapped(action) }
+fun main() { forward { println("wrapped") } }`, expected: 'wrapped' },
+);
+invalidFunctionCases.push(
+ { name: 'cannot store ordinary inline parameter', code: `inline fun save(action: () -> Unit) {
+    val stored = action
+    stored()
+}
+fun main() { save { println("bad") } }`, error: 'use noinline' },
+ { name: 'cannot capture ordinary inline parameter', code: `inline fun wrap(action: () -> Unit) {
+    val task = { action() }
+    task()
+}
+fun main() { wrap { println("bad") } }`, error: 'use crossinline or noinline' },
+ { name: 'cannot pass inline parameter to ordinary function', code: `fun consume(action: () -> Unit) { action() }
+inline fun forward(action: () -> Unit) { consume(action) }
+fun main() { forward { println("bad") } }`, error: 'use noinline' },
+);

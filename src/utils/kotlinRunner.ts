@@ -55,6 +55,22 @@ function staticValidateKotlin(code: string): KotlinDiagnostic | null {
   }
   if (stack.length) return { message: 'Syntax error: unclosed delimiter', line: stack.at(-1)!.line, type: 'syntax_error' };
 
+  const abstractContracts = [...code.matchAll(/abstract\s+class\s+([A-Za-z_][A-Za-z0-9_]*)[^\{]*\{([\s\S]*?)\n?\}/g)]
+    .map((match) => ({ base: match[1], methods: [...match[2].matchAll(/abstract\s+fun\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/g)].map((method) => method[1]) }));
+  for (const contract of abstractContracts) {
+    if (!contract.methods.length) continue;
+    const subclasses = [...code.matchAll(new RegExp(`\\bclass\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*:\\s*${contract.base}\\s*\\([^)]*\\)(?:\\s*\\{([\\s\\S]*?)\\})?`, 'g'))];
+    for (const subclass of subclasses) {
+      const body = subclass[2] ?? '';
+      const missing = contract.methods.find((method) => !new RegExp(`\\boverride\\s+fun\\s+${method}\\s*\\(`).test(body));
+      if (missing) return {
+        message: `Class ${subclass[1]} must implement ${missing}() or be abstract`,
+        line: code.slice(0, subclass.index).split('\n').length,
+        type: 'compiler_error',
+      };
+    }
+  }
+
   // 3. Track val vs var declarations and catch val reassignment
   const declaredVars: Map<string, VarDeclaration> = new Map();
   // Standard built-ins that shouldn't be flagged as unresolved
@@ -635,7 +651,7 @@ function inferMapVars(code: string): Set<string> {
   for (const line of code.split('\n')) {
     const match = line.match(/\b(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)[^=]*=\s*(?:__kt_)?(?:mapOf|mutableMapOf)\s*\(/);
     if (match) mapVars.add(match[1]);
-    const derived = line.match(/\b(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)[^=]*=\s*.*\.(?:groupBy|associate|associateBy|associateWith)\s*\(/);
+    const derived = line.match(/\b(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)[^=]*=\s*.*\.(?:groupBy|associate|associateBy|associateWith)\s*(?:\(|\{)/);
     if (derived) mapVars.add(derived[1]);
   }
   return mapVars;
@@ -656,6 +672,10 @@ function stripModifierKeywords(code: string): string {
     /\b(?:(?:private|public|protected|internal|open|abstract|override)\s+)+(?=(?:class|val|var|fun|constructor)\b)/g,
     ''
   );
+}
+
+function stripAbstractMemberDeclarations(code: string): string {
+  return code.replace(/^\s*abstract\s+fun\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)\s*(?::\s*[A-Za-z_][A-Za-z0-9_<>?,\s]*)?\s*$/gm, '');
 }
 
 /**
@@ -888,7 +908,7 @@ function splitTopLevelCommas(text: string): string[] {
  * (rather than overridden by every implementer) is NOT supported -- out of
  * scope, since it would require the interface to become a real mixin.
  */
-function stripInterfaceDeclarations(code: string): string {
+function transpileInterfaceDeclarations(code: string): string {
   const re = /\binterface\s+[A-Za-z_][A-Za-z0-9_]*\s*\{/g;
   let result = '';
   let cursor = 0;
@@ -906,12 +926,19 @@ function stripInterfaceDeclarations(code: string): string {
       re.lastIndex = openBraceIdx + 1;
       continue;
     }
-    result += code.slice(cursor, blockStart);
+    const name = match[0].match(/interface\s+([A-Za-z_][A-Za-z0-9_]*)/)![1];
+    const body = code.slice(openBraceIdx + 1, i - 1);
+    const methods = [...body.matchAll(/(?:fun\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?,\s]*)?\s*=\s*([^\n}]+)|fun\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)\s*:\s*[A-Za-z_][A-Za-z0-9_<>?,\s]*\{\s*return\s+([^;}]+)[;}]|function\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)\s*\{\s*return\s+([^;}]+)[;}])/g)]
+      .map((method) => [method[1] ?? method[4] ?? method[7], method[2] ?? method[5] ?? method[8], method[3] ?? method[6] ?? method[9]]);
+    const helper = methods.length
+      ? `const __kt_interface_${name} = { ${methods.map((method) => `${method[0]}(${cleanKotlinParams(method[1])}) { return ${method[2].trim()}; }`).join(', ')} };\n`
+      : '';
+    result += code.slice(cursor, blockStart) + helper;
     cursor = i;
     re.lastIndex = i;
   }
   result += code.slice(cursor);
-  return result;
+  return result.replace(/super<([A-Za-z_][A-Za-z0-9_]*)>\.([A-Za-z_][A-Za-z0-9_]*)\(([^)]*)\)/g, '__kt_interface_$1.$2.call(this$3)');
 }
 
 /**
@@ -924,7 +951,7 @@ function stripInterfaceDeclarations(code: string): string {
  * helpers above for how the body itself is handled.
  */
 function transpileClassDeclarations(code: string, classNamesOut: Set<string>): string {
-  const classRe = /\b(data\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?\s*(?:\:\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?)?\s*(\{)?/g;
+  const classRe = /\b(data\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s*<[^>{}]+>)?\s*(?:\(([^)]*)\))?\s*(?:\:\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*(?:\s*\([^)]*\))?)*)?\s*(\{)?/g;
   let result = '';
   let cursor = 0;
   let match: RegExpExecArray | null;
@@ -935,6 +962,8 @@ function transpileClassDeclarations(code: string, classNamesOut: Set<string>): s
     const blockStart = match.index;
     let blockEnd = blockStart + whole.length;
     let bodyLines: string[] = [];
+    let companionName: string | undefined;
+    let companionLines: string[] = [];
 
     if (hasBrace) {
       const openBraceIdx = blockStart + whole.length - 1;
@@ -950,6 +979,22 @@ function transpileClassDeclarations(code: string, classNamesOut: Set<string>): s
       }
       blockEnd = i;
       bodyLines = code.slice(openBraceIdx + 1, i - 1).split('\n');
+      const body = bodyLines.join('\n');
+      const companion = /\bcompanion\s+object(?:\s+([A-Za-z_][A-Za-z0-9_]*))?(?:\s*:\s*[A-Za-z_][A-Za-z0-9_]*)?\s*\{/.exec(body);
+      if (companion && companion.index !== undefined) {
+        const open = companion.index + companion[0].length - 1;
+        let companionDepth = 1;
+        let end = open + 1;
+        for (; end < body.length && companionDepth > 0; end++) {
+          if (body[end] === '{') companionDepth++;
+          else if (body[end] === '}') companionDepth--;
+        }
+        if (companionDepth === 0) {
+          companionName = companion[1];
+          companionLines = body.slice(open + 1, end - 1).split('\n');
+          bodyLines = (body.slice(0, companion.index) + body.slice(end)).split('\n');
+        }
+      }
     }
 
     const ctorParams = ctorParamsRaw ? parseConstructorParams(ctorParamsRaw) : [];
@@ -969,6 +1014,18 @@ function transpileClassDeclarations(code: string, classNamesOut: Set<string>): s
       methodLines.push(...mLines);
     }
 
+    const companionStaticLines: string[] = [];
+    for (const member of splitClassMembers(companionLines)) {
+      const header = member[0]?.trim() ?? '';
+      const property = header.match(/^(?:val|var)\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[^=]+)?\s*=\s*(.+)$/);
+      if (property && member.length === 1) {
+        companionStaticLines.push(`  static ${property[1]} = ${property[2]};`);
+        continue;
+      }
+      const { methodLines: companionMethods } = transpileClassMember(member);
+      companionStaticLines.push(...companionMethods.map((line) => line.replace(/^  /, '  static ')));
+    }
+
     const superCallLine = superName && superArgsRaw !== undefined ? [`    super(${superArgsRaw});`] : [];
     const ctorBodyLines = [...superCallLine, ...propertyAssignments, ...ctorExtraLines];
 
@@ -978,8 +1035,12 @@ function transpileClassDeclarations(code: string, classNamesOut: Set<string>): s
     // awareness of string-literal context, so a template literal here would
     // get its own generated toString corrupted into `new ClassName(...)`
     // text embedded inside the returned string.
-    const toStringLine = dataFlag
-      ? [`  toString() { return '${className}' + '(' + ${ctorParams.map((p) => `'${p.name}=' + this.${p.name}`).join(" + ', ' + ")} + ')'; }`]
+    const dataClassLines = dataFlag
+      ? [
+          `  copy(overrides = {}) { return new ${className}(${ctorParams.map((p) => `Object.prototype.hasOwnProperty.call(overrides, '${p.name}') ? overrides.${p.name} : this.${p.name}`).join(', ')}); }`,
+          `  equals(other) { return other instanceof ${className} && ${ctorParams.map((p) => `__kt_equals(this.${p.name}, other.${p.name})`).join(' && ')}; }`,
+          `  toString() { return '${className}' + '(' + ${ctorParams.map((p) => `'${p.name}=' + this.${p.name}`).join(" + ', ' + ")} + ')'; }`,
+        ]
       : [];
 
     // A supertype WITHOUT parens (`: Greetable`) is an interface -- Kotlin
@@ -995,16 +1056,25 @@ function transpileClassDeclarations(code: string, classNamesOut: Set<string>): s
       ...ctorBodyLines,
       '  }',
       ...methodLines,
-      ...toStringLine,
+      ...companionStaticLines,
+      ...dataClassLines,
       '}',
     ].join('\n');
 
-    result += code.slice(cursor, blockStart) + rewritten;
+    result += code.slice(cursor, blockStart) + rewritten + (companionName ? `\n${className}.${companionName} = ${className};` : '');
     cursor = blockEnd;
     classRe.lastIndex = blockEnd;
   }
   result += code.slice(cursor);
   return result;
+}
+
+function transpileDataClassCopyCalls(code: string): string {
+  return code.replace(/\b([A-Za-z_][A-Za-z0-9_]*)\.copy\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^()]+?)\s*\)/g, '$1.copy({ $2: $3 })');
+}
+
+function eraseGenericConstructorArguments(code: string): string {
+  return code.replace(/\b([A-Z][A-Za-z0-9_]*)\s*<[^>{}]+>\s*\(/g, '$1(');
 }
 
 /**
@@ -1092,12 +1162,15 @@ function insertNewForInstantiation(code: string, classNames: Set<string>): strin
  * pass once every class name is known.
  */
 function transpileOOPDeclarations(code: string): string {
+  code = stripAbstractMemberDeclarations(code);
   code = stripModifierKeywords(code);
+  code = transpileDataClassCopyCalls(code);
+  code = eraseGenericConstructorArguments(code);
   code = transpileEnumClasses(code);
-  code = stripInterfaceDeclarations(code);
-  code = transpileObjectDeclarations(code);
+  code = transpileInterfaceDeclarations(code);
   const classNames = new Set<string>();
   code = transpileClassDeclarations(code, classNames);
+  code = transpileObjectDeclarations(code);
   code = insertNewForInstantiation(code, classNames);
   return code;
 }
@@ -1106,6 +1179,10 @@ function transpileOOPDeclarations(code: string): string {
  * Transpiles Kotlin code into an isolated JavaScript execution function.
  */
 function transpileKotlinToJS(kotlinCode: string): string {
+  // Capture Map-producing declarations before lambda lowering expands a
+  // chained expression across lines. The post-lowering scan below still
+  // catches declarations introduced or normalized by the lowering passes.
+  const sourceMapVars = inferMapVars(kotlinCode);
   kotlinCode = stripCollectionGenerics(kotlinCode);
   kotlinCode = lowerKotlinFunctions(kotlinCode);
   kotlinCode = transpileMapDeclarations(kotlinCode);
@@ -1115,7 +1192,7 @@ function transpileKotlinToJS(kotlinCode: string): string {
   const lines = kotlinCode.split('\n');
   const jsLines: string[] = [];
   const intVars = inferIntTypedVars(kotlinCode);
-  const mapVars = inferMapVars(kotlinCode);
+  const mapVars = new Set([...sourceMapVars, ...inferMapVars(kotlinCode)]);
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
@@ -1169,6 +1246,12 @@ function transpileKotlinToJS(kotlinCode: string): string {
     // Kotlin single-line if-expression (`val x = if (cond) a else b`) ->
     // JS ternary -- see `transformIfExpression` above.
     line = transformIfExpression(line);
+
+    // Kotlin equality calls an object's generated/declared equals method;
+    // JavaScript's `==` only compares object identity. This narrow lowering
+    // covers the identifiers and property accesses used by the teaching
+    // runner while retaining primitive equality behavior.
+    line = line.replace(/\b([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?)\s*==\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?|\d+|true|false|null)\b/g, '__kt_equals($1, $2)');
 
     // Handle Kotlin fun declarations
     // fun foo(a: Int, b: String): String { -> function foo(a, b) {
@@ -1467,6 +1550,10 @@ export async function compileAndRunKotlin(
     }
     return value;
   };
+  const __kt_equals = (left: any, right: any) => {
+    if (left === null || left === undefined || right === null || right === undefined) return left === right;
+    return typeof left.equals === 'function' ? left.equals(right) : left === right;
+  };
 
   let returnValue: any = undefined;
 
@@ -1525,6 +1612,7 @@ export async function compileAndRunKotlin(
       '__kt_mutableSetOf',
       '__kt_size',
       '__kt_notNull',
+      '__kt_equals',
       'Pair',
       '__kt_format',
       runnerScript
@@ -1545,6 +1633,7 @@ export async function compileAndRunKotlin(
           __kt_mutableSetOf,
           __kt_size,
           __kt_notNull,
+          __kt_equals,
           (a: any, b: any) => new KotlinPair(a, b),
           formatKotlinValue
         );
