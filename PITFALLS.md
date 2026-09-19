@@ -1123,3 +1123,16 @@ duplicates with a `writeRun.solutionCode`/`debug.fixedCode` comparison
 script across all of World 8, `npm run audit:world8-quality` (42 examples,
 42 predictions, 52 execution checks, all passing), and the same full
 cross-world regression suite as above.
+
+## Trailing lambdas with explicit parameter arrows were mistakenly emitted as literal lambdas instead of attaching to the call site
+
+Found while auditing World 9 (Lambda Lab): `return@forEach` inside a trailing lambda with an explicit parameter arrow (`items.forEach { item -> if (item < 0) return@forEach; println(item) }`) failed to compile with `Compilation error: Unresolved return label: forEach`.
+
+Root cause: in `src/utils/kotlinFunctions.ts`, the lowering loop emits lambda expressions through two branches:
+1. `trailing` (a lambda immediately trailing a function/method call), which assigns the callee's name (`forEach`, `filter`, etc.) as the implicit label for labelled returns (`return@forEach`).
+2. `literal` (a standalone lambda expression `{ ... }`).
+
+When a lambda contained an explicit parameter arrow (`item ->`), the lookup checked `literal` before `trailing`, or the condition matched `literal` because both `trailing` and `literal` records were indexed by opening brace. Because `literal` was selected over `trailing`, the engine emitted the lambda as a standalone function value rather than associating it with the enclosing call. Consequently, the call's name was never registered as an active label in the lambda's lexical scope, causing `return@forEach` to be rejected as an unresolved return label.
+
+Fixed in `src/utils/kotlinFunctions.ts` by prioritizing `trailing` lambdas over `literal` lambdas when both match a token index (`const lambda = trailing ?? literal`). This ensures trailing lambdas with explicit parameter arrows are correctly associated with their call site, allowing implicit labels like `@forEach` to resolve properly. Verified via `npm run test:lambda-runner` (119/119 passing), `npm run audit:world9-quality`, and cross-world regression tests.
+

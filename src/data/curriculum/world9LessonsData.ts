@@ -11,25 +11,54 @@ type RunnableConfig = {
   learnText: string;
   takeaway: string;
   example: string[];
-  explore: string[];
-  exploreNote: string;
-  predictions: Array<{ code: string[]; output: string; detail: string }>;
+  exploreCards: Array<{
+    title: string;
+    subtitle: string;
+    code: string[];
+    whatItMeans: Array<{ label: string; description: string }>;
+    whatChanged: string;
+  }>;
+  predictions: Array<{
+    code?: string[];
+    prompt?: string;
+    options: Array<{ id: 'A' | 'B' | 'C' | 'D'; label: string; isCorrect: boolean }>;
+    detail: string;
+  }>;
   challenge: string;
   description: string;
   initialCode: string;
   solutionCode: string;
   expectedOutput: string;
+  debugTitle: string;
+  debugSubtitle: string;
   brokenCode: string;
   fixedCode: string;
+  debugExpectedOutput?: string;
   hints: [string, string, string];
+  debugExplanation: string;
 };
 
-const outputOptions = (answer: string) => [
-  { id: 'A' as const, label: answer, isCorrect: true },
-  { id: 'B' as const, label: '0', isCorrect: false },
-  { id: 'C' as const, label: 'An error', isCorrect: false },
-  { id: 'D' as const, label: 'The function itself', isCorrect: false },
-];
+type ReasoningConfig = {
+  key: string;
+  topic: string;
+  learnTitle: string;
+  learnText: string;
+  takeaway: string;
+  example: string[];
+  exploreCards: Array<{
+    title: string;
+    subtitle: string;
+    code: string[];
+    whatItMeans: Array<{ label: string; description: string }>;
+    whatChanged: string;
+  }>;
+  predictions: Array<{
+    code?: string[];
+    prompt: string;
+    options: Array<{ id: 'A' | 'B' | 'C' | 'D'; label: string; isCorrect: boolean }>;
+    detail: string;
+  }>;
+};
 
 function runnableLesson(config: RunnableConfig): FiveStageLesson {
   let commentNumber = 0;
@@ -38,6 +67,7 @@ function runnableLesson(config: RunnableConfig): FiveStageLesson {
     return `${indent}// ${commentNumber}. ${text}`;
   });
   const numberedDescription = `${config.description}\n\n1. Complete the function or lambda behavior described above.\n\n2. Call the completed value from the provided main() code.\n\n3. Confirm the output matches the expected result.`;
+
   return {
     id: `world-9-${config.key}`,
     worldId: WORLD_ID,
@@ -53,33 +83,29 @@ function runnableLesson(config: RunnableConfig): FiveStageLesson {
       codeSnippet: config.example,
       explanation: config.learnText,
       keyIdeas: [
-        { number: 1, title: 'Functions are values', description: 'A function can be stored in a variable, passed to another function, and called later.' },
-        { number: 2, title: 'The parameter decides the behavior', description: 'The same reusable function can produce different results when it receives a different operation.' },
-        { number: 3, title: 'Call the value with parentheses', description: 'Once a function value is available, value(input) runs it just like a named function call.' },
+        { number: 1, title: 'Functions are first-class values', description: 'A function can be stored in a variable, passed as an argument, and invoked later with parentheses.' },
+        { number: 2, title: 'Behavior is configurable', description: 'Higher-order functions separate control flow from logic, allowing callers to supply custom operations.' },
+        { number: 3, title: 'Precise return boundaries', description: 'Lambdas return their last expression, anonymous functions return locally, and inline functions permit non-local returns.' },
       ],
       keyTakeaway: config.takeaway,
     },
     explore: {
       title: 'Explore the Concept',
-      subtitle: 'Read the lambda from its input to its returned expression, then watch where the callable value is used.',
-      cards: [
-        {
-          id: `${config.key}-explore-1`, number: '01', title: 'Trace the callable value', language: 'Kotlin',
-          subtitle: config.exploreNote, code: config.explore,
-          whatItMeans: [{ label: 'Function value', description: 'This expression produces a callable value rather than running immediately.' }],
-          whatChanged: 'Stored or passed a behavior, then invoked that behavior with a real input.',
-        },
-        {
-          id: `${config.key}-explore-2`, number: '02', title: 'Change the input', language: 'Kotlin',
-          subtitle: 'The same operation can be reused with another value.', code: config.example,
-          whatItMeans: [{ label: 'Reusable operation', description: 'Only the input changes; the function’s rule stays the same.' }],
-          whatChanged: 'Confirmed that one callable value can be invoked repeatedly.',
-        },
-      ],
+      subtitle: 'Examine distinct ways this functional feature is written, invoked, and composed in Kotlin.',
+      cards: config.exploreCards.map((card, idx) => ({
+        id: `${config.key}-explore-${idx + 1}`,
+        number: `0${idx + 1}`,
+        title: card.title,
+        language: 'Kotlin',
+        subtitle: card.subtitle,
+        code: card.code,
+        whatItMeans: card.whatItMeans,
+        whatChanged: card.whatChanged,
+      })),
     },
     predict: {
       title: 'What will this code print?',
-      subtitle: 'Evaluate the operation first, then follow the value passed into println().',
+      subtitle: 'Trace each callable value and evaluate how the operation executes.',
       questions: config.predictions.map((question, index) => ({
         id: `${config.key}-predict-${index + 1}`,
         questionNumber: index + 1,
@@ -88,297 +114,1434 @@ function runnableLesson(config: RunnableConfig): FiveStageLesson {
         topicMeta: config.topic,
         language: 'Kotlin',
         code: question.code,
-        prompt: 'What will this code print?',
-        options: outputOptions(question.output),
+        prompt: question.prompt ?? 'What will this code print?',
+        options: question.options,
         explanation: { codeRef: 'The callable expression', detail: question.detail },
       })),
     },
     writeRun: {
-      challengeNumber: 1, totalChallenges: 1, xpReward: config.key === 'boss' ? 50 : 20,
-      title: config.challenge, description: numberedDescription,
+      challengeNumber: 1,
+      totalChallenges: 1,
+      xpReward: config.key === 'boss' ? 50 : 20,
+      title: config.challenge,
+      description: numberedDescription,
       requirements: { name: 'main', params: '(none)', returns: 'Unit' },
-      fileName: `${config.topic.replace(/[^A-Za-z]/g, '')}.kt`, initialCode: numberedStarterCode,
-      solutionCode: config.solutionCode, sampleInput: 'main()', expectedOutput: config.expectedOutput,
+      fileName: `${config.topic.replace(/[^A-Za-z]/g, '')}.kt`,
+      initialCode: numberedStarterCode,
+      solutionCode: config.solutionCode,
+      sampleInput: 'main()',
+      expectedOutput: config.expectedOutput,
       testCase: { call: '', expected: config.expectedOutput },
     },
     debug: {
-      title: 'Fix the Function Behavior', subtitle: 'The program runs, but its callable value applies the wrong rule.',
-      challengeNumber: 1, totalChallenges: 1, difficulty: 'medium', bugType: 'logic',
-      bugLabel: 'Logic Bug: Wrong Lambda or Function Value', brokenCode: config.brokenCode,
-      fixedCode: config.fixedCode, expectedOutput: config.expectedOutput, hints: config.hints,
-      explanation: 'The function value is valid Kotlin, so the program runs. Compare the operation’s expression with the result the program is meant to produce, then restore the intended callable behavior.',
+      title: config.debugTitle,
+      subtitle: config.debugSubtitle,
+      challengeNumber: 1,
+      totalChallenges: 1,
+      difficulty: 'medium',
+      bugType: 'logic',
+      bugLabel: 'Logic Bug: Incorrect Function Behavior',
+      brokenCode: config.brokenCode,
+      fixedCode: config.fixedCode,
+      expectedOutput: config.debugExpectedOutput ?? config.expectedOutput,
+      hints: config.hints,
+      explanation: config.debugExplanation,
     },
     mastered: {
       topicTitle: config.topic,
       summary: `You have mastered ${config.topic.toLowerCase()} by reading, predicting, writing, and repairing callable Kotlin code.`,
-      passedCount: '3 / 3 PASSED',
+      passedCount: `${config.predictions.length} / ${config.predictions.length} PASSED`,
       verificationItems: [
         { title: 'Concept understood', subtitle: config.takeaway },
-        { title: 'Examples explored', subtitle: 'Stored and invoked a reusable operation' },
-        { title: 'Predictions completed', subtitle: '3/3 callable-value traces correct' },
+        { title: 'Examples explored', subtitle: 'Progressive patterns examined and verified' },
+        { title: 'Predictions completed', subtitle: `${config.predictions.length}/${config.predictions.length} callable-value traces correct` },
         { title: 'Code written & executed', subtitle: 'A runnable function-value challenge passed' },
-        { title: 'Bugs diagnosed & repaired', subtitle: 'Repaired a wrong operation result' },
-      ], xpEarned: config.key === 'boss' ? 50 : 20, streakDays: 1, accuracy: '100%',
+        { title: 'Bugs diagnosed & repaired', subtitle: 'Repaired a distinct bug scenario' },
+      ],
+      xpEarned: config.key === 'boss' ? 50 : 20,
+      streakDays: 1,
+      accuracy: '100%',
     },
   };
 }
 
-function conceptualLesson(key: string, topic: string, title: string, subtitle: string, code: string[], questions: Array<{ prompt: string; answer: string; detail: string }>): FiveStageLesson {
+function reasoningLesson(config: ReasoningConfig): FiveStageLesson {
   return {
-    id: `world-9-${key}`, worldId: WORLD_ID, worldName: WORLD_NAME, stageName: STAGE, topicTitle: topic,
+    id: `world-9-${config.key}`,
+    worldId: WORLD_ID,
+    worldName: WORLD_NAME,
+    stageName: STAGE,
+    topicTitle: config.topic,
     learn: {
-      title, subtitle, exampleTag: 'CONCEPT', exampleTitle: 'Read the compiler rule', language: 'Kotlin', codeSnippet: code,
-      explanation: subtitle,
+      title: config.learnTitle,
+      subtitle: config.learnText,
+      exampleTag: 'CONCEPT',
+      exampleTitle: 'Compiler semantics',
+      language: 'Kotlin',
+      codeSnippet: config.example,
+      explanation: config.learnText,
       keyIdeas: [
-        { number: 1, title: 'This is a compile-time rule', description: 'Its purpose is to make control flow or generated code safe before the program runs.' },
-        { number: 2, title: 'Syntax signals intent', description: 'Kotlin uses a modifier or label so the compiler can enforce the correct boundary.' },
-        { number: 3, title: 'Use the right activity', description: 'Understand this rule through reading and prediction; the in-app runner does not pretend to emulate compiler internals.' },
+        { number: 1, title: 'Compile-time code generation', description: 'Modifiers like inline, noinline, and crossinline instruct the Kotlin compiler how to transform call sites.' },
+        { number: 2, title: 'Performance vs. code size', description: 'Inlining eliminates closure object allocations at call sites, but inlining huge functions inflates bytecode size.' },
+        { number: 3, title: 'Control-flow boundaries', description: 'Non-local returns are only safe in truly inlined contexts; crossinline and noinline preserve boundaries.' },
       ],
-      keyTakeaway: subtitle,
+      keyTakeaway: config.takeaway,
+    },
+    explore: {
+      title: 'Explore the Concept',
+      subtitle: 'Examine how Kotlin compiler directives govern inlining and return safety.',
+      cards: config.exploreCards.map((card, idx) => ({
+        id: `${config.key}-explore-${idx + 1}`,
+        number: `0${idx + 1}`,
+        title: card.title,
+        language: 'Kotlin',
+        subtitle: card.subtitle,
+        code: card.code,
+        whatItMeans: card.whatItMeans,
+        whatChanged: card.whatChanged,
+      })),
     },
     predict: {
-      title: 'Check Your Understanding', subtitle: 'Choose the statement that matches Kotlin’s compiler rule.',
-      questions: questions.map((question, index) => ({
-        id: `${key}-predict-${index + 1}`, questionNumber: index + 1, totalQuestions: questions.length,
-        title: topic, topicMeta: 'Compiler semantics', language: 'Kotlin', code: index === 0 ? code : undefined,
+      title: 'Check Your Understanding',
+      subtitle: 'Predict runtime behavior and compiler semantics for inlining rules.',
+      questions: config.predictions.map((question, index) => ({
+        id: `${config.key}-predict-${index + 1}`,
+        questionNumber: index + 1,
+        totalQuestions: config.predictions.length,
+        title: config.topic,
+        topicMeta: 'Compiler semantics',
+        language: 'Kotlin',
+        code: question.code,
         prompt: question.prompt,
-        options: [
-          { id: 'A', label: question.answer, isCorrect: true },
-          { id: 'B', label: 'It only changes the visual formatting of the code.', isCorrect: false },
-          { id: 'C', label: 'It makes every variable mutable.', isCorrect: false },
-          { id: 'D', label: 'It is identical to a normal function call in every situation.', isCorrect: false },
-        ], explanation: { codeRef: 'Kotlin compiler rule', detail: question.detail },
+        options: question.options,
+        explanation: { codeRef: 'Kotlin compiler rule', detail: question.detail },
       })),
     },
     mastered: {
-      topicTitle: topic, summary: `You understand when and why Kotlin uses ${topic.toLowerCase()} semantics.`, passedCount: '3 / 3 PASSED',
+      topicTitle: config.topic,
+      summary: `You understand when and why Kotlin uses ${config.topic.toLowerCase()} semantics.`,
+      passedCount: `${config.predictions.length} / ${config.predictions.length} PASSED`,
       verificationItems: [
-        { title: 'Concept understood', subtitle }, { title: 'Compiler rule identified', subtitle: 'Distinguished runtime behavior from compiler-enforced behavior' },
-        { title: 'Predictions completed', subtitle: '3/3 semantic checks correct' },
-      ], xpEarned: 20, streakDays: 1, accuracy: '100%',
+        { title: 'Concept understood', subtitle: config.takeaway },
+        { title: 'Compiler rules explored', subtitle: 'Analyzed inlining transformations and return constraints' },
+        { title: 'Predictions completed', subtitle: `${config.predictions.length}/${config.predictions.length} semantic checks correct` },
+      ],
+      xpEarned: 20,
+      streakDays: 1,
+      accuracy: '100%',
     },
   };
 }
 
 export const LAMBDA_EXPRESSIONS_LESSON = runnableLesson({
-  key: 'lambda-expressions', topic: 'Lambda expressions', learnTitle: 'Write a Function Without Naming It',
-  learnText: 'A lambda is a compact function value. Parameters appear before -> and the final expression becomes the result.',
-  takeaway: 'Use { input -> result } when a small behavior belongs exactly where it is used.',
-  example: ['fun main() {', '    val double = { number: Int -> number * 2 }', '    println(double(6))', '}'],
-  explore: ['val label = { name: String -> "Hi, " + name }', 'println(label("Mina"))'], exploreNote: 'The lambda is assigned first, then invoked with label("Mina").',
-  predictions: [
-    { code: ['fun main() {', '    val addFive = { n: Int -> n + 5 }', '    println(addFive(4))', '}'], output: '9', detail: 'n receives 4, so n + 5 is 9.' },
-    { code: ['fun main() {', '    val square = { n: Int -> n * n }', '    println(square(3))', '}'], output: '9', detail: 'The one input is multiplied by itself.' },
-    { code: ['fun main() {', '    val greet = { name: String -> "Hi " + name }', '    println(greet("Jo"))', '}'], output: 'Hi Jo', detail: 'The lambda concatenates the input string.' },
+  key: 'lambda-expressions',
+  topic: 'Lambda expressions',
+  learnTitle: 'Write a Function Without Naming It',
+  learnText: 'A lambda is a compact function literal written with braces. Parameters appear before -> and the final expression becomes the returned result.',
+  takeaway: 'Use { input -> result } when a small behavior belongs directly where it is declared or passed.',
+  example: [
+    'fun main() {',
+    '    val double = { number: Int -> number * 2 }',
+    '    println(double(6))',
+    '}',
   ],
-  challenge: 'Build a Tripler', description: 'Create a lambda named triple that receives an Int and returns that number multiplied by 3. Print triple(7).',
+  exploreCards: [
+    {
+      title: 'Single-parameter text formatter',
+      subtitle: 'A lambda can accept a String and concatenate it into a welcome message.',
+      code: [
+        'val format = { name: String -> "Welcome, " + name }',
+        'println(format("Mina"))',
+      ],
+      whatItMeans: [{ label: 'format("Mina")', description: 'Invokes the lambda with "Mina", returning "Welcome, Mina".' }],
+      whatChanged: 'Stored a String-to-String lambda in format and called it with an argument.',
+    },
+    {
+      title: 'Two-parameter math operation',
+      subtitle: 'Parameters before -> are comma-separated and called positionally.',
+      code: [
+        'val sum = { a: Int, b: Int -> a + b }',
+        'println(sum(15, 27))',
+      ],
+      whatItMeans: [{ label: 'sum(15, 27)', description: 'Binds a=15 and b=27, then evaluates a + b.' }],
+      whatChanged: 'Demonstrated a multi-parameter lambda combining two integer inputs.',
+    },
+    {
+      title: 'Zero-parameter supplier lambda',
+      subtitle: 'A lambda with no parameters omits the arrow -> completely and is invoked with empty parentheses.',
+      code: [
+        'val ping = { "PONG" }',
+        'println(ping())',
+      ],
+      whatItMeans: [{ label: 'ping()', description: 'Invokes the zero-parameter lambda, returning "PONG".' }],
+      whatChanged: 'Declared and invoked a supplier lambda with zero parameters.',
+    },
+    {
+      title: 'Multiline lambda body',
+      subtitle: 'Statements execute sequentially, and the very last expression becomes the returned value.',
+      code: [
+        'val score = { base: Int ->',
+        '    val bonus = 5',
+        '    base + bonus',
+        '}',
+        'println(score(20))',
+      ],
+      whatItMeans: [{ label: 'base + bonus', description: 'The final line in the braces determines the lambda output.' }],
+      whatChanged: 'Added an intermediate local variable inside the lambda body before returning.',
+    },
+    {
+      title: 'Capturing and reading outer variables (closure)',
+      subtitle: 'Lambdas can access and observe variables declared in their surrounding outer scope.',
+      code: [
+        'var factor = 2',
+        'val scale = { n: Int -> n * factor }',
+        'println(scale(5))',
+        'factor = 3',
+        'println(scale(5))',
+      ],
+      whatItMeans: [{ label: 'factor = 3', description: 'The lambda captures factor by reference and reflects updates made to it.' }],
+      whatChanged: 'Observed outer variable mutation across multiple invocations.',
+    },
+  ],
+  predictions: [
+    {
+      code: ['fun main() {', '    val addFive = { n: Int -> n + 5 }', '    println(addFive(4))', '}'],
+      options: [
+        { id: 'A', label: '9', isCorrect: true },
+        { id: 'B', label: '4', isCorrect: false },
+        { id: 'C', label: '5', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'n receives 4, so evaluating n + 5 yields 9.',
+    },
+    {
+      code: ['fun main() {', '    val multiply = { x: Int, y: Int -> x * y }', '    println(multiply(3, 4))', '}'],
+      options: [
+        { id: 'A', label: '12', isCorrect: true },
+        { id: 'B', label: '7', isCorrect: false },
+        { id: 'C', label: '34', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'The two parameters x and y receive 3 and 4; 3 * 4 is 12.',
+    },
+    {
+      code: ['fun main() {', '    val cheer = { "Hurray!" }', '    println(cheer())', '}'],
+      options: [
+        { id: 'A', label: 'Hurray!', isCorrect: true },
+        { id: 'B', label: 'cheer', isCorrect: false },
+        { id: 'C', label: 'null', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'The lambda takes zero parameters and produces "Hurray!" when invoked with cheer().',
+    },
+    {
+      code: ['fun main() {', '    val greet = { name: String -> "Hi " + name }', '    println(greet("Jo"))', '}'],
+      options: [
+        { id: 'A', label: 'Hi Jo', isCorrect: true },
+        { id: 'B', label: 'Hi name', isCorrect: false },
+        { id: 'C', label: 'Jo', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'The lambda concatenates "Hi " with the input string "Jo".',
+    },
+    {
+      code: [
+        'fun main() {',
+        '    var multiplier = 2',
+        '    val multiply = { x: Int -> x * multiplier }',
+        '    println(multiply(3))',
+        '    multiplier = 4',
+        '    println(multiply(3))',
+        '}',
+      ],
+      options: [
+        { id: 'A', label: '6\n12', isCorrect: true },
+        { id: 'B', label: '6\n6', isCorrect: false },
+        { id: 'C', label: '12\n12', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'The lambda captures multiplier from outer scope. First call computes 3 * 2 = 6; after multiplier becomes 4, the second call computes 3 * 4 = 12.',
+    },
+  ],
+  challenge: 'Build a Tripler',
+  description: 'Create a lambda named triple that receives an Int and returns that number multiplied by 3. Print triple(7).',
   initialCode: 'fun main() {\n    // Create triple as a lambda taking number: Int:\n\n    println(triple(7))\n}',
-  solutionCode: 'fun main() {\n    val triple = { number: Int -> number * 3 }\n    println(triple(7))\n}', expectedOutput: '21',
-  brokenCode: 'fun main() {\n    val triple = { number: Int -> number + 3 }\n    println(triple(7))\n}', fixedCode: 'fun main() {\n    val triple = { number: Int -> number * 3 }\n    println(triple(7))\n}',
-  hints: ['The lambda should triple, not add a fixed amount.', 'Look at the operator between number and 3.', 'Replace + with * in the lambda body.'],
+  solutionCode: 'fun main() {\n    val triple = { number: Int -> number * 3 }\n    println(triple(7))\n}',
+  expectedOutput: '21',
+  debugTitle: 'Fix the Fuel Cost Multiplier',
+  debugSubtitle: 'The fuel calculation adds distance instead of multiplying by rate, printing 14 instead of 40.',
+  brokenCode: 'fun main() {\n    val fuelCost = { distance: Int -> distance + 4 }\n    println(fuelCost(10))\n}',
+  fixedCode: 'fun main() {\n    val fuelCost = { distance: Int -> distance * 4 }\n    println(fuelCost(10))\n}',
+  debugExpectedOutput: '40',
+  hints: [
+    'The fuel calculation should multiply distance by 4, not add 4.',
+    'Look at the operator inside the lambda body: distance + 4.',
+    'Replace + with * so distance * 4 computes 40 for input 10.',
+  ],
+  debugExplanation: 'The original lambda used + instead of *, calculating 10 + 4 = 14. Changing the operator to * produces the expected 40.',
 });
 
 export const ANONYMOUS_FUNCTIONS_LESSON = runnableLesson({
-  key: 'anonymous-functions', topic: 'Anonymous functions', learnTitle: 'Use fun as a Value',
-  learnText: 'An anonymous function uses fun without a name. Unlike a lambda, an ordinary return inside it returns from that anonymous function.',
-  takeaway: 'Use fun (...) { return ... } when an unnamed function needs an explicit local return.',
-  example: ['fun main() {', '    val double = fun(number: Int): Int { return number * 2 }', '    println(double(6))', '}'],
-  explore: ['val welcome = fun(name: String): String { return "Welcome, " + name }', 'println(welcome("Ari"))'], exploreNote: 'The function has no declaration name; welcome stores the function value.',
-  predictions: [
-    { code: ['fun main() {', '    val next = fun(n: Int): Int { return n + 1 }', '    println(next(8))', '}'], output: '9', detail: 'return n + 1 is local to the anonymous function.' },
-    { code: ['fun main() {', '    val twice = fun(n: Int): Int { return n * 2 }', '    println(twice(5))', '}'], output: '10', detail: 'The anonymous function returns 5 * 2.' },
-    { code: ['fun main() {', '    val tag = fun(word: String): String { return "#" + word }', '    println(tag("kotlin"))', '}'], output: '#kotlin', detail: 'The function returns the prefixed string.' },
+  key: 'anonymous-functions',
+  topic: 'Anonymous functions',
+  learnTitle: 'Use fun as a Value',
+  learnText: 'An anonymous function uses the fun keyword without a function name. Unlike a lambda, a regular return inside it exits that anonymous function itself, not the outer caller.',
+  takeaway: 'Use fun (...) { return ... } when an unnamed function requires an explicit local return boundary or multiple return statements.',
+  example: [
+    'fun main() {',
+    '    val double = fun(number: Int): Int { return number * 2 }',
+    '    println(double(6))',
+    '}',
   ],
-  challenge: 'Create a Local Formatter', description: 'Store an anonymous function in format. It should return "Score: " + value. Print format(42).',
+  exploreCards: [
+    {
+      title: 'Explicit local early return',
+      subtitle: 'Multiple return statements allow guard clauses without labels.',
+      code: [
+        'val safeDivide = fun(a: Int, b: Int): Int {',
+        '    if (b == 0) return 0',
+        '    return a / b',
+        '}',
+        'println(safeDivide(12, 3))',
+        'println(safeDivide(10, 0))',
+      ],
+      whatItMeans: [{ label: 'return 0', description: 'Exits the anonymous function early when division by zero would occur.' }],
+      whatChanged: 'Demonstrated guard clauses returning locally from the anonymous function.',
+    },
+    {
+      title: 'String transformation function',
+      subtitle: 'Explicit parameter types and return type define a clear contract.',
+      code: [
+        'val tag = fun(word: String): String { return "[" + word + "]" }',
+        'println(tag("Kotlin"))',
+      ],
+      whatItMeans: [{ label: 'fun(word: String): String', description: 'Defines an anonymous function taking String and returning String.' }],
+      whatChanged: 'Used an anonymous function to enclose a string in brackets.',
+    },
+    {
+      title: 'Expression-body anonymous function',
+      subtitle: 'Single-expression syntax fun(...) = expr is supported without explicit return.',
+      code: [
+        'val square = fun(x: Int): Int = x * x',
+        'println(square(6))',
+      ],
+      whatItMeans: [{ label: '= x * x', description: 'Directly computes and returns the squared result.' }],
+      whatChanged: 'Wrote an anonymous function with single-expression body syntax.',
+    },
+    {
+      title: 'Passing an anonymous function to higher-order functions',
+      subtitle: 'Anonymous functions can be passed directly into standard library functions like filter.',
+      code: [
+        'val numbers = listOf(1, 2, 3, 4, 5, 6)',
+        'val evens = numbers.filter(fun(n: Int): Boolean { return n % 2 == 0 })',
+        'println(evens)',
+      ],
+      whatItMeans: [{ label: 'filter(fun(...) { ... })', description: 'Passes the anonymous function inside parentheses as an argument to filter.' }],
+      whatChanged: 'Supplied an explicit anonymous function with local return into a higher-order collection function.',
+    },
+  ],
+  predictions: [
+    {
+      code: ['fun main() {', '    val next = fun(n: Int): Int { return n + 1 }', '    println(next(8))', '}'],
+      options: [
+        { id: 'A', label: '9', isCorrect: true },
+        { id: 'B', label: '8', isCorrect: false },
+        { id: 'C', label: '1', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'The anonymous function executes return 8 + 1, producing 9.',
+    },
+    {
+      code: ['fun main() {', '    val twice = fun(n: Int): Int { return n * 2 }', '    println(twice(5))', '}'],
+      options: [
+        { id: 'A', label: '10', isCorrect: true },
+        { id: 'B', label: '5', isCorrect: false },
+        { id: 'C', label: '2', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'Calling twice(5) returns 5 * 2 = 10.',
+    },
+    {
+      code: ['fun main() {', '    val tag = fun(word: String): String { return "#" + word }', '    println(tag("kotlin"))', '}'],
+      options: [
+        { id: 'A', label: '#kotlin', isCorrect: true },
+        { id: 'B', label: 'kotlin', isCorrect: false },
+        { id: 'C', label: '#', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'Prefixes "#" to the argument "kotlin", giving "#kotlin".',
+    },
+    {
+      code: [
+        'fun main() {',
+        '    val items = listOf("cat", "elephant", "dog")',
+        '    val longWords = items.filter(fun(w: String): Boolean { return w.length > 3 })',
+        '    println(longWords)',
+        '}',
+      ],
+      options: [
+        { id: 'A', label: '[elephant]', isCorrect: true },
+        { id: 'B', label: '[cat, dog]', isCorrect: false },
+        { id: 'C', label: '[cat, elephant, dog]', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'filter evaluates each string with the anonymous function; only "elephant" has length > 3, yielding [elephant].',
+    },
+  ],
+  challenge: 'Create a Local Formatter',
+  description: 'Store an anonymous function in format. It should return "Score: " + value. Print format(42).',
   initialCode: 'fun main() {\n    // Create format as an anonymous function taking value: Int:\n\n    println(format(42))\n}',
-  solutionCode: 'fun main() {\n    val format = fun(value: Int): String { return "Score: " + value }\n    println(format(42))\n}', expectedOutput: 'Score: 42',
-  brokenCode: 'fun main() {\n    val format = fun(value: Int): String { return "Score: " + (value + 1) }\n    println(format(42))\n}', fixedCode: 'fun main() {\n    val format = fun(value: Int): String { return "Score: " + value }\n    println(format(42))\n}',
-  hints: ['The function should format the exact value it receives.', 'Nothing should change value before it is concatenated.', 'Remove + 1 from the return expression.'],
+  solutionCode: 'fun main() {\n    val format = fun(value: Int): String { return "Score: " + value }\n    println(format(42))\n}',
+  expectedOutput: 'Score: 42',
+  debugTitle: 'Fix the Reference Code Formatter',
+  debugSubtitle: 'The reference formatter adds 1 to the code parameter, producing REF-101 instead of REF-100.',
+  brokenCode: 'fun main() {\n    val parseCode = fun(code: Int): String { return "REF-" + (code + 1) }\n    println(parseCode(100))\n}',
+  fixedCode: 'fun main() {\n    val parseCode = fun(code: Int): String { return "REF-" + code }\n    println(parseCode(100))\n}',
+  debugExpectedOutput: 'REF-100',
+  hints: [
+    'The reference code should keep the exact integer passed in.',
+    'Notice the + 1 addition to code in the return expression.',
+    'Remove (code + 1) and return "REF-" + code.',
+  ],
+  debugExplanation: 'The anonymous function altered the input value by adding 1. Removing the + 1 restores the correct code REF-100.',
 });
 
 export const FUNCTION_TYPES_LESSON = runnableLesson({
-  key: 'function-types', topic: 'Function types', learnTitle: 'Describe a Callable Value',
-  learnText: 'A function type such as (Int) -> Int says what input a callable accepts and what it returns.',
-  takeaway: 'Read (Input) -> Output as the contract for a function value.',
-  example: ['fun main() {', '    val double: (Int) -> Int = { n -> n * 2 }', '    println(double(5))', '}'],
-  explore: ['val badge: (String) -> String = { name -> "VIP " + name }', 'println(badge("Rae"))'], exploreNote: 'The annotation promises one String input and one String result.',
-  predictions: [
-    { code: ['fun main() {', '    val plusTwo: (Int) -> Int = { n -> n + 2 }', '    println(plusTwo(7))', '}'], output: '9', detail: 'The callable’s Int input is 7 and it returns 7 + 2.' },
-    { code: ['fun main() {', '    val echo: (String) -> String = { text -> text + "!" }', '    println(echo("Go"))', '}'], output: 'Go!', detail: 'The String result follows the declared String-to-String contract.' },
-    { code: ['fun main() {', '    val subtract: (Int, Int) -> Int = { a, b -> a - b }', '    println(subtract(9, 4))', '}'], output: '5', detail: 'Two Int inputs are accepted in order.' },
+  key: 'function-types',
+  topic: 'Function types',
+  learnTitle: 'Describe a Callable Value',
+  learnText: 'A function type such as (Int) -> Int describes what inputs a callable accepts and what type of value it returns.',
+  takeaway: 'Read (Input) -> Output as the explicit type signature and contract for any function value.',
+  example: [
+    'fun main() {',
+    '    val double: (Int) -> Int = { n -> n * 2 }',
+    '    println(double(5))',
+    '}',
   ],
-  challenge: 'Declare a Discount Function', description: 'Declare discount with type (Int) -> Int. Its lambda should subtract 5 from price. Print discount(30).',
+  exploreCards: [
+    {
+      title: 'Two-parameter function contract',
+      subtitle: 'The function type (String, Int) -> String accepts two parameters in exact order.',
+      code: [
+        'val combine: (String, Int) -> String = { text, count -> text + count }',
+        'println(combine("Level ", 5))',
+      ],
+      whatItMeans: [{ label: '(String, Int) -> String', description: 'Requires a String first, an Int second, and produces a String.' }],
+      whatChanged: 'Annotated a multi-parameter lambda with an explicit two-argument function type.',
+    },
+    {
+      title: 'Zero-parameter function type',
+      subtitle: 'An empty parameter list () -> ReturnType represents a supplier or thunk.',
+      code: [
+        'val ping: () -> String = { "PONG" }',
+        'println(ping())',
+      ],
+      whatItMeans: [{ label: '() -> String', description: 'Takes zero arguments and returns a String when called.' }],
+      whatChanged: 'Declared a zero-parameter function type invoked with ping().',
+    },
+    {
+      title: 'Reassigning a function-typed variable',
+      subtitle: 'A var with a function type can hold any matching callable implementation.',
+      code: [
+        'var op: (Int) -> Int = { it * 2 }',
+        'println(op(4))',
+        'op = { it + 10 }',
+        'println(op(4))',
+      ],
+      whatItMeans: [{ label: 'op = { it + 10 }', description: 'Replaces the doubling logic with an adding logic matching (Int) -> Int.' }],
+      whatChanged: 'Swapped the active implementation stored in a function-typed variable at runtime.',
+    },
+  ],
+  predictions: [
+    {
+      code: ['fun main() {', '    val plusTwo: (Int) -> Int = { n -> n + 2 }', '    println(plusTwo(7))', '}'],
+      options: [
+        { id: 'A', label: '9', isCorrect: true },
+        { id: 'B', label: '7', isCorrect: false },
+        { id: 'C', label: '2', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'The callable contract is (Int) -> Int; calling plusTwo(7) returns 7 + 2 = 9.',
+    },
+    {
+      code: ['fun main() {', '    val echo: (String) -> String = { text -> text + "!" }', '    println(echo("Go"))', '}'],
+      options: [
+        { id: 'A', label: 'Go!', isCorrect: true },
+        { id: 'B', label: 'Go', isCorrect: false },
+        { id: 'C', label: '!', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'The String-to-String lambda appends "!" to "Go", printing "Go!".',
+    },
+    {
+      code: ['fun main() {', '    val subtract: (Int, Int) -> Int = { a, b -> a - b }', '    println(subtract(9, 4))', '}'],
+      options: [
+        { id: 'A', label: '5', isCorrect: true },
+        { id: 'B', label: '13', isCorrect: false },
+        { id: 'C', label: '-5', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'Passes 9 as a and 4 as b, calculating 9 - 4 = 5.',
+    },
+  ],
+  challenge: 'Declare a Discount Function',
+  description: 'Declare discount with type (Int) -> Int. Its lambda should subtract 5 from price. Print discount(30).',
   initialCode: 'fun main() {\n    // Declare discount with type (Int) -> Int:\n\n    println(discount(30))\n}',
-  solutionCode: 'fun main() {\n    val discount: (Int) -> Int = { price -> price - 5 }\n    println(discount(30))\n}', expectedOutput: '25',
-  brokenCode: 'fun main() {\n    val discount: (Int) -> Int = { price -> price + 5 }\n    println(discount(30))\n}', fixedCode: 'fun main() {\n    val discount: (Int) -> Int = { price -> price - 5 }\n    println(discount(30))\n}',
-  hints: ['A discount lowers the price.', 'Check whether the lambda adds or subtracts 5.', 'Use price - 5.'],
+  solutionCode: 'fun main() {\n    val discount: (Int) -> Int = { price -> price - 5 }\n    println(discount(30))\n}',
+  expectedOutput: '25',
+  debugTitle: 'Fix the Surcharge Calculation',
+  debugSubtitle: 'The surcharge function subtracts 8 instead of adding it, producing 12 instead of 28.',
+  brokenCode: 'fun main() {\n    val addSurcharge: (Int) -> Int = { weight -> weight - 8 }\n    println(addSurcharge(20))\n}',
+  fixedCode: 'fun main() {\n    val addSurcharge: (Int) -> Int = { weight -> weight + 8 }\n    println(addSurcharge(20))\n}',
+  debugExpectedOutput: '28',
+  hints: [
+    'A surcharge must increase the cost by 8.',
+    'Check whether the lambda uses + or - between weight and 8.',
+    'Change weight - 8 to weight + 8.',
+  ],
+  debugExplanation: 'The lambda subtracted 8 from 20 instead of adding 8. Changing the subtraction to addition restores the expected result 28.',
 });
 
 export const HIGHER_ORDER_FUNCTIONS_LESSON = runnableLesson({
-  key: 'higher-order-functions', topic: 'Higher-order functions', learnTitle: 'Accept Behavior as an Argument',
-  learnText: 'A higher-order function receives a function value, then decides when to call that behavior.',
-  takeaway: 'Pass an operation parameter when one reusable function should work with many behaviors.',
-  example: ['fun apply(value: Int, operation: (Int) -> Int): Int {', '    return operation(value)', '}', 'fun main() {', '    println(apply(4) { it * 3 })', '}'],
-  explore: ['fun use(value: Int, operation: (Int) -> Int): Int {', '    return operation(value)', '}', 'println(use(10) { it - 1 })'], exploreNote: 'use does not know the rule; operation supplies it.',
-  predictions: [
-    { code: ['fun run(value: Int, op: (Int) -> Int): Int { return op(value) }', 'fun main() {', '    println(run(3) { it * 4 })', '}'], output: '12', detail: 'run passes 3 into the supplied operation.' },
-    { code: ['fun run(value: Int, op: (Int) -> Int): Int { return op(value) }', 'fun main() {', '    println(run(8) { it + 2 })', '}'], output: '10', detail: 'The operation adds 2 after run supplies 8.' },
-    { code: ['fun main() {', '    val op = { n: Int -> n - 3 }', '    println(op(9))', '}'], output: '6', detail: 'A function value can be called after it is stored.' },
+  key: 'higher-order-functions',
+  topic: 'Higher-order functions',
+  learnTitle: 'Accept Behavior as an Argument',
+  learnText: 'A higher-order function is a function that receives another function as a parameter, returns a function, or both. Trailing lambdas can be placed outside the argument parentheses.',
+  takeaway: 'Pass an operation parameter when one reusable algorithm should operate with caller-provided behaviors.',
+  example: [
+    'fun apply(value: Int, operation: (Int) -> Int): Int {',
+    '    return operation(value)',
+    '}',
+    'fun main() {',
+    '    println(apply(4) { it * 3 })',
+    '}',
   ],
-  challenge: 'Apply a Bonus Rule', description: 'Write applyBonus(value, operation) so it returns operation(value). In main, print applyBonus(10) { it + 5 }.',
+  exploreCards: [
+    {
+      title: 'Trailing lambda syntax',
+      subtitle: 'When the last parameter is a function type, the lambda can sit outside parentheses.',
+      code: [
+        'fun apply(value: Int, operation: (Int) -> Int): Int {',
+        '    return operation(value)',
+        '}',
+        'println(apply(4) { it * 3 })',
+      ],
+      whatItMeans: [{ label: 'apply(4) { it * 3 }', description: '4 is passed inside parentheses; the operation lambda follows outside.' }],
+      whatChanged: 'Demonstrated Kotlin’s conventional trailing lambda calling syntax.',
+    },
+    {
+      title: 'Swapping operations with one higher-order function',
+      subtitle: 'The caller chooses the operation, while apply controls when the operation runs.',
+      code: [
+        'fun apply(value: Int, operation: (Int) -> Int): Int {',
+        '    return operation(value)',
+        '}',
+        'println(apply(10) { it + 2 })',
+        'println(apply(10) { it * 5 })',
+      ],
+      whatItMeans: [{ label: 'Reusable engine', description: 'The exact same apply function handles addition and multiplication.' }],
+      whatChanged: 'Passed two different operations to the same higher-order function.',
+    },
+    {
+      title: 'Two data arguments and an operation',
+      subtitle: 'Higher-order functions can accept multiple arguments before the function parameter.',
+      code: [
+        'fun combine(a: Int, b: Int, op: (Int, Int) -> Int): Int = op(a, b)',
+        'println(combine(7, 3) { x, y -> x - y })',
+      ],
+      whatItMeans: [{ label: 'combine(7, 3) { ... }', description: 'Passes 7 and 3, then executes the subtraction lambda on them.' }],
+      whatChanged: 'Used a higher-order function that combines two inputs with a binary lambda.',
+    },
+  ],
+  predictions: [
+    {
+      code: ['fun run(value: Int, op: (Int) -> Int): Int { return op(value) }', 'fun main() {', '    println(run(3) { it * 4 })', '}'],
+      options: [
+        { id: 'A', label: '12', isCorrect: true },
+        { id: 'B', label: '7', isCorrect: false },
+        { id: 'C', label: '3', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'run invokes op with value 3, computing 3 * 4 = 12.',
+    },
+    {
+      code: ['fun run(value: Int, op: (Int) -> Int): Int { return op(value) }', 'fun main() {', '    println(run(8) { it + 2 })', '}'],
+      options: [
+        { id: 'A', label: '10', isCorrect: true },
+        { id: 'B', label: '8', isCorrect: false },
+        { id: 'C', label: '16', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'run passes 8 into { it + 2 }, returning 10.',
+    },
+    {
+      code: ['fun calculate(x: Int, op: (Int) -> Int): Int = op(x)', 'fun main() {', '    val step = { n: Int -> n - 3 }', '    println(calculate(9, step))', '}'],
+      options: [
+        { id: 'A', label: '6', isCorrect: true },
+        { id: 'B', label: '9', isCorrect: false },
+        { id: 'C', label: '3', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'calculate passes 9 into the step lambda, returning 9 - 3 = 6.',
+    },
+  ],
+  challenge: 'Apply a Bonus Rule',
+  description: 'Write applyBonus(value, operation) so it returns operation(value). In main, print applyBonus(10) { it + 5 }.',
   initialCode: 'fun applyBonus(value: Int, operation: (Int) -> Int): Int {\n    // Return operation(value):\n\n}\n\nfun main() {\n    println(applyBonus(10) { it + 5 })\n}',
-  solutionCode: 'fun applyBonus(value: Int, operation: (Int) -> Int): Int {\n    return operation(value)\n}\n\nfun main() {\n    println(applyBonus(10) { it + 5 })\n}', expectedOutput: '15',
-  brokenCode: 'fun applyBonus(value: Int, operation: (Int) -> Int): Int {\n    return value\n}\n\nfun main() {\n    println(applyBonus(10) { it + 5 })\n}', fixedCode: 'fun applyBonus(value: Int, operation: (Int) -> Int): Int {\n    return operation(value)\n}\n\nfun main() {\n    println(applyBonus(10) { it + 5 })\n}',
-  hints: ['The supplied operation must actually be called.', 'Returning value ignores the lambda.', 'Return operation(value).'],
+  solutionCode: 'fun applyBonus(value: Int, operation: (Int) -> Int): Int {\n    return operation(value)\n}\n\nfun main() {\n    println(applyBonus(10) { it + 5 })\n}',
+  expectedOutput: '15',
+  debugTitle: 'Fix Bypassed Higher-Order Policy',
+  debugSubtitle: 'modifyScore returns score directly without invoking the supplied policy lambda, printing 50 instead of 100.',
+  brokenCode: 'fun modifyScore(score: Int, policy: (Int) -> Int): Int {\n    return score\n}\n\nfun main() {\n    println(modifyScore(50) { it * 2 })\n}',
+  fixedCode: 'fun modifyScore(score: Int, policy: (Int) -> Int): Int {\n    return policy(score)\n}\n\nfun main() {\n    println(modifyScore(50) { it * 2 })\n}',
+  debugExpectedOutput: '100',
+  hints: [
+    'The higher-order function must actually call the policy parameter.',
+    'Returning score ignores the multiplier passed in main().',
+    'Change return score to return policy(score).',
+  ],
+  debugExplanation: 'The function ignored its policy argument and returned the raw score. Calling policy(score) executes the doubling lambda and returns 100.',
 });
 
 export const IT_LESSON = runnableLesson({
-  key: 'it', topic: 'it', learnTitle: 'Use Kotlin’s Implicit Lambda Parameter',
-  learnText: 'When a lambda has exactly one parameter, Kotlin lets you omit its name and use it instead.',
-  takeaway: 'Use it only when one implicit parameter stays clear; name the parameter when clarity needs it.',
-  example: ['fun main() {', '    val double: (Int) -> Int = { it * 2 }', '    println(double(8))', '}'],
-  explore: ['val announce: (String) -> String = { "Ready: " + it }', 'println(announce("Go"))'], exploreNote: 'it stands for the single String input.',
-  predictions: [
-    { code: ['fun main() {', '    val next: (Int) -> Int = { it + 1 }', '    println(next(4))', '}'], output: '5', detail: 'it receives 4.' },
-    { code: ['fun main() {', '    val loud: (String) -> String = { it + "!" }', '    println(loud("Yes"))', '}'], output: 'Yes!', detail: 'it receives the one String argument.' },
-    { code: ['fun main() {', '    val half: (Int) -> Int = { it / 2 }', '    println(half(8))', '}'], output: '4', detail: 'it is 8, so integer division gives 4.' },
+  key: 'it',
+  topic: 'it',
+  learnTitle: 'Use Kotlin’s Implicit Lambda Parameter',
+  learnText: 'When a lambda has exactly one parameter, Kotlin lets you omit the parameter declaration and -> arrow entirely and refer to the argument as it.',
+  takeaway: 'Use it when a single parameter is obvious from context; use an explicit name when clarity or nesting requires it.',
+  example: [
+    'fun main() {',
+    '    val double: (Int) -> Int = { it * 2 }',
+    '    println(double(8))',
+    '}',
   ],
-  challenge: 'Use the Implicit Input', description: 'Create a lambda named cheer with type (String) -> String. Use it to return "Go, " + it + "!". Print cheer("Team").',
+  exploreCards: [
+    {
+      title: 'it in collection transformations',
+      subtitle: 'Standard library functions like map supply each element through it.',
+      code: [
+        'val items = listOf(1, 2, 3)',
+        'println(items.map { it * 10 })',
+      ],
+      whatItMeans: [{ label: 'it * 10', description: 'it represents each integer in items consecutively.' }],
+      whatChanged: 'Used it inside standard library collection map.',
+    },
+    {
+      title: 'String method chaining on it',
+      subtitle: 'it can receive any type, such as String, and call member methods on it directly.',
+      code: [
+        'val shout: (String) -> String = { it.uppercase() + "!" }',
+        'println(shout("hello"))',
+      ],
+      whatItMeans: [{ label: 'it.uppercase()', description: 'Calls String.uppercase() on the implicit it parameter.' }],
+      whatChanged: 'Invoked a method on the implicit it argument.',
+    },
+    {
+      title: 'Boolean predicate using it',
+      subtitle: 'Predicates return Boolean conditions evaluated against it.',
+      code: [
+        'val isPositive: (Int) -> Boolean = { it > 0 }',
+        'println(isPositive(4))',
+        'println(isPositive(-2))',
+      ],
+      whatItMeans: [{ label: 'it > 0', description: 'Evaluates whether the implicit integer input is strictly positive.' }],
+      whatChanged: 'Created a predicate lambda utilizing it.',
+    },
+  ],
+  predictions: [
+    {
+      code: ['fun main() {', '    val next: (Int) -> Int = { it + 1 }', '    println(next(4))', '}'],
+      options: [
+        { id: 'A', label: '5', isCorrect: true },
+        { id: 'B', label: '4', isCorrect: false },
+        { id: 'C', label: '1', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'it is assigned 4, so it + 1 produces 5.',
+    },
+    {
+      code: ['fun main() {', '    val loud: (String) -> String = { it + "!" }', '    println(loud("Yes"))', '}'],
+      options: [
+        { id: 'A', label: 'Yes!', isCorrect: true },
+        { id: 'B', label: 'Yes', isCorrect: false },
+        { id: 'C', label: 'it!', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'it is the string "Yes", so appending "!" gives "Yes!".',
+    },
+    {
+      code: ['fun main() {', '    val half: (Int) -> Int = { it / 2 }', '    println(half(8))', '}'],
+      options: [
+        { id: 'A', label: '4', isCorrect: true },
+        { id: 'B', label: '8', isCorrect: false },
+        { id: 'C', label: '2', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'it receives 8; integer division 8 / 2 results in 4.',
+    },
+  ],
+  challenge: 'Use the Implicit Input',
+  description: 'Create a lambda named cheer with type (String) -> String. Use it to return "Go, " + it + "!". Print cheer("Team").',
   initialCode: 'fun main() {\n    // Create cheer using implicit it:\n\n    println(cheer("Team"))\n}',
-  solutionCode: 'fun main() {\n    val cheer: (String) -> String = { "Go, " + it + "!" }\n    println(cheer("Team"))\n}', expectedOutput: 'Go, Team!',
-  brokenCode: 'fun main() {\n    val cheer: (String) -> String = { "Go, " + it }\n    println(cheer("Team"))\n}', fixedCode: 'fun main() {\n    val cheer: (String) -> String = { "Go, " + it + "!" }\n    println(cheer("Team"))\n}',
-  hints: ['The output needs punctuation after the input.', 'The lambda has one String input, represented by it.', 'Append + "!" to the expression.'],
+  solutionCode: 'fun main() {\n    val cheer: (String) -> String = { "Go, " + it + "!" }\n    println(cheer("Team"))\n}',
+  expectedOutput: 'Go, Team!',
+  debugTitle: 'Fix the Unit Suffix Position',
+  debugSubtitle: 'The unit formatter prepends the unit prefix instead of appending it as a suffix, printing px24 instead of 24px.',
+  brokenCode: 'fun main() {\n    val addUnit: (Int) -> String = { "px" + it }\n    println(addUnit(24))\n}',
+  fixedCode: 'fun main() {\n    val addUnit: (Int) -> String = { it.toString() + "px" }\n    println(addUnit(24))\n}',
+  debugExpectedOutput: '24px',
+  hints: [
+    'The pixel unit "px" must come after the number, not before it.',
+    'Convert the number to string and append "px".',
+    'Use it.toString() + "px" or "$it" + "px".',
+  ],
+  debugExplanation: 'The original code placed "px" in front of it. Swapping the concatenation order to it.toString() + "px" produces 24px.',
 });
 
 export const FUNCTION_REFERENCES_LESSON = runnableLesson({
-  key: 'function-references', topic: 'Function references', learnTitle: 'Pass a Named Function with ::',
-  learnText: 'Prefixing a named function with :: passes the function itself instead of calling it immediately.',
-  takeaway: 'Use ::name when another function needs a callable reference to name.',
-  example: ['fun double(n: Int): Int = n * 2', 'fun main() {', '    val operation: (Int) -> Int = ::double', '    println(operation(5))', '}'],
-  explore: ['fun badge(name: String): String = "VIP " + name', 'val makeBadge: (String) -> String = ::badge', 'println(makeBadge("Noa"))'], exploreNote: '::badge stores the function; badge("Noa") would call it immediately.',
-  predictions: [
-    { code: ['fun plusOne(n: Int): Int = n + 1', 'fun main() {', '    val op: (Int) -> Int = ::plusOne', '    println(op(9))', '}'], output: '10', detail: 'op refers to plusOne, then op(9) calls it.' },
-    { code: ['fun label(n: Int): String = "#" + n', 'fun main() {', '    val tag: (Int) -> String = ::label', '    println(tag(3))', '}'], output: '#3', detail: 'The reference keeps label’s String result.' },
-    { code: ['fun triple(n: Int): Int = n * 3', 'fun main() {', '    println((::triple)(4))', '}'], output: '12', detail: 'The reference is callable with the same input.' },
+  key: 'function-references',
+  topic: 'Function references',
+  learnTitle: 'Pass a Named Function with ::',
+  learnText: 'Prefixing an existing function with :: produces a function reference. This allows passing a named function wherever a matching function type is expected.',
+  takeaway: 'Use ::name to pass an existing named function as a callable value without wrapping it in an extra lambda.',
+  example: [
+    'fun double(n: Int): Int = n * 2',
+    'fun main() {',
+    '    val operation: (Int) -> Int = ::double',
+    '    println(operation(5))',
+    '}',
   ],
-  challenge: 'Reference a Named Formatter', description: 'Write a named function stamp that returns "ID-" + number. Store ::stamp in formatter and print formatter(7).',
+  exploreCards: [
+    {
+      title: 'Passing a reference to a higher-order function',
+      subtitle: 'A named predicate can be passed directly using ::isEven.',
+      code: [
+        'fun isEven(n: Int): Boolean = n % 2 == 0',
+        'fun check(x: Int, predicate: (Int) -> Boolean): Boolean = predicate(x)',
+        'println(check(8, ::isEven))',
+        'println(check(7, ::isEven))',
+      ],
+      whatItMeans: [{ label: '::isEven', description: 'Refers to the named isEven function without invoking it immediately.' }],
+      whatChanged: 'Passed a top-level function reference as an argument.',
+    },
+    {
+      title: 'Storing a reference in a typed variable',
+      subtitle: 'A reference matches any function type with equivalent parameters and return type.',
+      code: [
+        'fun cube(n: Int): Int = n * n * n',
+        'val op: (Int) -> Int = ::cube',
+        'println(op(3))',
+      ],
+      whatItMeans: [{ label: 'val op = ::cube', description: 'op stores a reference to cube, which can be called with op(3).' }],
+      whatChanged: 'Assigned ::cube to an (Int) -> Int variable.',
+    },
+    {
+      title: 'String function reference',
+      subtitle: 'Works with text parameters and returns matching (String) -> String.',
+      code: [
+        'fun greet(name: String): String = "Hello, " + name',
+        'val fn: (String) -> String = ::greet',
+        'println(fn("Alex"))',
+      ],
+      whatItMeans: [{ label: '::greet', description: 'A reference to the greet function conforming to (String) -> String.' }],
+      whatChanged: 'Created a function reference taking and returning a String.',
+    },
+  ],
+  predictions: [
+    {
+      code: ['fun plusOne(n: Int): Int = n + 1', 'fun main() {', '    val op: (Int) -> Int = ::plusOne', '    println(op(9))', '}'],
+      options: [
+        { id: 'A', label: '10', isCorrect: true },
+        { id: 'B', label: '9', isCorrect: false },
+        { id: 'C', label: '1', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'op refers to plusOne; op(9) calls plusOne(9), returning 10.',
+    },
+    {
+      code: ['fun label(n: Int): String = "#" + n', 'fun main() {', '    val tag: (Int) -> String = ::label', '    println(tag(3))', '}'],
+      options: [
+        { id: 'A', label: '#3', isCorrect: true },
+        { id: 'B', label: '3', isCorrect: false },
+        { id: 'C', label: '#', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'tag refers to label; tag(3) evaluates "#" + 3 = "#3".',
+    },
+    {
+      code: ['fun triple(n: Int): Int = n * 3', 'fun main() {', '    println((::triple)(4))', '}'],
+      options: [
+        { id: 'A', label: '12', isCorrect: true },
+        { id: 'B', label: '4', isCorrect: false },
+        { id: 'C', label: '3', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: '(::triple)(4) directly invokes the function reference with 4, producing 12.',
+    },
+  ],
+  challenge: 'Reference a Named Formatter',
+  description: 'Write a named function stamp that returns "ID-" + number. Store ::stamp in formatter and print formatter(7).',
   initialCode: 'fun stamp(number: Int): String {\n    // Return "ID-" + number:\n\n}\n\nfun main() {\n    // Store ::stamp in formatter:\n\n    println(formatter(7))\n}',
-  solutionCode: 'fun stamp(number: Int): String {\n    return "ID-" + number\n}\n\nfun main() {\n    val formatter: (Int) -> String = ::stamp\n    println(formatter(7))\n}', expectedOutput: 'ID-7',
-  brokenCode: 'fun stamp(number: Int): String {\n    return "ID-" + number\n}\n\nfun main() {\n    val formatter: (Int) -> String = { it + "ID-" }\n    println(formatter(7))\n}', fixedCode: 'fun stamp(number: Int): String {\n    return "ID-" + number\n}\n\nfun main() {\n    val formatter: (Int) -> String = ::stamp\n    println(formatter(7))\n}',
-  hints: ['formatter should refer to the named stamp function.', 'A function reference starts with two colons.', 'Replace the lambda with ::stamp.'],
+  solutionCode: 'fun stamp(number: Int): String {\n    return "ID-" + number\n}\n\nfun main() {\n    val formatter: (Int) -> String = ::stamp\n    println(formatter(7))\n}',
+  expectedOutput: 'ID-7',
+  debugTitle: 'Fix the Bypassed Function Reference',
+  debugSubtitle: 'taxFunc uses an identity lambda instead of referencing calculateTax, printing 50 instead of 5.',
+  brokenCode: 'fun calculateTax(amount: Int): Int = amount / 10\n\nfun main() {\n    val taxFunc: (Int) -> Int = { amount -> amount }\n    println(taxFunc(50))\n}',
+  fixedCode: 'fun calculateTax(amount: Int): Int = amount / 10\n\nfun main() {\n    val taxFunc: (Int) -> Int = ::calculateTax\n    println(taxFunc(50))\n}',
+  debugExpectedOutput: '5',
+  hints: [
+    'taxFunc must reference the calculateTax function.',
+    'Replace the lambda with a function reference syntax using ::.',
+    'Assign ::calculateTax to taxFunc.',
+  ],
+  debugExplanation: 'The code mistakenly assigned a dummy lambda returning amount unmodified. Assigning ::calculateTax calls the division logic, printing 5.',
 });
 
 export const RETURNING_FROM_LAMBDAS_LESSON = runnableLesson({
-  key: 'returning-from-lambdas', topic: 'Returning from lambdas', learnTitle: 'The Last Lambda Expression Is Its Result',
-  learnText: 'A lambda returns the value of its final expression without writing return. That result becomes the function call’s result.',
-  takeaway: 'Put the value a lambda should produce in its final expression.',
-  example: ['fun main() {', '    val priceWithTax: (Int) -> Int = { price -> price + 2 }', '    println(priceWithTax(10))', '}'],
-  explore: ['val isEven: (Int) -> Boolean = { number -> number % 2 == 0 }', 'println(isEven(6))'], exploreNote: 'The comparison is the final expression, so its Boolean value is returned.',
-  predictions: [
-    { code: ['fun main() {', '    val add = { n: Int -> n + 4 }', '    println(add(2))', '}'], output: '6', detail: 'n + 4 is the lambda’s final expression.' },
-    { code: ['fun main() {', '    val label = { n: Int -> "Level " + n }', '    println(label(3))', '}'], output: 'Level 3', detail: 'The final concatenation is returned.' },
-    { code: ['fun main() {', '    val check = { n: Int -> n > 5 }', '    println(check(7))', '}'], output: 'true', detail: 'The final comparison returns true.' },
+  key: 'returning-from-lambdas',
+  topic: 'Returning from lambdas',
+  learnTitle: 'The Last Lambda Expression Is Its Result',
+  learnText: 'In Kotlin, a lambda returns the value of its final expression automatically. You do not write return inside a lambda for normal returns.',
+  takeaway: 'Make the last expression inside the lambda braces the exact value you want the lambda to produce.',
+  example: [
+    'fun main() {',
+    '    val priceWithTax: (Int) -> Int = { price -> price + 2 }',
+    '    println(priceWithTax(10))',
+    '}',
   ],
-  challenge: 'Return a Shipping Total', description: 'Create total: (Int) -> Int as a lambda whose final expression adds 4 to subtotal. Print total(16).',
+  exploreCards: [
+    {
+      title: 'Multiline lambda with final expression',
+      subtitle: 'Intermediate variables can be declared, and the final line is returned.',
+      code: [
+        'val compute = { x: Int ->',
+        '    val step1 = x * 2',
+        '    val step2 = step1 + 3',
+        '    step2',
+        '}',
+        'println(compute(4))',
+      ],
+      whatItMeans: [{ label: 'step2', description: 'Since step2 is the last expression, its value (11) is the lambda result.' }],
+      whatChanged: 'Executed multi-step calculations where the last line produces the returned value.',
+    },
+    {
+      title: 'Returning an if-else expression',
+      subtitle: 'Because if is an expression in Kotlin, its chosen branch becomes the lambda result.',
+      code: [
+        'val sign = { n: Int -> if (n >= 0) "pos" else "neg" }',
+        'println(sign(-5))',
+        'println(sign(3))',
+      ],
+      whatItMeans: [{ label: 'if (...) ... else ...', description: 'The branch that evaluates becomes the lambda result.' }],
+      whatChanged: 'Used an inline conditional expression as the final lambda expression.',
+    },
+    {
+      title: 'Returning a Boolean comparison',
+      subtitle: 'Logical comparisons directly return true or false.',
+      code: [
+        'val inRange = { n: Int -> n >= 1 && n <= 10 }',
+        'println(inRange(7))',
+        'println(inRange(15))',
+      ],
+      whatItMeans: [{ label: 'n >= 1 && n <= 10', description: 'Returns a Boolean without needing any if statement.' }],
+      whatChanged: 'Returned a Boolean condition from a lambda.',
+    },
+  ],
+  predictions: [
+    {
+      code: ['fun main() {', '    val add = { n: Int -> n + 4 }', '    println(add(2))', '}'],
+      options: [
+        { id: 'A', label: '6', isCorrect: true },
+        { id: 'B', label: '2', isCorrect: false },
+        { id: 'C', label: '4', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'n + 4 is the final expression, returning 2 + 4 = 6.',
+    },
+    {
+      code: ['fun main() {', '    val label = { n: Int -> "Level " + n }', '    println(label(3))', '}'],
+      options: [
+        { id: 'A', label: 'Level 3', isCorrect: true },
+        { id: 'B', label: '3', isCorrect: false },
+        { id: 'C', label: 'Level', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'The final concatenation produces "Level 3".',
+    },
+    {
+      code: ['fun main() {', '    val check = { n: Int -> n > 5 }', '    println(check(7))', '}'],
+      options: [
+        { id: 'A', label: 'true', isCorrect: true },
+        { id: 'B', label: 'false', isCorrect: false },
+        { id: 'C', label: '7', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: '7 > 5 evaluates to true, which is returned.',
+    },
+  ],
+  challenge: 'Return a Shipping Total',
+  description: 'Create total: (Int) -> Int as a lambda whose final expression adds 4 to subtotal. Print total(16).',
   initialCode: 'fun main() {\n    // Create total as a lambda returning subtotal + 4:\n\n    println(total(16))\n}',
-  solutionCode: 'fun main() {\n    val total: (Int) -> Int = { subtotal -> subtotal + 4 }\n    println(total(16))\n}', expectedOutput: '20',
-  brokenCode: 'fun main() {\n    val total: (Int) -> Int = { subtotal -> subtotal - 4 }\n    println(total(16))\n}', fixedCode: 'fun main() {\n    val total: (Int) -> Int = { subtotal -> subtotal + 4 }\n    println(total(16))\n}',
-  hints: ['The last expression should add the shipping amount.', 'The subtotal must increase by 4.', 'Use subtotal + 4.'],
+  solutionCode: 'fun main() {\n    val total: (Int) -> Int = { subtotal -> subtotal + 4 }\n    println(total(16))\n}',
+  expectedOutput: '20',
+  debugTitle: 'Fix the Multiline Lambda Return Value',
+  debugSubtitle: 'calculateBonus returns the extra variable alone rather than adding it to base, printing 15 instead of 115.',
+  brokenCode: 'fun main() {\n    val calculateBonus = { base: Int ->\n        val extra = 15\n        extra\n    }\n    println(calculateBonus(100))\n}',
+  fixedCode: 'fun main() {\n    val calculateBonus = { base: Int ->\n        val extra = 15\n        base + extra\n    }\n    println(calculateBonus(100))\n}',
+  debugExpectedOutput: '115',
+  hints: [
+    'The bonus calculation must include the base amount.',
+    'Look at the final expression inside the calculateBonus lambda.',
+    'Change the last line from extra to base + extra.',
+  ],
+  debugExplanation: 'The lambda ended with extra alone, discarding base. Ending with base + extra produces the expected sum 115.',
 });
 
-const LOCAL_RETURNS_CONCEPT = conceptualLesson('local-returns', 'Local returns', 'Return From the Intended Boundary', 'A labelled return such as return@forEach exits the lambda only; an ordinary non-local return in an inline lambda exits the enclosing function. Both return boundaries are supported in the learning editor.', ['items.forEach { item ->', '    if (item < 0) return@forEach', '    println(item)', '}'], [
-  { prompt: 'What does return@forEach target?', answer: 'Only the lambda passed to forEach, then the surrounding loop continues.', detail: 'The label makes the return local to that lambda invocation.' },
-  { prompt: 'Why use a labelled return?', answer: 'To make the return boundary explicit when a lambda is nested in other code.', detail: 'It prevents confusing the lambda boundary with an outer function boundary.' },
-  { prompt: 'What does a bare return inside a forEach lambda exit?', answer: 'The enclosing function, because forEach allows non-local returns.', detail: 'Use return@forEach to skip only the current callback. A bare return exits the surrounding function instead.' },
-]);
+export const LOCAL_RETURNS_LESSON: FiveStageLesson = runnableLesson({
+  key: 'local-returns',
+  topic: 'Local returns',
+  learnTitle: 'Return From the Intended Boundary',
+  learnText: 'A labelled return such as return@forEach exits only the current lambda invocation. In contrast, an unlabelled return inside an inlined lambda exits the surrounding enclosing function.',
+  takeaway: 'Use return@label to skip or finish the current lambda callback without aborting the enclosing function.',
+  example: [
+    'fun sumPositive(values: List<Int>): Int {',
+    '    var total = 0',
+    '    values.forEach {',
+    '        if (it < 0) return@forEach',
+    '        total += it',
+    '    }',
+    '    return total',
+    '}',
+    'fun main() {',
+    '    println(sumPositive(listOf(1, -1, 2, -2, 4)))',
+    '}',
+  ],
+  exploreCards: [
+    {
+      title: 'return@forEach skips one iteration',
+      subtitle: 'Labelled return acts like continue for a forEach loop.',
+      code: [
+        'val numbers = listOf(1, -2, 3, -4, 5)',
+        'numbers.forEach {',
+        '    if (it < 0) return@forEach',
+        '    println(it)',
+        '}',
+      ],
+      whatItMeans: [{ label: 'return@forEach', description: 'Immediately exits the lambda for the current element, proceeding to the next element.' }],
+      whatChanged: 'Printed only positive numbers by skipping negatives with return@forEach.',
+    },
+    {
+      title: 'Non-local return exits the enclosing function',
+      subtitle: 'A bare return inside an inlined function exits the surrounding named function completely.',
+      code: [
+        'fun findFirstEven(list: List<Int>): Int {',
+        '    list.forEach {',
+        '        if (it % 2 == 0) return it',
+        '    }',
+        '    return -1',
+        '}',
+        'fun main() {',
+        '    println(findFirstEven(listOf(1, 3, 4, 7)))',
+        '}',
+      ],
+      whatItMeans: [{ label: 'return it', description: 'Immediately returns from findFirstEven as soon as an even number is found.' }],
+      whatChanged: 'Demonstrated a non-local return through inline forEach.',
+    },
+    {
+      title: 'Custom explicit lambda label',
+      subtitle: 'A lambda can be prefixed with label@ to enable return@label.',
+      code: [
+        'val sanitize: (Int) -> Int = filter@ { n ->',
+        '    if (n < 0) return@filter 0',
+        '    n * 2',
+        '}',
+        'println(sanitize(-3))',
+        'println(sanitize(5))',
+      ],
+      whatItMeans: [{ label: 'filter@ { ... return@filter 0 }', description: 'Returns 0 from the lambda early when n < 0.' }],
+      whatChanged: 'Attached a custom label to a lambda and returned a value locally.',
+    },
+  ],
+  predictions: [
+    {
+      code: [
+        'fun main() {',
+        '    val items = listOf(1, -2, 3)',
+        '    items.forEach { item ->',
+        '        if (item < 0) return@forEach',
+        '        println(item)',
+        '    }',
+        '}',
+      ],
+      options: [
+        { id: 'A', label: '1\n3', isCorrect: true },
+        { id: 'B', label: '1', isCorrect: false },
+        { id: 'C', label: '1\n-2\n3', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'The negative item -2 hits return@forEach, skipping its print. 1 and 3 are printed.',
+    },
+    {
+      code: [
+        'fun search(numbers: List<Int>): Int {',
+        '    numbers.forEach {',
+        '        if (it > 10) return it',
+        '    }',
+        '    return 0',
+        '}',
+        'fun main() {',
+        '    println(search(listOf(4, 15, 8)))',
+        '}',
+      ],
+      options: [
+        { id: 'A', label: '15', isCorrect: true },
+        { id: 'B', label: '0', isCorrect: false },
+        { id: 'C', label: '4', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'When 15 is encountered, the bare return it exits search() immediately with 15.',
+    },
+    {
+      code: [
+        'fun main() {',
+        '    var count = 0',
+        '    listOf(2, 4, 5, 6).forEach {',
+        '        if (it % 2 != 0) return@forEach',
+        '        count += it',
+        '    }',
+        '    println(count)',
+        '}',
+      ],
+      options: [
+        { id: 'A', label: '12', isCorrect: true },
+        { id: 'B', label: '17', isCorrect: false },
+        { id: 'C', label: '6', isCorrect: false },
+        { id: 'D', label: '0', isCorrect: false },
+      ],
+      detail: '5 is skipped by return@forEach. The remaining numbers 2 + 4 + 6 sum to 12.',
+    },
+  ],
+  challenge: 'Skip Negatives Without Stopping the Sum',
+  description: 'Complete sumPositive(values) using forEach. Skip negative items with return@forEach, sum the others, and return total. The provided main must print 7.',
+  initialCode: 'fun sumPositive(values: List<Int>): Int {\n    var total = 0\n    values.forEach {\n        // 1. Skip negative items with a labelled return.\n        // 2. Add remaining items to total.\n    }\n    return total\n}\n\nfun main() {\n    println(sumPositive(listOf(1, -1, 2, -2, 4)))\n}',
+  solutionCode: 'fun sumPositive(values: List<Int>): Int {\n    var total = 0\n    values.forEach {\n        if (it < 0) return@forEach\n        total += it\n    }\n    return total\n}\n\nfun main() {\n    println(sumPositive(listOf(1, -1, 2, -2, 4)))\n}',
+  expectedOutput: '7',
+  debugTitle: 'Fix the Premature Return in Word Counter',
+  debugSubtitle: 'countLongWords uses bare return count instead of return@forEach, exiting on the first short word and returning 0 instead of 2.',
+  brokenCode: 'fun countLongWords(words: List<String>): Int {\n    var count = 0\n    words.forEach {\n        if (it.length <= 3) return count\n        count += 1\n    }\n    return count\n}\n\nfun main() {\n    println(countLongWords(listOf("cat", "elephant", "dog", "tiger")))\n}',
+  fixedCode: 'fun countLongWords(words: List<String>): Int {\n    var count = 0\n    words.forEach {\n        if (it.length <= 3) return@forEach\n        count += 1\n    }\n    return count\n}\n\nfun main() {\n    println(countLongWords(listOf("cat", "elephant", "dog", "tiger")))\n}',
+  debugExpectedOutput: '2',
+  hints: [
+    'A short word should skip only that item, not terminate the whole function.',
+    'A bare return inside an inline forEach exits countLongWords prematurely.',
+    'Replace return count inside the if statement with return@forEach.',
+  ],
+  debugExplanation: 'The bare return count exited countLongWords immediately when "cat" was checked. Using return@forEach skips only "cat" and "dog", counting "elephant" and "tiger" for a result of 2.',
+});
 
-const SUM_POSITIVE_DECLARATION = `fun sumPositive(values: List<Int>): Int {
-    var total = 0
-    values.forEach {
-        if (it < 0) return@forEach
-        total += it
-    }
-    return total
-}
+export const INLINE_FUNCTIONS_LESSON = reasoningLesson({
+  key: 'inline-functions',
+  topic: 'Inline functions',
+  learnTitle: 'Ask the Compiler to Inline a Function',
+  learnText: 'The inline modifier requests the Kotlin compiler to copy the function body and its lambda parameters directly into call sites, eliminating function object allocation and allowing non-local returns.',
+  takeaway: 'Mark higher-order functions inline when they take function parameters and you want to avoid lambda allocation overhead or permit non-local returns.',
+  example: [
+    'inline fun execute(action: () -> Unit) {',
+    '    action()',
+    '}',
+    'fun main() {',
+    '    execute { println("Inlined execution!") }',
+    '}',
+  ],
+  exploreCards: [
+    {
+      title: 'Direct inlining at the call site',
+      subtitle: 'The compiler copies the inline function body and lambda directly into the caller.',
+      code: [
+        'inline fun execute(action: () -> Unit) {',
+        '    action()',
+        '}',
+        'fun main() {',
+        '    execute { println("Running directly!") }',
+        '}',
+      ],
+      whatItMeans: [{ label: 'inline fun execute', description: 'No Function object is created; the println is substituted into main() by the compiler.' }],
+      whatChanged: 'Inlined a simple higher-order action at the call site.',
+    },
+    {
+      title: 'Enabling non-local returns',
+      subtitle: 'Because inline code is substituted into the caller, a bare return exits the enclosing function.',
+      code: [
+        'inline fun runSafe(action: () -> Unit) {',
+        '    action()',
+        '}',
+        'fun evaluate(): String {',
+        '    runSafe { return "Early exit" }',
+        '    return "Finished"',
+        '}',
+        'fun main() {',
+        '    println(evaluate())',
+        '}',
+      ],
+      whatItMeans: [{ label: 'return "Early exit"', description: 'Exits evaluate() directly because runSafe is inlined.' }],
+      whatChanged: 'Demonstrated that inlined lambdas support non-local returns.',
+    },
+    {
+      title: 'Inlined parameter transformation',
+      subtitle: 'Functions taking typed transformations can also be marked inline.',
+      code: [
+        'inline fun compute(value: Int, operation: (Int) -> Int): Int {',
+        '    return operation(value)',
+        '}',
+        'fun main() {',
+        '    println(compute(8) { it * 2 })',
+        '}',
+      ],
+      whatItMeans: [{ label: 'compute(8) { it * 2 }', description: 'Both compute and the multiplication lambda are inlined into main.' }],
+      whatChanged: 'Applied an inlined transformation function.',
+    },
+  ],
+  predictions: [
+    {
+      prompt: 'What does the Kotlin compiler do for an inline function call?',
+      options: [
+        { id: 'A', label: 'It copies the function bytecode and the lambda code directly into the calling site.', isCorrect: true },
+        { id: 'B', label: 'It creates a background thread to execute the lambda asynchronously.', isCorrect: false },
+        { id: 'C', label: 'It converts all variables inside the lambda into global static variables.', isCorrect: false },
+        { id: 'D', label: 'It delays execution until the garbage collector runs.', isCorrect: false },
+      ],
+      detail: 'Inlining replaces the function call with the actual contents of the function and lambda bytecode.',
+    },
+    {
+      code: [
+        'inline fun check(action: () -> Unit) { action() }',
+        'fun test(): Int {',
+        '    check { return 42 }',
+        '    return 0',
+        '}',
+        'fun main() { println(test()) }',
+      ],
+      prompt: 'What will this code print?',
+      options: [
+        { id: 'A', label: '42', isCorrect: true },
+        { id: 'B', label: '0', isCorrect: false },
+        { id: 'C', label: 'Compiler error', isCorrect: false },
+        { id: 'D', label: 'null', isCorrect: false },
+      ],
+      detail: 'Because check is inlined, return 42 performs a non-local return exiting test() with 42.',
+    },
+    {
+      prompt: 'Why should you avoid inlining very large function bodies?',
+      options: [
+        { id: 'A', label: 'Inlining large functions can cause bytecode bloat because the code is duplicated at every call site.', isCorrect: true },
+        { id: 'B', label: 'Because inline functions cannot accept Int or String parameters.', isCorrect: false },
+        { id: 'C', label: 'Because the JVM forbids functions with more than 10 lines of code.', isCorrect: false },
+        { id: 'D', label: 'Because large functions automatically run slower on the CPU.', isCorrect: false },
+      ],
+      detail: 'Duplicating large function bodies across many call sites inflates bytecode size significantly.',
+    },
+  ],
+});
 
-fun main() {
-    println(sumPositive(listOf(1, -1, 2, -2, 4)))
-}`;
+export const NOINLINE_LESSON = reasoningLesson({
+  key: 'noinline',
+  topic: 'noinline',
+  learnTitle: 'Keep One Lambda as a Function Object',
+  learnText: 'Inside an inline function, noinline tells the compiler NOT to inline a specific lambda parameter. This is necessary when that lambda must be stored in a variable or passed to a non-inline function.',
+  takeaway: 'Use noinline on a parameter of an inline function when that lambda must be preserved as a callable object.',
+  example: [
+    'inline fun setup(noinline callback: (Int) -> Int): Int {',
+    '    val saved = callback',
+    '    return saved(5)',
+    '}',
+    'fun main() {',
+    '    println(setup { it + 7 })',
+    '}',
+  ],
+  exploreCards: [
+    {
+      title: 'Storing a noinline lambda parameter',
+      subtitle: 'Inlined lambdas cannot be stored as objects; noinline preserves the object.',
+      code: [
+        'inline fun setup(noinline callback: (Int) -> Int): Int {',
+        '    val saved = callback',
+        '    return saved(5)',
+        '}',
+        'fun main() {',
+        '    println(setup { it + 7 })',
+        '}',
+      ],
+      whatItMeans: [{ label: 'noinline callback', description: 'Kept as a real Function object, allowing val saved = callback.' }],
+      whatChanged: 'Stored a noinline parameter into a local variable.',
+    },
+    {
+      title: 'Mixing inline and noinline parameters',
+      subtitle: 'An inline function can inline some parameters while keeping others as function objects.',
+      code: [
+        'inline fun runMixed(inlineOp: (Int) -> Int, noinline storedOp: (Int) -> Int): Int {',
+        '    return inlineOp(2) + storedOp(3)',
+        '}',
+        'fun main() {',
+        '    println(runMixed({ it * 2 }, { it * 3 }))',
+        '}',
+      ],
+      whatItMeans: [{ label: 'inlineOp vs storedOp', description: 'inlineOp is inlined at the call site; storedOp remains a function object.' }],
+      whatChanged: 'Combined inlined and non-inlined parameters in a single function.',
+    },
+    {
+      title: 'Non-local returns are forbidden in noinline',
+      subtitle: 'Because a noinline lambda is kept as an object, it cannot perform a non-local return.',
+      code: [
+        'inline fun process(noinline op: () -> Unit) {',
+        '    op()',
+        '}',
+      ],
+      whatItMeans: [{ label: 'No non-local return', description: 'A bare return inside a noinline lambda is rejected by the Kotlin compiler.' }],
+      whatChanged: 'Clarified the return restrictions on noinline parameters.',
+    },
+  ],
+  predictions: [
+    {
+      prompt: 'What does the noinline modifier do to a parameter in an inline function?',
+      options: [
+        { id: 'A', label: 'It keeps that specific lambda as a regular function object instead of inlining it.', isCorrect: true },
+        { id: 'B', label: 'It prevents the function from ever being called.', isCorrect: false },
+        { id: 'C', label: 'It makes the parameter accept only primitive numbers.', isCorrect: false },
+        { id: 'D', label: 'It converts the lambda into an anonymous class at compile time only.', isCorrect: false },
+      ],
+      detail: 'noinline instructs the compiler to generate a normal closure object for that parameter.',
+    },
+    {
+      code: [
+        'inline fun calculate(noinline op: (Int) -> Int): Int {',
+        '    val stored = op',
+        '    return stored(10)',
+        '}',
+        'fun main() {',
+        '    println(calculate { it * 3 })',
+        '}',
+      ],
+      prompt: 'What will this code print?',
+      options: [
+        { id: 'A', label: '30', isCorrect: true },
+        { id: 'B', label: '10', isCorrect: false },
+        { id: 'C', label: 'Compiler error', isCorrect: false },
+        { id: 'D', label: '0', isCorrect: false },
+      ],
+      detail: 'The noinline lambda is stored and invoked with 10, returning 10 * 3 = 30.',
+    },
+    {
+      prompt: 'Can a lambda passed to a noinline parameter use a bare non-local return?',
+      options: [
+        { id: 'A', label: 'No, non-local returns are only permitted in truly inlined lambdas.', isCorrect: true },
+        { id: 'B', label: 'Yes, any lambda can return from the outer function at any time.', isCorrect: false },
+        { id: 'C', label: 'Yes, but only if the function returns a String.', isCorrect: false },
+        { id: 'D', label: 'Only if the parameter is also marked crossinline.', isCorrect: false },
+      ],
+      detail: 'Because noinline lambdas may be invoked later or from other scopes, non-local returns are disallowed.',
+    },
+  ],
+});
 
-export const LOCAL_RETURNS_LESSON: FiveStageLesson = {
-  ...LOCAL_RETURNS_CONCEPT,
-  learn: { ...LOCAL_RETURNS_CONCEPT.learn, codeSnippet: SUM_POSITIVE_DECLARATION.split('\n'),
-    explanation: 'Each negative value returns from just that forEach invocation. Later values are still visited, so 1 + 2 + 4 produces 7. A bare return total would exit sumPositive at the first negative value instead.' },
-  writeRun: {
-    challengeNumber: 1, totalChallenges: 1, xpReward: 20,
-    title: 'Skip Negatives Without Stopping the Sum',
-    description: 'Complete sumPositive(values) using forEach.\n\n1. Start total at 0.\n\n2. For a negative item, use return@forEach to skip only that item.\n\n3. Add other items to total, then return total after the loop. The provided main must print 7.',
-    requirements: { name: 'sumPositive', params: 'values: List<Int>', returns: 'Int' },
-    fileName: 'LocalReturns.kt',
-    initialCode: `fun sumPositive(values: List<Int>): Int {
-    var total = 0
-    values.forEach {
-        // 1. Skip negative items with a labelled return.
-        // 2. Add the remaining items to total.
-    }
-    return total
-}
-
-fun main() {
-    println(sumPositive(listOf(1, -1, 2, -2, 4)))
-}`,
-    solutionCode: SUM_POSITIVE_DECLARATION, sampleInput: 'main()', expectedOutput: '7',
-    testCase: { call: '', expected: '7' },
-  },
-  debug: {
-    title: 'Fix the Return That Stops the Whole Sum',
-    subtitle: 'The sum stops at the first negative value and reports 1 instead of 7.',
-    challengeNumber: 1, totalChallenges: 1, difficulty: 'medium', bugType: 'logic', bugLabel: 'Wrong Return Boundary',
-    brokenCode: SUM_POSITIVE_DECLARATION.replace('return@forEach', 'return total'),
-    fixedCode: SUM_POSITIVE_DECLARATION, expectedOutput: '7',
-    hints: ['Decide whether a negative item should end one callback or the whole function.', 'A bare return inside inline forEach exits sumPositive.', 'Replace return total inside the if with return@forEach. Keep the final return total after the loop.'],
-    explanation: 'return total exits sumPositive when -1 is encountered. return@forEach skips that callback only, allowing 2 and 4 to be added later.',
-  },
-  mastered: { ...LOCAL_RETURNS_CONCEPT.mastered,
-    summary: 'You can choose between a local labelled return and a non-local return, and repair a return that exits the wrong boundary.',
-    verificationItems: [...LOCAL_RETURNS_CONCEPT.mastered.verificationItems,
-      { title: 'Code written & executed', subtitle: 'Skipped negative items while continuing the sum' },
-      { title: 'Bug diagnosed & repaired', subtitle: 'Replaced an unintended non-local return with return@forEach' }],
-  },
-};
-
-export const INLINE_FUNCTIONS_LESSON = conceptualLesson('inline-functions', 'Inline functions', 'Ask the Compiler to Inline a Higher-Order Function', 'inline asks the Kotlin compiler to substitute a function body at call sites, reducing some lambda allocation overhead and enabling specific control-flow rules.', ['inline fun use(value: Int, operation: (Int) -> Int): Int {', '    return operation(value)', '}'], [
-  { prompt: 'Who performs inlining?', answer: 'The Kotlin compiler, before the program runs.', detail: 'inline is not a runtime loop or a visual formatting change.' },
-  { prompt: 'What can inline reduce in some cases?', answer: 'The overhead of allocating a function object for a higher-order call.', detail: 'It is a performance and control-flow tool, not a guarantee to use everywhere.' },
-  { prompt: 'Why is inline concept-only here?', answer: 'The browser runner executes JavaScript and cannot honestly demonstrate Kotlin compiler inlining.', detail: 'The activity focuses on the real compiler meaning.' },
-]);
-
-export const NOINLINE_LESSON = conceptualLesson('noinline', 'noinline', 'Keep One Lambda as a Real Value', 'Inside an inline function, noinline tells Kotlin not to inline a particular function parameter so it can be stored or passed onward as a value.', ['inline fun schedule(', '    noinline later: () -> Unit,', '    now: () -> Unit', ') {', '    now()', '}'], [
-  { prompt: 'What does noinline apply to?', answer: 'A specific lambda parameter of an inline function.', detail: 'It does not disable the inline modifier for every parameter.' },
-  { prompt: 'Why mark a parameter noinline?', answer: 'Because that lambda needs to be kept, stored, or passed as a real function value.', detail: 'A noinline parameter remains callable but is not substituted at each call site.' },
-  { prompt: 'What is the relationship to inline?', answer: 'noinline is meaningful only inside a function declared inline.', detail: 'It refines the compiler treatment of one parameter.' },
-]);
-
-export const CROSSINLINE_LESSON = conceptualLesson('crossinline', 'crossinline', 'Forbid Non-Local Returns Safely', 'crossinline marks a lambda parameter of an inline function when that lambda may run in another execution context, so a non-local return is forbidden.', ['inline fun later(crossinline action: () -> Unit) {', '    val task = { action() }', '    task()', '}'], [
-  { prompt: 'What does crossinline prevent?', answer: 'A non-local return from that lambda.', detail: 'The lambda may be invoked from a nested callback-like context.' },
-  { prompt: 'Why is crossinline needed?', answer: 'Because the inline function passes the lambda into another execution boundary.', detail: 'A return from the outer caller would no longer be safe there.' },
-  { prompt: 'Does crossinline stop the lambda from running?', answer: 'No; it only restricts the kind of return written inside it.', detail: 'The action remains callable normally.' },
-]);
+export const CROSSINLINE_LESSON = reasoningLesson({
+  key: 'crossinline',
+  topic: 'crossinline',
+  learnTitle: 'Forbid Non-Local Returns Safely',
+  learnText: 'crossinline marks a lambda parameter of an inline function when that lambda will be executed inside another execution context, such as a local object or nested lambda. It allows inlining while disallowing non-local returns.',
+  takeaway: 'Use crossinline when an inlined lambda is called from a nested scope where non-local returns would be illegal.',
+  example: [
+    'inline fun runWrapped(crossinline action: (Int) -> Int): Int {',
+    '    val helper = { action(4) }',
+    '    return helper()',
+    '}',
+    'fun main() {',
+    '    println(runWrapped { it * 5 })',
+    '}',
+  ],
+  exploreCards: [
+    {
+      title: 'Calling an inlined lambda in a nested context',
+      subtitle: 'crossinline allows action to be inlined even inside a local helper closure.',
+      code: [
+        'inline fun runWrapped(crossinline action: (Int) -> Int): Int {',
+        '    val helper = { action(4) }',
+        '    return helper()',
+        '}',
+        'fun main() {',
+        '    println(runWrapped { it * 5 })',
+        '}',
+      ],
+      whatItMeans: [{ label: 'crossinline action', description: 'Inlined into helper, but bare non-local returns are blocked.' }],
+      whatChanged: 'Executed an inlined lambda from inside another nested closure.',
+    },
+    {
+      title: 'Labelled return remains valid inside crossinline',
+      subtitle: 'Local returns targeted with return@functionName are completely legal.',
+      code: [
+        'inline fun compute(crossinline step: (Int) -> Int): Int {',
+        '    val task = { step(6) }',
+        '    return task()',
+        '}',
+        'println(compute { if (it > 5) return@compute 0; it })',
+      ],
+      whatItMeans: [{ label: 'Local labelled return', description: 'Exiting the lambda itself with return@compute is allowed.' }],
+      whatChanged: 'Demonstrated that crossinline forbids only non-local returns.',
+    },
+    {
+      title: 'Why crossinline is required by the compiler',
+      subtitle: 'Without crossinline, passing a lambda into another object or thread could break execution flow.',
+      code: [
+        'inline fun schedule(crossinline task: () -> Unit) {',
+        '    val runnable = { task() }',
+        '    runnable()',
+        '}',
+      ],
+      whatItMeans: [{ label: 'Context boundary', description: 'Guarantees the lambda cannot jump out of callers on another call stack.' }],
+      whatChanged: 'Illustrated context boundary protection with crossinline.',
+    },
+  ],
+  predictions: [
+    {
+      prompt: 'What does crossinline prevent inside an inlined lambda?',
+      options: [
+        { id: 'A', label: 'It disallows non-local returns while still allowing the lambda body to be inlined.', isCorrect: true },
+        { id: 'B', label: 'It prevents the lambda from accessing local variables.', isCorrect: false },
+        { id: 'C', label: 'It forbids using the it keyword inside the lambda.', isCorrect: false },
+        { id: 'D', label: 'It makes the function run on a separate CPU core.', isCorrect: false },
+      ],
+      detail: 'crossinline enables inlining while preventing unsafe non-local returns across execution boundaries.',
+    },
+    {
+      code: [
+        'inline fun execute(crossinline action: (Int) -> Int): Int {',
+        '    val runner = { action(3) }',
+        '    return runner()',
+        '}',
+        'fun main() {',
+        '    println(execute { it * 4 })',
+        '}',
+      ],
+      prompt: 'What will this code print?',
+      options: [
+        { id: 'A', label: '12', isCorrect: true },
+        { id: 'B', label: '3', isCorrect: false },
+        { id: 'C', label: '4', isCorrect: false },
+        { id: 'D', label: 'Compiler error', isCorrect: false },
+      ],
+      detail: 'execute passes 3 to the action lambda via runner(), producing 3 * 4 = 12.',
+    },
+    {
+      prompt: 'How can you exit early from a crossinline lambda if bare return is forbidden?',
+      options: [
+        { id: 'A', label: 'Use a labelled return such as return@functionName.', isCorrect: true },
+        { id: 'B', label: 'Use a break statement.', isCorrect: false },
+        { id: 'C', label: 'Throw a RuntimeException.', isCorrect: false },
+        { id: 'D', label: 'Local returns are impossible in Kotlin lambdas.', isCorrect: false },
+      ],
+      detail: 'A labelled return exits only the lambda itself, which is always safe.',
+    },
+  ],
+});
 
 export const WORLD_9_BOSS_LESSON = runnableLesson({
-  key: 'boss', topic: 'Functional Utility Engine', learnTitle: 'Build Reusable Operations',
-  learnText: 'A utility engine accepts behavior as a function parameter, so one function can apply many rules without duplicating its own control flow.',
-  takeaway: 'Combine function types, higher-order parameters, and lambdas to create flexible reusable utilities.',
-  example: ['fun apply(value: Int, operation: (Int) -> Int): Int {', '    return operation(value)', '}', 'fun main() {', '    println(apply(6) { it * 2 })', '}'],
-  explore: ['fun apply(value: Int, operation: (Int) -> Int): Int { return operation(value) }', 'val addTen: (Int) -> Int = { it + 10 }', 'println(apply(5, addTen))'], exploreNote: 'The same apply function works with a stored lambda or a trailing lambda.',
-  predictions: [
-    { code: ['fun apply(n: Int, op: (Int) -> Int): Int { return op(n) }', 'fun main() {', '    println(apply(4) { it * it })', '}'], output: '16', detail: 'apply supplies 4 to the square operation.' },
-    { code: ['fun apply(n: Int, op: (Int) -> Int): Int { return op(n) }', 'fun main() {', '    val bonus: (Int) -> Int = { it + 10 }', '    println(apply(2, bonus))', '}'], output: '12', detail: 'The stored bonus operation receives 2.' },
-    { code: ['fun main() {', '    val label: (Int) -> String = { "Item-" + it }', '    println(label(3))', '}'], output: 'Item-3', detail: 'A function type can return text as well as numbers.' },
+  key: 'boss',
+  topic: 'Functional Utility Engine',
+  learnTitle: 'Build Reusable Operations',
+  learnText: 'A functional utility engine accepts behavior as function parameters, allowing one reusable pipeline to apply multiple distinct transformations without duplicating control flow.',
+  takeaway: 'Combine function types, higher-order functions, lambdas, and function references to create flexible, modular pipelines.',
+  example: [
+    'fun apply(value: Int, operation: (Int) -> Int): Int {',
+    '    return operation(value)',
+    '}',
+    'fun main() {',
+    '    println(apply(6) { it * 2 })',
+    '}',
   ],
-  challenge: 'Build the Functional Utility Engine', description: 'Create applyRule(value, rule) returning rule(value). In main, create double with type (Int) -> Int, then print applyRule(9, double) and applyRule(9) { it + 1 }.',
+  exploreCards: [
+    {
+      title: 'Stored lambda vs. trailing lambda',
+      subtitle: 'The same higher-order utility works seamlessly with both calling conventions.',
+      code: [
+        'fun apply(value: Int, operation: (Int) -> Int): Int { return operation(value) }',
+        'val addTen: (Int) -> Int = { it + 10 }',
+        'println(apply(5, addTen))',
+      ],
+      whatItMeans: [{ label: 'apply(5, addTen)', description: 'Supplies a pre-defined function value addTen to apply.' }],
+      whatChanged: 'Called a higher-order function with a stored function value.',
+    },
+    {
+      title: 'Chaining two transformation steps',
+      subtitle: 'Compose functions by passing step1’s output into step2.',
+      code: [
+        'fun transform(value: Int, step1: (Int) -> Int, step2: (Int) -> Int): Int {',
+        '    return step2(step1(value))',
+        '}',
+        'println(transform(5, { it + 3 }, { it * 2 }))',
+      ],
+      whatItMeans: [{ label: 'step2(step1(value))', description: '5 + 3 = 8, then 8 * 2 = 16.' }],
+      whatChanged: 'Composed two functional steps sequentially.',
+    },
+    {
+      title: 'Predicate filtering utility',
+      subtitle: 'A utility counting matching items based on a caller-supplied predicate.',
+      code: [
+        'fun filterAndCount(items: List<Int>, predicate: (Int) -> Boolean): Int {',
+        '    var count = 0',
+        '    items.forEach { if (predicate(it)) count++ }',
+        '    return count',
+        '}',
+        'println(filterAndCount(listOf(2, 5, 8, 11)) { it > 6 })',
+      ],
+      whatItMeans: [{ label: '{ it > 6 }', description: 'Predicate testing whether an element exceeds 6.' }],
+      whatChanged: 'Built a functional filter-and-count utility.',
+    },
+  ],
+  predictions: [
+    {
+      code: ['fun apply(n: Int, op: (Int) -> Int): Int { return op(n) }', 'fun main() {', '    println(apply(4) { it * it })', '}'],
+      options: [
+        { id: 'A', label: '16', isCorrect: true },
+        { id: 'B', label: '8', isCorrect: false },
+        { id: 'C', label: '4', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'apply supplies 4 to the squaring lambda, returning 4 * 4 = 16.',
+    },
+    {
+      code: ['fun apply(n: Int, op: (Int) -> Int): Int { return op(n) }', 'fun main() {', '    val bonus: (Int) -> Int = { it + 10 }', '    println(apply(2, bonus))', '}'],
+      options: [
+        { id: 'A', label: '12', isCorrect: true },
+        { id: 'B', label: '20', isCorrect: false },
+        { id: 'C', label: '2', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'Passes 2 to the stored bonus operation, returning 2 + 10 = 12.',
+    },
+    {
+      code: ['fun main() {', '    val label: (Int) -> String = { "Item-" + it }', '    println(label(3))', '}'],
+      options: [
+        { id: 'A', label: 'Item-3', isCorrect: true },
+        { id: 'B', label: 'Item-it', isCorrect: false },
+        { id: 'C', label: '3', isCorrect: false },
+        { id: 'D', label: 'An error', isCorrect: false },
+      ],
+      detail: 'Formats "Item-" with 3, producing "Item-3".',
+    },
+  ],
+  challenge: 'Build the Functional Utility Engine',
+  description: 'Create applyRule(value, rule) returning rule(value). In main, create double with type (Int) -> Int, then print applyRule(9, double) and applyRule(9) { it + 1 }.',
   initialCode: 'fun applyRule(value: Int, rule: (Int) -> Int): Int {\n    // Return rule(value):\n\n}\n\nfun main() {\n    // Create double as an (Int) -> Int lambda:\n\n    println(applyRule(9, double))\n    println(applyRule(9) { it + 1 })\n}',
-  solutionCode: 'fun applyRule(value: Int, rule: (Int) -> Int): Int {\n    return rule(value)\n}\n\nfun main() {\n    val double: (Int) -> Int = { it * 2 }\n    println(applyRule(9, double))\n    println(applyRule(9) { it + 1 })\n}', expectedOutput: '18\n10',
-  brokenCode: 'fun applyRule(value: Int, rule: (Int) -> Int): Int {\n    return value\n}\n\nfun main() {\n    val double: (Int) -> Int = { it * 2 }\n    println(applyRule(9, double))\n    println(applyRule(9) { it + 1 })\n}', fixedCode: 'fun applyRule(value: Int, rule: (Int) -> Int): Int {\n    return rule(value)\n}\n\nfun main() {\n    val double: (Int) -> Int = { it * 2 }\n    println(applyRule(9, double))\n    println(applyRule(9) { it + 1 })\n}',
-  hints: ['applyRule must use the rule parameter.', 'Returning value bypasses both supplied behaviors.', 'Return rule(value).'],
+  solutionCode: 'fun applyRule(value: Int, rule: (Int) -> Int): Int {\n    return rule(value)\n}\n\nfun main() {\n    val double: (Int) -> Int = { it * 2 }\n    println(applyRule(9, double))\n    println(applyRule(9) { it + 1 })\n}',
+  expectedOutput: '18\n10',
+  debugTitle: 'Fix the Pipeline Processor Ignored Operation',
+  debugSubtitle: 'runTransform returns number unmodified instead of applying the operation lambda, printing 4 and 4 instead of 16 and 14.',
+  brokenCode: 'fun runTransform(number: Int, operation: (Int) -> Int): Int {\n    return number\n}\n\nfun main() {\n    val square: (Int) -> Int = { it * it }\n    println(runTransform(4, square))\n    println(runTransform(4) { it + 10 })\n}',
+  fixedCode: 'fun runTransform(number: Int, operation: (Int) -> Int): Int {\n    return operation(number)\n}\n\nfun main() {\n    val square: (Int) -> Int = { it * it }\n    println(runTransform(4, square))\n    println(runTransform(4) { it + 10 })\n}',
+  debugExpectedOutput: '16\n14',
+  hints: [
+    'runTransform must execute the operation parameter on number.',
+    'Returning number ignores the transformation.',
+    'Change return number to return operation(number).',
+  ],
+  debugExplanation: 'The function returned number without executing operation(number). Calling operation(number) applies the square and addTen operations, yielding 16 and 14.',
 });

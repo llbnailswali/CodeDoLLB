@@ -622,10 +622,11 @@ ${lower(body + 1, end, child(ctx))}
         const arrow = top(i + 1, end, '->');
         const literal = i === a || ['=', '(', ',', 'return', '->'].includes(at(i - 1)) || (arrow >= 0 && /^[A-Za-z_][A-Za-z_0-9\s,:?<>]*$/.test(text(i + 1, arrow)));
         const trailing = !declarationBodies.has(i) && isName(at(i - 1)) && !['else', 'try', 'finally', 'do', 'init', 'when'].includes(at(i - 1)) && at(i - 2) !== 'class' && at(i - 2) !== 'object' && at(i - 2) !== 'interface';
-        if (literal) emit(i, end + 1, lambda(i, end, ctx, expected, callLabel, inline));
-        else if (trailing) {
+        if (trailing) {
           const info = callInfo(i, ctx), param = info.signature?.params.at(-1);
           emit(i, end + 1, `(${lambda(i, end, ctx, param?.type, info.name, info.inline && !param?.mode)})`);
+        } else if (literal) {
+          emit(i, end + 1, lambda(i, end, ctx, expected, callLabel, inline));
         } else {
           const branch = child(ctx);
           const close = i - 1;

@@ -1092,7 +1092,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Create compact function values with { parameters -> result } and invoke them later.",
-        "questionsCount": 3,
+        "questionsCount": 5,
         "fiveStageLessonKey": "world-9-lambda-expressions"
       },
       {
@@ -1103,7 +1103,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use unnamed fun expressions as callable values, including explicit local returns.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-9-anonymous-functions"
       },
       {
@@ -1237,7 +1237,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "functional-collection-operations",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Transform, discard null results, and select values with collection lambdas.", "questionsCount": 3, "fiveStageLessonKey": "world-10-map-mapnotnull-filter"
+        "description": "Transform, discard null results, and select values with collection lambdas.", "questionsCount": 4, "fiveStageLessonKey": "world-10-map-mapnotnull-filter"
       },
       {
         "id": "world-10-filternot-filterisinstance-flatmap",
@@ -1273,7 +1273,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "functional-collection-operations",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Pair, batch, and slide across collection values.", "questionsCount": 3, "fiveStageLessonKey": "world-10-zip-chunked-windowed"
+        "description": "Pair, batch, and slide across collection values.", "questionsCount": 4, "fiveStageLessonKey": "world-10-zip-chunked-windowed"
       },
       {
         "id": "world-10-distinct-sorted",
@@ -1372,7 +1372,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Separate records that carry data from a fixed vocabulary of states, then reason about value equality and copies.",
-        "questionsCount": 3, "fiveStageLessonKey": "world-11-data-classes-in-domain-modeling-enum-cla"
+        "questionsCount": 4, "fiveStageLessonKey": "world-11-data-classes-in-domain-modeling-enum-cla"
       },
       {
         "id": "world-11-nested-classes",

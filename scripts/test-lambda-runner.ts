@@ -79,9 +79,9 @@ async function main() {
   }
   const lesson = LOCAL_RETURNS_LESSON;
   for (const [name, code, expected] of [
-    ['local-return writing solution', lesson.writeRun!.solutionCode, '7'],
-    ['local-return debug repair', lesson.debug!.fixedCode, '7'],
-    ['local-return broken program exposes early exit', lesson.debug!.brokenCode, '1'],
+    ['local-return writing solution', lesson.writeRun!.solutionCode, lesson.writeRun!.expectedOutput],
+    ['local-return debug repair', lesson.debug!.fixedCode, lesson.debug!.expectedOutput],
+    ['local-return broken program exposes early exit', lesson.debug!.brokenCode, '0'],
     ['local-return starter does not pass', lesson.writeRun!.initialCode, '0'],
   ]) {
     const result = await compileAndRunKotlin(code);

@@ -24,7 +24,10 @@
     "audit:world6-quality": "tsx scripts/audit-world6-quality.ts",
     "audit:world7-quality": "tsx scripts/audit-world7-quality.ts",
     "test:world7-kotlin": "tsx scripts/test-world7-kotlin.ts",
-    "audit:world8-quality": "tsx scripts/audit-world8-quality.ts"
+    "audit:world8-quality": "tsx scripts/audit-world8-quality.ts",
+    "audit:world9-quality": "tsx scripts/audit-world9-quality.ts",
+    "audit:world10-quality": "tsx scripts/audit-world10-quality.ts",
+    "audit:world11-quality": "tsx scripts/audit-world11-quality.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.1",

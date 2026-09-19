@@ -31,6 +31,8 @@ type Topic = {
     debugTitle: string;
     bug: string;
     broken: string;
+    debugSolution?: string;
+    debugOutput?: string;
     hints: [string, string, string];
     repair: string;
   };
@@ -94,7 +96,9 @@ function lesson(topic: Topic): FiveStageLesson {
         title: practice.debugTitle, subtitle: practice.bug, challengeNumber: 1, totalChallenges: 1,
         difficulty: topic.key === 'boss' ? 'hard' as const : 'medium' as const,
         bugType: 'logic' as const, bugLabel: practice.debugTitle, brokenCode: practice.broken,
-        fixedCode: practice.solution, expectedOutput: practice.output, hints: practice.hints, explanation: practice.repair,
+        fixedCode: practice.debugSolution ?? practice.solution,
+        expectedOutput: practice.debugOutput ?? practice.output,
+        hints: practice.hints, explanation: practice.repair,
       },
     } : {}),
     mastered: {
@@ -252,15 +256,19 @@ const topics: Topic[] = [
     patterns: [
       { title: 'Keep records and choices explicit', declarations: model, body: 'val ticket = Ticket(7, "Ana")\nprintln(ticket)\nprintln(Level.HIGH)', output: 'Ticket(id=7, owner=Ana)\nHIGH', detail: 'Ticket names the fields in its generated text representation. Level.HIGH names one of the only two allowed priority choices.', prediction: program(model, 'println(Ticket(9, "Bo"))\nprintln(Level.LOW)'), answer: 'Ticket(id=9, owner=Bo)\nLOW', distractors: ['Ticket(id=9, owner=Bo)\nHIGH', '9 Bo\nLOW', 'Ticket\n0'], reasoning: 'Generated toString() uses the constructor property names and values. Printing the enum entry gives LOW, not its ordinal.' },
       { title: 'Use an enum inside the model', declarations: 'enum class State { OPEN, CLOSED }\ndata class Issue(val id: Int, val state: State)', body: 'val issue = Issue(2, State.OPEN)\nprintln(issue.state)', output: 'OPEN', detail: 'The State type connects the record to the allowed vocabulary. Passing the string "OPEN" instead would be a type error.', prediction: program('enum class State { OPEN, CLOSED }\ndata class Issue(val id: Int, val state: State)', 'val issue = Issue(5, State.CLOSED)\nprintln(issue.state == State.OPEN)'), answer: 'false', distractors: ['true', 'CLOSED', 'Compilation error: enum entries cannot be compared'], reasoning: 'The issue stores CLOSED. It is a different enum entry from OPEN, so equality is false.' },
+      { title: 'Store custom properties in enum entries', declarations: 'enum class Priority(val score: Int) {\n    LOW(10),\n    HIGH(50)\n}', body: 'val level = Priority.HIGH\nprintln(level.score)\nprintln(level.name)', output: '50\nHIGH', detail: 'Enum classes can declare constructor properties. Each entry passes its own parameters, accessible alongside built-in members like name.', prediction: program('enum class Priority(val score: Int) {\n    LOW(10),\n    HIGH(50)\n}', 'val low = Priority.LOW\nval high = Priority.HIGH\nprintln(high.score - low.score)'), answer: '40', distractors: ['50', '10', 'Compilation error: enum entries cannot declare constructor properties'], reasoning: 'high.score is 50 and low.score is 10. 50 - 10 yields 40.' },
       { title: 'Copy without replacing the original', declarations: 'data class Ticket(val id: Int, val owner: String)', body: 'val original = Ticket(1, "Ana")\nval reassigned = original.copy(owner = "Bo")\nprintln(original.owner)\nprintln(reassigned.owner)', output: 'Ana\nBo', detail: 'copy(owner = ...) creates another Ticket with the same id and a different owner. The original record keeps its owner.', prediction: program('data class Ticket(val id: Int, val owner: String)', 'val original = Ticket(1, "Ana")\nval same = original.copy()\nval other = original.copy(owner = "Bo")\nprintln(original == same)\nprintln(original == other)'), answer: 'true\nfalse', distractors: ['false\nfalse', 'true\ntrue', 'false\ntrue'], reasoning: 'Data-class equality compares constructor properties. same has identical values; other differs in owner. New instance identity does not make same unequal.' },
     ],
     practice: {
       title: 'Create Two Ticket Records', steps: ['Keep the provided Ticket data class and Level enum.', 'Create first as Ticket(7, "Ana") and second as Ticket(8, "Bo").', 'Print first, then second, then Level.HIGH on separate lines.'],
       initialCode: program(model, '// 1. Keep the declarations above.\n// 2. Create first and second.\n\n// 3. Print both records, then the HIGH level.'),
       solution: program(model, 'val first = Ticket(7, "Ana")\nval second = Ticket(8, "Bo")\nprintln(first)\nprintln(second)\nprintln(Level.HIGH)'), output: 'Ticket(id=7, owner=Ana)\nTicket(id=8, owner=Bo)\nHIGH',
-      debugTitle: 'Fix the Duplicated Record', bug: 'Both tickets are created correctly, but the report prints Ana’s ticket twice and omits Bo’s ticket.',
-      broken: program(model, 'val first = Ticket(7, "Ana")\nval second = Ticket(8, "Bo")\nprintln(first)\nprintln(first)\nprintln(Level.HIGH)'),
-      hints: ['Compare the two record lines with the two values created in main.', 'Both println calls currently read the same variable.', 'Change the second println(first) to println(second).'], repair: 'The constructor values were correct. Printing second on the second record line reports Ticket(id=8, owner=Bo) instead of repeating the first record.',
+      debugTitle: 'Fix the Duplicated Record', bug: 'Both devices are created correctly, but the report prints the first device twice and omits the second device.',
+      broken: program('data class Device(val serial: Int, val model: String)\nenum class Status { ACTIVE, RETIRED }', 'val d1 = Device(101, "Tablet")\nval d2 = Device(102, "Phone")\nprintln(d1)\nprintln(d1)\nprintln(Status.ACTIVE)'),
+      debugSolution: program('data class Device(val serial: Int, val model: String)\nenum class Status { ACTIVE, RETIRED }', 'val d1 = Device(101, "Tablet")\nval d2 = Device(102, "Phone")\nprintln(d1)\nprintln(d2)\nprintln(Status.ACTIVE)'),
+      debugOutput: 'Device(serial=101, model=Tablet)\nDevice(serial=102, model=Phone)\nACTIVE',
+      hints: ['Compare the two printed lines with the two values created in main.', 'Both println calls currently read the same d1 variable.', 'Change the second println(d1) to println(d2).'],
+      repair: 'The constructor values were correct. Printing d2 on the second line reports Device(serial=102, model=Phone) instead of repeating the first record.',
     },
   },
   {
@@ -311,9 +319,12 @@ const topics: Topic[] = [
       title: 'Record Three Visits', steps: ['Implement VisitCounter.record() so it adds exactly one to this.total.', 'In main, call record() twice and print total.', 'Call record() once more and print total again. The two output lines must be 2 and 3.'],
       initialCode: program('object VisitCounter {\n    var total = 0\n    fun record() {\n        // 1. Increase this.total by one.\n    }\n}', '// 2. Record twice, then print total.\n\n// 3. Record once more, then print total.'),
       solution: program(singleton, 'VisitCounter.record()\nVisitCounter.record()\nprintln(VisitCounter.total)\nVisitCounter.record()\nprintln(VisitCounter.total)'), output: '2\n3',
-      debugTitle: 'Fix the Counter That Keeps Resetting', bug: 'After three visits the totals should be 2 and 3, but record() resets total to 1 on every call.',
-      broken: program('object VisitCounter {\n    var total = 0\n    fun record() {\n        this.total = 1\n    }\n}', 'VisitCounter.record()\nVisitCounter.record()\nprintln(VisitCounter.total)\nVisitCounter.record()\nprintln(VisitCounter.total)'),
-      hints: ['A new visit must preserve earlier visits.', 'Compare assigning a constant with adding to the current total.', 'Replace this.total = 1 with this.total = this.total + 1.'], repair: 'Assigning 1 discards previous visits. Adding one to the stored total preserves shared history, producing 2 and then 3.',
+      debugTitle: 'Fix the Vault That Keeps Resetting', bug: 'After three deposits the balances should be 10 and 15, but deposit() resets balance to 5 on every call.',
+      broken: program('object CoinVault {\n    var balance = 0\n    fun deposit() {\n        this.balance = 5\n    }\n}', 'CoinVault.deposit()\nCoinVault.deposit()\nprintln(CoinVault.balance)\nCoinVault.deposit()\nprintln(CoinVault.balance)'),
+      debugSolution: program('object CoinVault {\n    var balance = 0\n    fun deposit() {\n        this.balance = this.balance + 5\n    }\n}', 'CoinVault.deposit()\nCoinVault.deposit()\nprintln(CoinVault.balance)\nCoinVault.deposit()\nprintln(CoinVault.balance)'),
+      debugOutput: '10\n15',
+      hints: ['A new deposit must preserve earlier deposits in the vault.', 'Compare assigning a constant with adding to the current balance.', 'Replace this.balance = 5 with this.balance = this.balance + 5.'],
+      repair: 'Assigning 5 discards previous deposits. Adding 5 to the stored balance preserves shared history, producing 10 and then 15.',
     },
   },
   {
@@ -425,9 +436,12 @@ const topics: Topic[] = [
       title: 'Build a Two-Ticket Report', steps: ['In TicketPrinter.label(ticket), return "#" + ticket.id + " " + ticket.owner. Use the argument, not fixed record values.', 'In main, create first as Ticket(12, "Ana") and second as Ticket(13, "Bo").', 'Print the formatted first and second tickets, then Level.HIGH, each on a new line.'],
       initialCode: program('data class Ticket(val id: Int, val owner: String)\nenum class Level { LOW, HIGH }\nobject TicketPrinter {\n    fun label(ticket: Ticket): String {\n        // 1. Build and return the label from ticket.id and ticket.owner.\n    }\n}', '// 2. Create first and second.\n\n// 3. Print their labels, then Level.HIGH.'),
       solution: program(engine, 'val first = Ticket(12, "Ana")\nval second = Ticket(13, "Bo")\nprintln(TicketPrinter.label(first))\nprintln(TicketPrinter.label(second))\nprintln(Level.HIGH)'), output: '#12 Ana\n#13 Bo\nHIGH',
-      debugTitle: 'Fix the Hard-Coded Owner', bug: 'The first label looks right, but Bo’s ticket is also labelled Ana. The shared formatter must work for every supplied record.',
-      broken: program('data class Ticket(val id: Int, val owner: String)\nenum class Level { LOW, HIGH }\nobject TicketPrinter {\n    fun label(ticket: Ticket) = "#" + ticket.id + " Ana"\n}', 'val first = Ticket(12, "Ana")\nval second = Ticket(13, "Bo")\nprintln(TicketPrinter.label(first))\nprintln(TicketPrinter.label(second))\nprintln(Level.HIGH)'),
-      hints: ['Compare the two owners in main with the two owners in the output.', 'label() reads ticket.id but uses fixed text for the owner.', 'Replace " Ana" with " " + ticket.owner in label().'], repair: 'The formatter must read both fields from its argument. Using ticket.owner fixes the second label to #13 Bo and still keeps the first label correct.',
+      debugTitle: 'Fix the Hard-Coded Attendee', bug: 'The first badge looks right, but Lia’s badge is also labelled Kai. The shared formatter must work for every supplied record.',
+      broken: program('data class Badge(val code: Int, val attendee: String)\nenum class Tier { VIP, REGULAR }\nobject BadgePrinter {\n    fun format(badge: Badge): String = "B-" + badge.code + " Kai"\n}', 'val b1 = Badge(41, "Kai")\nval b2 = Badge(42, "Lia")\nprintln(BadgePrinter.format(b1))\nprintln(BadgePrinter.format(b2))\nprintln(Tier.VIP)'),
+      debugSolution: program('data class Badge(val code: Int, val attendee: String)\nenum class Tier { VIP, REGULAR }\nobject BadgePrinter {\n    fun format(badge: Badge): String = "B-" + badge.code + " " + badge.attendee\n}', 'val b1 = Badge(41, "Kai")\nval b2 = Badge(42, "Lia")\nprintln(BadgePrinter.format(b1))\nprintln(BadgePrinter.format(b2))\nprintln(Tier.VIP)'),
+      debugOutput: 'B-41 Kai\nB-42 Lia\nVIP',
+      hints: ['Compare the two attendees in main with the two attendees in the output.', 'format() reads badge.code but uses fixed text for the attendee.', 'Replace " Kai" with " " + badge.attendee in format().'],
+      repair: 'The formatter must read both fields from its argument. Using badge.attendee fixes the second label to B-42 Lia and keeps the first label correct.',
     },
   },
 ];

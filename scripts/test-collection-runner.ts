@@ -11,9 +11,12 @@ for (const body of ['listOf(1).chunked(0)', 'listOf(1).windowed(2, 0)', 'listOf<
  if (result.success) { failures++; console.error('Expected rejection:', body); }
 }
 for (const lesson of WORLD_10_LESSONS) {
- for (const code of [lesson.writeRun!.solutionCode, lesson.debug!.fixedCode]) {
+ for (const [code, expected] of [
+   [lesson.writeRun!.solutionCode, lesson.writeRun!.expectedOutput],
+   [lesson.debug!.fixedCode, lesson.debug!.expectedOutput],
+ ]) {
   const result = await compileAndRunKotlin(code);
-  if (!result.success || result.output !== lesson.writeRun!.expectedOutput) { failures++; console.error(lesson.id, result); }
+  if (!result.success || result.output !== expected) { failures++; console.error(lesson.id, result); }
  }
 }
 if (failures) process.exit(1);
