@@ -13,7 +13,18 @@
     "test:lambda-kotlin": "tsx scripts/test-lambda-kotlin.ts",
     "test:lambda-runner": "tsx scripts/test-lambda-runner.ts",
     "update-progress": "node scripts/update-data-gathering-progress.mjs",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test:collection-runner": "tsx scripts/test-collection-runner.ts",
+    "test:collection-kotlin": "tsx scripts/test-collection-kotlin.ts",
+    "audit:world1-quality": "tsx scripts/audit-world1-quality.ts",
+    "audit:world2-quality": "tsx scripts/audit-world2-quality.ts",
+    "audit:world3-quality": "tsx scripts/audit-world3-quality.ts",
+    "audit:world4-quality": "tsx scripts/audit-world4-quality.ts",
+    "audit:world5-quality": "tsx scripts/audit-world5-quality.ts",
+    "audit:world6-quality": "tsx scripts/audit-world6-quality.ts",
+    "audit:world7-quality": "tsx scripts/audit-world7-quality.ts",
+    "test:world7-kotlin": "tsx scripts/test-world7-kotlin.ts",
+    "audit:world8-quality": "tsx scripts/audit-world8-quality.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.1",

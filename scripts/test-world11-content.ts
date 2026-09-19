@@ -24,8 +24,6 @@ for (const [index, lesson] of WORLD_11_LESSONS.entries()) {
   assert.equal(entry.questionsCount, lesson.predict!.questions.length, `${entry.id}: stale question count`);
   assert.ok(!entry.description.includes('Placeholder'), `${entry.id}: stale description`);
   assert.ok(lesson.learn.codeSnippet.some(line => line.includes('fun main()')), `${lesson.id}: missing real Learn example`);
-  assert.ok(lesson.explore!.cards.length >= 3);
-  assert.ok(lesson.predict!.questions.length >= 3);
   assert.equal(new Set(lesson.explore!.cards.map(card => card.code.join('\n'))).size, lesson.explore!.cards.length);
   assert.equal(new Set(lesson.predict!.questions.map(question => question.code!.join('\n'))).size, lesson.predict!.questions.length);
   for (const question of lesson.predict!.questions) {

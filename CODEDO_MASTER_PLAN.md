@@ -5,61 +5,10 @@
 
 ## Required Authoring Rule — Analyze Coverage Before Choosing Counts
 
-**Updated 2026-09-18. This rule supersedes all fixed counts, numeric minimums,
-count formulas, and example quotas elsewhere in this document.** Earlier
-references to three or five–six activities are historical guidance, not current
-requirements. This applies to every world, including revisions to World 11.
-
-Example and prediction counts must follow the lesson's complexity and the
-coverage needed for a practical understanding. **There is no fixed count,
-numeric minimum, or maximum.** Explore and Predict may need different counts.
-Do not stop at a standard number or pad a simple lesson to reach one.
-
-Before authoring or revising a lesson:
-
-1. **Analyze the topic.** List all commonly used concepts, syntax patterns,
-   behaviors, practical use cases, and common mistakes within its scope.
-   Include important edge cases that affect everyday use. Identify prerequisites
-   and explicitly defer specialist details that belong in another lesson.
-2. **Plan coverage first.** Record the following map in the lesson/world's
-   content planning or review Markdown file before writing the activities:
-
-   | Common concept / behavior | Explore example(s) | Prediction(s) | Write & Run task(s) | Debug task(s) | Limitation or deferral |
-   |---|---|---|---|---|---|
-   | Name the specific skill | How it will be demonstrated | What the learner must reason about | How the learner will implement it | What mistake the learner will diagnose | State the reason if a stage cannot apply |
-
-3. **Derive the counts from the map.** State how many examples and predictions
-   the lesson needs and why. Add multiple activities when one concept has
-   materially different common behaviors. Changing only names or numbers does
-   not provide new concept coverage. Counts may change when analysis reveals
-   gaps; they are a result of planning, not a quota imposed on it.
-4. **Teach and check every common concept.** Explore must explain real code and
-   its behavior progressively. Predict must test understanding through distinct
-   code scenarios, plausible mistakes, and clear explanations. Do not leave a
-   common concept covered only by a mention in Learn or a definition question.
-5. **Carry that coverage into Write & Run and Debug.** Learners must implement
-   the supported concepts they explored and predicted, then diagnose and repair
-   representative mistakes involving those concepts. Use as many tasks as the
-   coverage requires; one writing task and one bug are not a universal default.
-   A combined task may cover several concepts only when each is actually
-   exercised and verified. Do not teach a broad lesson and assess only its
-   simplest concept in the editor.
-6. **Respect execution capability and activity relevance.** Check
-   [CODEDO_EDITOR_CAPACITY.md](CODEDO_EDITOR_CAPACITY.md). If a concept cannot
-   be executed or checked faithfully, retain its real Kotlin examples and
-   predictions, record the missing capability and deferred practice in the map,
-   and do not fabricate a runnable task or claim implementation mastery. Record
-   a reason for any other inapplicable activity. A current UI/data-model limit
-   of one task is an implementation gap, not grounds to shrink needed coverage.
-7. **Review coverage before completion.** Verify that every listed common
-   concept has meaningful teaching and assessment, that supported concepts
-   carry through to writing/debugging, and that runnable solutions and bug
-   repairs pass while broken versions fail. Completion depends on this review,
-   not matching another lesson's activity count.
-
-**Quality benchmark:** World 8, Lesson 12 illustrates concrete explanations,
-progressive examples, meaningful predictions, precise writing instructions, and
-useful debugging hints. Reuse that quality standard, not its exercise counts.
+Follow [LESSON_QUALITY_STANDARD.md](LESSON_QUALITY_STANDARD.md), the single
+source for lesson quality, coverage planning, stage acceptance and audit gates.
+It supersedes older quality guidance and activity quotas in this plan. No lesson
+is a quality benchmark for another. The curriculum scope remains in this file.
 
 ---
 
@@ -301,7 +250,7 @@ Every topic below uses **topic-aware activity selection**. The activities are no
 
 > **Use only the activities that meaningfully prove understanding.**
 
-Exercise counts are also **coverage-driven**, not fixed at 5–6. Where an activity applies, it has a minimum baseline (normally **at least 3**), and additional exercises are created whenever needed to cover the topic's important knowledge points and behaviors.
+Exercise counts follow [the lesson quality standard](LESSON_QUALITY_STANDARD.md): derive them from concept coverage, with no fixed count or numeric minimum.
 
 ## 1. Kotlin Fundamentals
 
@@ -2749,56 +2698,11 @@ Therefore:
 
 ---
 
-# 4. Minimum Exercise Requirements
+# 4–5. Activity Counts and Coverage
 
-Although there should be no fixed maximum, CodeDo should have minimum quality guarantees.
-
-### Recommended minimums
-
-| Activity | Minimum | Maximum |
-|---|---:|---:|
-| 🔍 Explore Examples | **3** | No fixed maximum |
-| 🧠 Predict Output / Behavior | **3** | No fixed maximum |
-| ❓ MCQ / Check Understanding | **3** where applicable | No fixed maximum |
-| 💻 Write & Run | Topic-dependent | No fixed maximum |
-| 🐞 Debug | Topic-dependent | No fixed maximum |
-
-These are **minimums, not target counts**.
-
-The minimum guarantees that an applicable activity is not represented by only one trivial example.
-
----
-
-# 5. Concept Coverage Determines the Actual Number
-
-The fundamental exercise-count rule is:
-
-```text
-Actual Exercise Count =
-MAX(Minimum Required, Exercises Needed for Concept Coverage)
-```
-
-For example:
-
-```text
-Simple topic
-Minimum = 3
-Coverage requires = 3
-
-→ Create 3
-```
-
-But:
-
-```text
-Complex topic
-Minimum = 3
-Coverage requires = 12
-
-→ Create 12
-```
-
-There is no artificial maximum.
+See [LESSON_QUALITY_STANDARD.md](LESSON_QUALITY_STANDARD.md). The former
+minimum-count table and MAX formula are retired. Record coverage and derive
+counts before authoring; no numeric quota applies.
 
 ---
 

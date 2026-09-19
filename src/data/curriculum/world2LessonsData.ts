@@ -422,6 +422,19 @@ export const COMPARISON_OPERATORS_LESSON: FiveStageLesson = {
           { label: 'Result', description: 'true, because 72 is greater than 60' }
         ],
         whatChanged: 'A relational comparison produced a Boolean we can use to decide pass/fail.'
+      },
+      {
+        id: 'card-cmp-6',
+        number: '06',
+        title: 'Relational operators also order Strings',
+        language: 'Kotlin',
+        subtitle: '< and > are not only for numbers.',
+        code: ['val a = "apple"', 'val b = "banana"', 'println(a < b)'],
+        whatItMeans: [
+          { label: 'a < b', description: 'Strings compare alphabetically (lexicographically), like dictionary order' },
+          { label: 'Result', description: 'true, because "apple" comes before "banana" alphabetically' }
+        ],
+        whatChanged: 'Showed that <, >, <=, and >= work on Strings too, not just numbers.'
       }
     ]
   },
@@ -432,7 +445,7 @@ export const COMPARISON_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-cmp-1',
         questionNumber: 1,
-        totalQuestions: 5,
+        totalQuestions: 6,
         title: 'Relational Comparison',
         topicMeta: 'Relational operators',
         language: 'Kotlin',
@@ -452,7 +465,7 @@ export const COMPARISON_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-cmp-2',
         questionNumber: 2,
-        totalQuestions: 5,
+        totalQuestions: 6,
         title: 'Structural Equality',
         topicMeta: 'Structural equality',
         language: 'Kotlin',
@@ -472,7 +485,7 @@ export const COMPARISON_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-cmp-3',
         questionNumber: 3,
-        totalQuestions: 5,
+        totalQuestions: 6,
         title: 'Inequality Check',
         topicMeta: 'Inequality logic',
         language: 'Kotlin',
@@ -492,7 +505,7 @@ export const COMPARISON_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-cmp-4',
         questionNumber: 4,
-        totalQuestions: 5,
+        totalQuestions: 6,
         title: 'Strictly Less Than',
         topicMeta: 'The < operator',
         language: 'Kotlin',
@@ -512,7 +525,7 @@ export const COMPARISON_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-cmp-5',
         questionNumber: 5,
-        totalQuestions: 5,
+        totalQuestions: 6,
         title: 'Equal Values with <=',
         topicMeta: 'The <= operator',
         language: 'Kotlin',
@@ -527,6 +540,26 @@ export const COMPARISON_OPERATORS_LESSON: FiveStageLesson = {
         explanation: {
           codeRef: 'a <= b',
           detail: 'a and b are both 7. Since <= includes the equal case, and 7 equals 7, the result is true.'
+        }
+      },
+      {
+        id: 'pred-cmp-6',
+        questionNumber: 6,
+        totalQuestions: 6,
+        title: 'Ordering Strings',
+        topicMeta: 'Relational operators on String',
+        language: 'Kotlin',
+        code: ['fun main() {', '    val first = "cat"', '    val second = "car"', '    println(first > second)', '}'],
+        prompt: 'What does this code print?',
+        options: [
+          { id: 'A', label: 'true', isCorrect: true },
+          { id: 'B', label: 'false', isCorrect: false },
+          { id: 'C', label: 'Compiler error: > cannot compare String', isCorrect: false },
+          { id: 'D', label: '3', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'first > second',
+          detail: 'Strings compare alphabetically. "cat" and "car" share "ca", then "t" comes after "r" in the alphabet, so "cat" > "car" is true.'
         }
       }
     ]
@@ -708,6 +741,27 @@ export const LOGICAL_OPERATORS_LESSON: FiveStageLesson = {
           { label: 'true && false', description: 'Combines both results with AND, producing false' }
         ],
         whatChanged: 'Combined all three logical operators -- &&, ||, and ! -- in a single, clearly grouped expression.'
+      },
+      {
+        id: 'card-logic-6',
+        number: '06',
+        title: 'Short-circuit evaluation with &&',
+        language: 'Kotlin',
+        subtitle: 'The right side is skipped entirely when it cannot change the result.',
+        code: [
+          'fun expensiveCheck(): Boolean {',
+          '    println("Checked!")',
+          '    return true',
+          '}',
+          'val hasKey = false',
+          'val result = hasKey && expensiveCheck()',
+          'println(result)'
+        ],
+        whatItMeans: [
+          { label: 'hasKey && expensiveCheck()', description: 'hasKey is false, so && already knows the whole expression must be false -- expensiveCheck() never runs' },
+          { label: '"Checked!" never prints', description: 'Proof that the right side was skipped, not just that the final answer happened to be false' }
+        ],
+        whatChanged: 'Showed that && does not just evaluate to false -- it actively skips the right side once the left side already decides the answer.'
       }
     ]
   },
@@ -718,7 +772,7 @@ export const LOGICAL_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-logic-1',
         questionNumber: 1,
-        totalQuestions: 5,
+        totalQuestions: 6,
         title: 'AND Evaluation',
         topicMeta: 'Logical AND (&&)',
         language: 'Kotlin',
@@ -738,7 +792,7 @@ export const LOGICAL_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-logic-2',
         questionNumber: 2,
-        totalQuestions: 5,
+        totalQuestions: 6,
         title: 'OR combined with NOT',
         topicMeta: 'Logical OR (||) and NOT (!)',
         language: 'Kotlin',
@@ -758,7 +812,7 @@ export const LOGICAL_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-logic-3',
         questionNumber: 3,
-        totalQuestions: 5,
+        totalQuestions: 6,
         title: 'Operator Precedence',
         topicMeta: '&& vs || precedence',
         language: 'Kotlin',
@@ -786,7 +840,7 @@ export const LOGICAL_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-logic-4',
         questionNumber: 4,
-        totalQuestions: 5,
+        totalQuestions: 6,
         title: 'Negating a Boolean',
         topicMeta: 'The ! operator',
         language: 'Kotlin',
@@ -806,7 +860,7 @@ export const LOGICAL_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-logic-5',
         questionNumber: 5,
-        totalQuestions: 5,
+        totalQuestions: 6,
         title: 'Combining AND, OR, and NOT',
         topicMeta: 'Mixed logical expression',
         language: 'Kotlin',
@@ -829,6 +883,36 @@ export const LOGICAL_OPERATORS_LESSON: FiveStageLesson = {
         explanation: {
           codeRef: '(hasTicket || isVip) && !isBanned',
           detail: '(hasTicket || isVip) is true || false = true. !isBanned is !true = false. Combining them with && gives true && false = false.'
+        }
+      },
+      {
+        id: 'pred-logic-6',
+        questionNumber: 6,
+        totalQuestions: 6,
+        title: 'Short-Circuit Evaluation',
+        topicMeta: '&& skips the right side',
+        language: 'Kotlin',
+        code: [
+          'fun main() {',
+          '    fun expensiveCheck(): Boolean {',
+          '        println("Checked!")',
+          '        return true',
+          '    }',
+          '    val hasKey = false',
+          '    val result = hasKey && expensiveCheck()',
+          '    println(result)',
+          '}'
+        ],
+        prompt: 'What does this program print, in order?',
+        options: [
+          { id: 'A', label: 'false', isCorrect: true },
+          { id: 'B', label: 'Checked!\nfalse', isCorrect: false },
+          { id: 'C', label: 'Checked!\ntrue', isCorrect: false },
+          { id: 'D', label: 'true', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'hasKey && expensiveCheck()',
+          detail: 'hasKey is false, so && short-circuits: it already knows the whole expression is false without ever calling expensiveCheck(). "Checked!" never prints, and only the final result (false) is shown.'
         }
       }
     ]
@@ -1014,6 +1098,32 @@ export const ASSIGNMENT_OPERATORS_LESSON: FiveStageLesson = {
           { label: 'Result', description: '17 % 5 = 2 (17 divided by 5 leaves a remainder of 2)' }
         ],
         whatChanged: 'remainder became 2, the leftover from dividing 17 by 5.'
+      },
+      {
+        id: 'card-assignop-7',
+        number: '07',
+        title: '+= on a String',
+        language: 'Kotlin',
+        subtitle: 'Compound assignment works on text too, not just numbers.',
+        code: ['var message = "Hello"', 'message += ", World!"', 'println(message)'],
+        whatItMeans: [
+          { label: 'message += ", World!"', description: 'Shorthand for message = message + ", World!" -- concatenation, not arithmetic' },
+          { label: 'Result', description: '"Hello" + ", World!" = "Hello, World!"' }
+        ],
+        whatChanged: 'Used += to build up a String, one of the most common real-world uses of compound assignment.'
+      },
+      {
+        id: 'card-assignop-8',
+        number: '08',
+        title: '*= on a Double',
+        language: 'Kotlin',
+        subtitle: 'Compound assignment works the same way on decimal values.',
+        code: ['var total = 10.0', 'total *= 1.5', 'println(total)'],
+        whatItMeans: [
+          { label: 'total *= 1.5', description: 'Shorthand for total = total * 1.5' },
+          { label: 'Result', description: '10.0 * 1.5 = 15.0 -- still a Double, printed with its decimal point' }
+        ],
+        whatChanged: 'Applied a compound operator to a Double, not just an Int.'
       }
     ]
   },
@@ -1024,7 +1134,7 @@ export const ASSIGNMENT_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-assignop-1',
         questionNumber: 1,
-        totalQuestions: 4,
+        totalQuestions: 6,
         title: 'Compound Addition',
         topicMeta: '+= operator',
         language: 'Kotlin',
@@ -1044,7 +1154,7 @@ export const ASSIGNMENT_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-assignop-2',
         questionNumber: 2,
-        totalQuestions: 4,
+        totalQuestions: 6,
         title: 'Compound Subtraction',
         topicMeta: '-= operator',
         language: 'Kotlin',
@@ -1064,7 +1174,7 @@ export const ASSIGNMENT_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-assignop-3',
         questionNumber: 3,
-        totalQuestions: 4,
+        totalQuestions: 6,
         title: 'Multiple Compound Operators',
         topicMeta: 'chained assignment',
         language: 'Kotlin',
@@ -1084,7 +1194,7 @@ export const ASSIGNMENT_OPERATORS_LESSON: FiveStageLesson = {
       {
         id: 'pred-assignop-4',
         questionNumber: 4,
-        totalQuestions: 4,
+        totalQuestions: 6,
         title: 'Compound Assignment on val',
         topicMeta: 'val immutability',
         language: 'Kotlin',
@@ -1099,6 +1209,46 @@ export const ASSIGNMENT_OPERATORS_LESSON: FiveStageLesson = {
         explanation: {
           codeRef: 'limit -= 10',
           detail: 'Every assignment operator, including compound ones like -=, reassigns the variable. Since limit was declared with val, the compiler rejects this before the code can run.'
+        }
+      },
+      {
+        id: 'pred-assignop-5',
+        questionNumber: 5,
+        totalQuestions: 6,
+        title: 'Compound Assignment on a String',
+        topicMeta: '+= on String',
+        language: 'Kotlin',
+        code: ['fun main() {', '    var message = "Hello"', '    message += ", World!"', '    println(message)', '}'],
+        prompt: 'What does this code print?',
+        options: [
+          { id: 'A', label: 'Hello, World!', isCorrect: true },
+          { id: 'B', label: 'Hello', isCorrect: false },
+          { id: 'C', label: ', World!', isCorrect: false },
+          { id: 'D', label: 'Compiler error', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'message += ", World!"',
+          detail: '+= works on Strings too -- it is shorthand for message = message + ", World!", concatenating the two: "Hello" + ", World!" = "Hello, World!".'
+        }
+      },
+      {
+        id: 'pred-assignop-6',
+        questionNumber: 6,
+        totalQuestions: 6,
+        title: 'Compound Assignment on a Double',
+        topicMeta: '*= on Double',
+        language: 'Kotlin',
+        code: ['fun main() {', '    var total = 10.0', '    total *= 1.5', '    println(total)', '}'],
+        prompt: 'What does this code print?',
+        options: [
+          { id: 'A', label: '15.0', isCorrect: true },
+          { id: 'B', label: '15', isCorrect: false },
+          { id: 'C', label: '11.5', isCorrect: false },
+          { id: 'D', label: 'Compiler error', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'total *= 1.5',
+          detail: 'total *= 1.5 is shorthand for total = total * 1.5. Since total was 10.0, the new value is 10.0 * 1.5 = 15.0, still printed with its decimal point because it stays a Double.'
         }
       }
     ]
@@ -1271,6 +1421,32 @@ export const INCREMENT_DECREMENT_LESSON: FiveStageLesson = {
       {
         id: 'card-incdec-5',
         number: '05',
+        title: 'Prefix vs postfix as an expression value',
+        language: 'Kotlin',
+        subtitle: 'The value used elsewhere differs, even though the variable ends up the same.',
+        code: ['var count = 5', 'val old = count++', 'println(old)', 'println(count)'],
+        whatItMeans: [
+          { label: 'val old = count++', description: 'Postfix returns the value BEFORE incrementing: old is 5' },
+          { label: 'println(count)', description: 'count itself is still incremented to 6, same as always' }
+        ],
+        whatChanged: 'Captured the value a postfix ++ returns, which is the OLD value -- unlike the variable itself, which still ends up incremented.'
+      },
+      {
+        id: 'card-incdec-6',
+        number: '06',
+        title: 'Prefix as an expression value',
+        language: 'Kotlin',
+        subtitle: 'The same variable, but ++ moved before it changes what gets captured.',
+        code: ['var count = 5', 'val fresh = ++count', 'println(fresh)', 'println(count)'],
+        whatItMeans: [
+          { label: 'val fresh = ++count', description: 'Prefix returns the value AFTER incrementing: fresh is 6' },
+          { label: 'println(count)', description: 'count is also 6 -- the variable itself ends up the same either way' }
+        ],
+        whatChanged: 'Showed the real reason prefix vs postfix matters: only when the ++/-- expression\'s own result is captured, not when it\'s used as its own standalone statement.'
+      },
+      {
+        id: 'card-incdec-7',
+        number: '07',
         title: 'val cannot be incremented',
         language: 'Kotlin',
         subtitle: 'The compiler blocks ++ / -- on a val.',
@@ -1290,7 +1466,7 @@ export const INCREMENT_DECREMENT_LESSON: FiveStageLesson = {
       {
         id: 'pred-incdec-1',
         questionNumber: 1,
-        totalQuestions: 5,
+        totalQuestions: 7,
         title: 'Basic Increment',
         topicMeta: 'Postfix ++',
         language: 'Kotlin',
@@ -1310,7 +1486,7 @@ export const INCREMENT_DECREMENT_LESSON: FiveStageLesson = {
       {
         id: 'pred-incdec-2',
         questionNumber: 2,
-        totalQuestions: 5,
+        totalQuestions: 7,
         title: 'Double Decrement',
         topicMeta: 'Postfix --',
         language: 'Kotlin',
@@ -1330,7 +1506,7 @@ export const INCREMENT_DECREMENT_LESSON: FiveStageLesson = {
       {
         id: 'pred-incdec-3',
         questionNumber: 3,
-        totalQuestions: 5,
+        totalQuestions: 7,
         title: 'Prefix Increment',
         topicMeta: 'Prefix ++',
         language: 'Kotlin',
@@ -1350,7 +1526,7 @@ export const INCREMENT_DECREMENT_LESSON: FiveStageLesson = {
       {
         id: 'pred-incdec-4',
         questionNumber: 4,
-        totalQuestions: 5,
+        totalQuestions: 7,
         title: 'val Increment Attempt',
         topicMeta: 'val immutability',
         language: 'Kotlin',
@@ -1370,7 +1546,7 @@ export const INCREMENT_DECREMENT_LESSON: FiveStageLesson = {
       {
         id: 'pred-incdec-5',
         questionNumber: 5,
-        totalQuestions: 5,
+        totalQuestions: 7,
         title: 'Mixed Increment and Decrement',
         topicMeta: 'Combining ++ and --',
         language: 'Kotlin',
@@ -1385,6 +1561,46 @@ export const INCREMENT_DECREMENT_LESSON: FiveStageLesson = {
         explanation: {
           codeRef: 'coins++\n    coins--\n    coins++',
           detail: 'Starting at 8: +1 makes 9, -1 makes 8, +1 makes 9 again. The final printed value is 9.'
+        }
+      },
+      {
+        id: 'pred-incdec-6',
+        questionNumber: 6,
+        totalQuestions: 7,
+        title: 'Postfix as an Expression Value',
+        topicMeta: 'Postfix ++ result',
+        language: 'Kotlin',
+        code: ['fun main() {', '    var count = 5', '    val old = count++', '    println(old)', '    println(count)', '}'],
+        prompt: 'What does this program print, in order?',
+        options: [
+          { id: 'A', label: '5\n6', isCorrect: true },
+          { id: 'B', label: '6\n6', isCorrect: false },
+          { id: 'C', label: '5\n5', isCorrect: false },
+          { id: 'D', label: '6\n5', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'val old = count++',
+          detail: 'Postfix count++ returns the value BEFORE incrementing, so old captures 5 -- but count itself still ends up incremented to 6, which the second println confirms.'
+        }
+      },
+      {
+        id: 'pred-incdec-7',
+        questionNumber: 7,
+        totalQuestions: 7,
+        title: 'Prefix as an Expression Value',
+        topicMeta: 'Prefix ++ result',
+        language: 'Kotlin',
+        code: ['fun main() {', '    var count = 5', '    val fresh = ++count', '    println(fresh)', '    println(count)', '}'],
+        prompt: 'What does this program print, in order?',
+        options: [
+          { id: 'A', label: '6\n6', isCorrect: true },
+          { id: 'B', label: '5\n6', isCorrect: false },
+          { id: 'C', label: '6\n5', isCorrect: false },
+          { id: 'D', label: '5\n5', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'val fresh = ++count',
+          detail: 'Prefix ++count returns the value AFTER incrementing, so fresh captures 6 -- and count is also 6, since prefix increments before producing its result.'
         }
       }
     ]

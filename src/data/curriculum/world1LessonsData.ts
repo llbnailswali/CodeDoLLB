@@ -105,6 +105,21 @@ export const COMMENTS_LESSON: FiveStageLesson = {
           { label: 'Active line', description: 'Only "Game start!" will print' }
         ],
         whatChanged: 'We disabled a line of code without deleting it.'
+      },
+      {
+        id: 'card-comments-4',
+        number: '04',
+        title: '// inside a string is not a comment',
+        language: 'Kotlin',
+        subtitle: 'Comment markers lose their meaning inside quotes.',
+        code: [
+          'val website = "Visit http://example.com for docs"',
+          'println(website)'
+        ],
+        whatItMeans: [
+          { label: '// inside "..."', description: 'The // in http:// is just literal text here, not the start of a comment' }
+        ],
+        whatChanged: 'Showed that // only starts a comment outside of a string literal.'
       }
     ]
   },
@@ -352,6 +367,22 @@ export const PRINT_PRINTLN_LESSON: FiveStageLesson = {
           { label: 'println(42)', description: 'Prints 42 on the same line, then breaks to a new line' }
         ],
         whatChanged: 'Produces "Count: 42" cleanly on a single line.'
+      },
+      {
+        id: 'card-print-4',
+        number: '04',
+        title: 'Empty println() for a blank line',
+        language: 'Kotlin',
+        subtitle: 'Calling println() with no arguments still moves to a new line.',
+        code: [
+          'println("Hi")',
+          'println()',
+          'println("Bye")'
+        ],
+        whatItMeans: [
+          { label: 'println()', description: 'Prints nothing but still ends the current line, inserting a blank line between "Hi" and "Bye"' }
+        ],
+        whatChanged: 'Inserted a visible blank line by calling println() with no arguments.'
       }
     ]
   },
@@ -469,26 +500,29 @@ export const PRINT_PRINTLN_LESSON: FiveStageLesson = {
     }
   },
   debug: {
-    title: 'Fix the Broken Print Call',
-    subtitle: 'Fix the typo preventing the message from printing.',
+    title: 'Fix the Broken Score Line',
+    subtitle: 'The label and score should appear together on one line, but they are printing separately -- identify why, and fix the calls.',
     challengeNumber: 1,
     totalChallenges: 1,
     difficulty: 'easy',
-    bugType: 'syntax',
-    bugLabel: 'Syntax Error: Unresolved print line typo',
+    bugType: 'logic',
+    bugLabel: 'Logic Bug: println() Ends the Line Too Early',
     brokenCode: `fun main() {
-    prntln("Welcome to CodeDo!")
+    // BUG: println() starts a new line before the score can join it!
+    println("Score:")
+    print(95)
 }`,
     fixedCode: `fun main() {
-    println("Welcome to CodeDo!")
+    print("Score:")
+    println(95)
 }`,
-    expectedOutput: 'Welcome to CodeDo!',
+    expectedOutput: 'Score:95',
     hints: [
-      'Look closely at the spelling of the printing function.',
-      '"prntln" is missing the letter "i".',
-      'Change "prntln" to "println".'
+      'Compare the two calls used here -- one of them ends the current line before the next value is printed.',
+      'println("Score:") immediately starts a new line, so 95 always lands on its own separate line instead of joining "Score:".',
+      'Swap which call keeps the line open: use print() for "Score:" and println() for 95.'
     ],
-    explanation: 'In Kotlin, the console printing function is spelled `println` (short for print line). Typoing it causes an unresolved reference error.'
+    explanation: 'println() always ends the current line with a newline, while print() leaves the line open for whatever prints next. Because the label used println(), the score was pushed to its own line no matter what printed it. Swapping to print("Score:") followed by println(95) keeps both values on the same line: Score:95.'
   },
   mastered: {
     topicTitle: 'print() and println()',
@@ -746,7 +780,7 @@ export const VAL_VS_VAR_LESSON: FiveStageLesson = {
     summary: 'You mastered Kotlin\'s immutability foundation: locked read-only `val` vs reassignable `var`.',
     passedCount: '3 / 3 PASSED',
     verificationItems: [
-      { title: 'val immutability', subtitle: 'Understood compile-time immutability' },
+      { title: 'val immutability', subtitle: 'Understood that val locks the variable itself against reassignment (not necessarily the contents of what it holds)' },
       { title: 'var mutability', subtitle: 'Learned how and when to mutate variables' },
       { title: 'Idiomatic Kotlin', subtitle: 'Defaulting to val for safer code' }
     ],
@@ -1185,39 +1219,40 @@ export const INT_LONG_LESSON: FiveStageLesson = {
     challengeNumber: 1,
     totalChallenges: 1,
     xpReward: 20,
-    title: 'Calculate Seconds in a Day',
+    title: 'Convert Daily Visitors to a Yearly Long Total',
     description:
-      'Declare the time constants:\n' +
-      '• val hours = 24\n' +
-      '• val minutes = 60\n' +
-      '• val seconds = 60\n\n' +
-      '1. Calculate the total seconds in a day: hours * minutes * seconds.\n\n' +
-      '2. Print the resulting total seconds (86400).',
+      'Declare the visitor counts:\n' +
+      '• val dailyVisitors = 50_000 (an Int)\n' +
+      '• val days = 365L (a Long)\n\n' +
+      '1. Convert dailyVisitors to Long using .toLong(), since Kotlin never implicitly widens Int to Long.\n\n' +
+      '2. Multiply the converted value by days to get the yearly total.\n\n' +
+      '3. Print the resulting yearly total (18250000).',
     requirements: {
       name: 'main',
       params: '(none)',
       returns: 'Unit'
     },
-    fileName: 'SecondsInDay.kt',
+    fileName: 'YearlyVisitors.kt',
     initialCode: `fun main() {
-    val hours = 24
-    val minutes = 60
-    val seconds = 60
+    val dailyVisitors = 50_000
+    val days = 365L
 
-    // 1. Calculate and print total seconds (hours * minutes * seconds):
+    // 1. Convert dailyVisitors to Long with .toLong():
+
+    // 2-3. Multiply by days and print the yearly total:
 }`,
     solutionCode: `fun main() {
-    val hours = 24
-    val minutes = 60
-    val seconds = 60
-    val total = hours * minutes * seconds
-    println(total)
+    val dailyVisitors = 50_000
+    val days = 365L
+    val dailyVisitorsLong = dailyVisitors.toLong()
+    val yearlyVisitors = dailyVisitorsLong * days
+    println(yearlyVisitors)
 }`,
     sampleInput: 'main()',
-    expectedOutput: '86400',
+    expectedOutput: '18250000',
     testCase: {
       call: '',
-      expected: '86400'
+      expected: '18250000'
     }
   },
   debug: {
@@ -1356,6 +1391,22 @@ export const FLOAT_DOUBLE_LESSON: FiveStageLesson = {
           { label: 'No auto-conversion', description: 'Kotlin will not silently downgrade Double to Float' }
         ],
         whatChanged: 'Learned the mandatory f suffix for Float.'
+      },
+      {
+        id: 'card-float-4',
+        number: '04',
+        title: 'Converting between Float and Double',
+        language: 'Kotlin',
+        subtitle: 'Explicit conversion via .toFloat() or .toDouble().',
+        code: [
+          'val weight: Float = 68.5f',
+          'val weightAsDouble: Double = weight.toDouble()',
+          'println(weightAsDouble)'
+        ],
+        whatItMeans: [
+          { label: '.toDouble()', description: 'Kotlin does not implicitly widen a Float to a Double; you must convert explicitly, just like Int to Long' }
+        ],
+        whatChanged: 'Converted a Float to a Double safely.'
       }
     ]
   },
@@ -1366,7 +1417,7 @@ export const FLOAT_DOUBLE_LESSON: FiveStageLesson = {
       {
         id: 'pred-float-1',
         questionNumber: 1,
-        totalQuestions: 3,
+        totalQuestions: 4,
         title: 'Default decimal type',
         topicMeta: 'Decimal defaults',
         language: 'Kotlin',
@@ -1389,7 +1440,7 @@ export const FLOAT_DOUBLE_LESSON: FiveStageLesson = {
       {
         id: 'pred-float-2',
         questionNumber: 2,
-        totalQuestions: 3,
+        totalQuestions: 4,
         title: 'Float Suffix',
         topicMeta: 'Float literals',
         language: 'Kotlin',
@@ -1412,7 +1463,7 @@ export const FLOAT_DOUBLE_LESSON: FiveStageLesson = {
       {
         id: 'pred-float-3',
         questionNumber: 3,
-        totalQuestions: 3,
+        totalQuestions: 4,
         title: 'Type Mismatch on Float',
         topicMeta: 'Type assignment',
         language: 'Kotlin',
@@ -1430,6 +1481,30 @@ export const FLOAT_DOUBLE_LESSON: FiveStageLesson = {
           codeRef: 'val speed: Float = 55.0',
           detail: '55.0 is a Double. In Kotlin, assigning a Double to a variable typed as Float is a compile error without the trailing f.'
         }
+      },
+      {
+        id: 'pred-float-4',
+        questionNumber: 4,
+        totalQuestions: 4,
+        title: 'Explicit Conversion',
+        topicMeta: 'Float / Double conversion',
+        language: 'Kotlin',
+        code: [
+          'val weight: Float = 68.5f',
+          'val weightAsDouble: Double = weight.toDouble()',
+          'println(weightAsDouble)'
+        ],
+        prompt: 'What does this program print?',
+        options: [
+          { id: 'A', label: '68.5', isCorrect: true },
+          { id: 'B', label: 'Compile error: Type mismatch', isCorrect: false },
+          { id: 'C', label: '68', isCorrect: false },
+          { id: 'D', label: '68.5f', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: '.toDouble()',
+          detail: 'Kotlin never implicitly widens a Float to a Double, but .toDouble() converts it explicitly, safely producing 68.5 as a Double.'
+        }
       }
     ]
   },
@@ -1437,34 +1512,40 @@ export const FLOAT_DOUBLE_LESSON: FiveStageLesson = {
     challengeNumber: 1,
     totalChallenges: 1,
     xpReward: 20,
-    title: 'Calculate Circle Area',
+    title: 'Convert a Double Subtotal to Float',
     description:
-      'Declare val radius = 5.0 and val pi = 3.14.\n\n' +
-      '1. Calculate area using the formula: pi * radius * radius.\n\n' +
-      '2. Print the calculated area (78.5).',
+      'Declare the order values:\n' +
+      '• val pricePerItem = 12.50 (a Double)\n' +
+      '• val quantity = 4.0 (a Double)\n\n' +
+      '1. Calculate subtotal using the formula: pricePerItem * quantity.\n\n' +
+      '2. Convert subtotal to Float using .toFloat() and store it as val subtotalAsFloat: Float.\n\n' +
+      '3. Print subtotalAsFloat (50.0).',
     requirements: {
       name: 'main',
       params: '(none)',
       returns: 'Unit'
     },
-    fileName: 'CircleArea.kt',
+    fileName: 'SubtotalFloat.kt',
     initialCode: `fun main() {
-    val radius = 5.0
-    val pi = 3.14
+    val pricePerItem = 12.50
+    val quantity = 4.0
 
-    // 1. Calculate and print area (pi * radius * radius):
+    // 1. Calculate subtotal (pricePerItem * quantity):
+
+    // 2-3. Convert subtotal to Float and print it:
 }`,
     solutionCode: `fun main() {
-    val radius = 5.0
-    val pi = 3.14
-    val area = pi * radius * radius
-    println(area)
+    val pricePerItem = 12.50
+    val quantity = 4.0
+    val subtotal = pricePerItem * quantity
+    val subtotalAsFloat: Float = subtotal.toFloat()
+    println(subtotalAsFloat)
 }`,
     sampleInput: 'main()',
-    expectedOutput: '78.5',
+    expectedOutput: '50.0',
     testCase: {
       call: '',
-      expected: '78.5'
+      expected: '50.0'
     }
   },
   debug: {
@@ -1715,33 +1796,31 @@ export const BOOLEAN_LESSON: FiveStageLesson = {
     }
   },
   debug: {
-    title: 'Fix the Boolean Logic Mistake',
-    subtitle: 'Backstage access is being granted incorrectly -- identify why, and fix the operator.',
+    title: 'Fix the Missing Negation',
+    subtitle: 'The sound status is backwards -- identify why, and fix the missing operator.',
     challengeNumber: 1,
     totalChallenges: 1,
     difficulty: 'easy',
     bugType: 'logic',
-    bugLabel: 'Logic Bug: Wrong Logical Operator',
+    bugLabel: 'Logic Bug: Missing Negation (!)',
     brokenCode: `fun main() {
-    val hasTicket = true
-    val isVip = false
-    // BUG: this grants access with EITHER condition, not both!
-    val canEnterBackstage = hasTicket || isVip
-    println(canEnterBackstage)
+    val isMuted = true
+    // BUG: soundEnabled should be the OPPOSITE of isMuted, not a copy of it!
+    val soundEnabled = isMuted
+    println(soundEnabled)
 }`,
     fixedCode: `fun main() {
-    val hasTicket = true
-    val isVip = false
-    val canEnterBackstage = hasTicket && isVip
-    println(canEnterBackstage)
+    val isMuted = true
+    val soundEnabled = !isMuted
+    println(soundEnabled)
 }`,
     expectedOutput: 'false',
     hints: [
-      'Backstage access should require BOTH a ticket AND vip status -- check whether the operator actually enforces that.',
-      'hasTicket || isVip is true if EITHER condition holds, so it wrongly grants access with just a ticket.',
-      'Change || to && so canEnterBackstage = hasTicket && isVip.'
+      'soundEnabled and isMuted should never agree -- if one is true, the other must be false. Check whether that is actually true here.',
+      'val soundEnabled = isMuted just copies isMuted\'s value (true), instead of flipping it.',
+      'Add the ! negation operator: val soundEnabled = !isMuted.'
     ],
-    explanation: 'hasTicket || isVip grants access if either condition is true, so having just a ticket (with isVip false) still evaluates to true. Requiring both conditions with && correctly evaluates to false when isVip is false, producing the real answer: false.'
+    explanation: 'Copying isMuted directly means soundEnabled ends up true whenever the device is muted -- exactly backwards. Adding the ! negation operator flips true to false, so soundEnabled = !isMuted correctly evaluates to false while isMuted is true.'
   },
   mastered: {
     topicTitle: 'Boolean',
@@ -1842,7 +1921,7 @@ export const CHAR_LESSON: FiveStageLesson = {
       {
         id: 'card-char-3',
         number: '03',
-        title: 'Escape characters',
+        title: 'Escape characters: tab',
         language: 'Kotlin',
         subtitle: 'Representing invisible characters.',
         code: [
@@ -1853,6 +1932,22 @@ export const CHAR_LESSON: FiveStageLesson = {
           { label: '\'\\t\'', description: 'Single character representing horizontal tab' }
         ],
         whatChanged: 'Used an escaped control character.'
+      },
+      {
+        id: 'card-char-4',
+        number: '04',
+        title: 'Escape characters: newline',
+        language: 'Kotlin',
+        subtitle: 'Forcing a line break inside concatenated text.',
+        code: [
+          'val newline = \'\\n\'',
+          'println("Line1" + newline + "Line2")'
+        ],
+        whatItMeans: [
+          { label: '\'\\n\'', description: 'Single character representing a line break' },
+          { label: 'Result', description: 'Prints "Line1" and "Line2" on two separate lines, even though they were joined with +' }
+        ],
+        whatChanged: 'Used a different escape character to control line breaks, not just spacing.'
       }
     ]
   },
@@ -1863,7 +1958,7 @@ export const CHAR_LESSON: FiveStageLesson = {
       {
         id: 'pred-char-1',
         questionNumber: 1,
-        totalQuestions: 3,
+        totalQuestions: 4,
         title: 'Char Quotes',
         topicMeta: 'Quotation syntax',
         language: 'Kotlin',
@@ -1885,7 +1980,7 @@ export const CHAR_LESSON: FiveStageLesson = {
       {
         id: 'pred-char-2',
         questionNumber: 2,
-        totalQuestions: 3,
+        totalQuestions: 4,
         title: 'Multiple characters error',
         topicMeta: 'Char length',
         language: 'Kotlin',
@@ -1907,7 +2002,7 @@ export const CHAR_LESSON: FiveStageLesson = {
       {
         id: 'pred-char-3',
         questionNumber: 3,
-        totalQuestions: 3,
+        totalQuestions: 4,
         title: 'Char digit vs Int',
         topicMeta: 'Char vs Int',
         language: 'Kotlin',
@@ -1925,6 +2020,29 @@ export const CHAR_LESSON: FiveStageLesson = {
         explanation: {
           codeRef: 'println(c)',
           detail: 'println outputs the character glyph \'5\' without the surrounding single quotes.'
+        }
+      },
+      {
+        id: 'pred-char-4',
+        questionNumber: 4,
+        totalQuestions: 4,
+        title: 'Newline escape',
+        topicMeta: 'Escape sequences',
+        language: 'Kotlin',
+        code: [
+          'val newline = \'\\n\'',
+          'println("Line1" + newline + "Line2")'
+        ],
+        prompt: 'What does this print?',
+        options: [
+          { id: 'A', label: 'Line1 and Line2 on two separate lines', isCorrect: true },
+          { id: 'B', label: 'Line1\\nLine2 (with the literal backslash-n visible)', isCorrect: false },
+          { id: 'C', label: 'Line1Line2 (joined with no separator)', isCorrect: false },
+          { id: 'D', label: 'Compile error', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: '\'\\n\'',
+          detail: 'The escape sequence \\n represents an actual line-break character, not the two visible characters "\\" and "n". Concatenating it between the two strings forces Line2 onto its own line.'
         }
       }
     ]
@@ -1959,29 +2077,29 @@ export const CHAR_LESSON: FiveStageLesson = {
     }
   },
   debug: {
-    title: 'Fix the Character Case Mistake',
-    subtitle: 'The printed initial has the wrong case -- identify why, and fix the value.',
+    title: 'Fix the Missing Tab Escape',
+    subtitle: 'The name and score should be separated by a tab, but the separator prints as a plain letter -- identify why, and fix the Char literal.',
     challengeNumber: 1,
     totalChallenges: 1,
     difficulty: 'easy',
     bugType: 'logic',
-    bugLabel: 'Logic Bug: Wrong Character Case',
+    bugLabel: 'Logic Bug: Missing Backslash in Escape Sequence',
     brokenCode: `fun main() {
-    // BUG: this initial should be uppercase to match the expected output!
-    val letter: Char = 'z'
-    println(letter)
+    // BUG: this should be a tab escape, not the plain letter t!
+    val separator: Char = 't'
+    println("Name:" + separator + "Score")
 }`,
     fixedCode: `fun main() {
-    val letter: Char = 'Z'
-    println(letter)
+    val separator: Char = '\\t'
+    println("Name:" + separator + "Score")
 }`,
-    expectedOutput: 'Z',
+    expectedOutput: 'Name:\tScore',
     hints: [
-      'Compare the printed letter to the expected output -- do they match exactly, including case?',
-      '\'z\' (lowercase) and \'Z\' (uppercase) are different Char values in Kotlin.',
-      'Change \'z\' to \'Z\'.'
+      'The separator Char is meant to be a tab, not the visible letter t -- check what actually prints between "Name:" and "Score".',
+      "'t' is just the one-character letter t. A tab escape needs a backslash before the t: '\\t'.",
+      "Change 't' to '\\t' so separator holds the tab escape sequence, not a literal letter."
     ],
-    explanation: '\'z\' and \'Z\' are distinct Char values -- Kotlin is case-sensitive. Changing the lowercase \'z\' to uppercase \'Z\' produces the correct output: Z.'
+    explanation: "'t' is a single Char holding the letter t -- Kotlin has no way to know you meant \"tab\" without the backslash. '\\t' is the escape sequence for an actual tab character. Since separator was declared as a single Char, only one escape sequence (or one literal character) can go inside the quotes; adding the backslash fixes the value without changing anything else."
   },
   mastered: {
     topicTitle: 'Char',
@@ -2341,6 +2459,21 @@ export const STRING_TEMPLATES_LESSON: FiveStageLesson = {
           { label: '${name.length}', description: 'Requires curly braces to access the .length property' }
         ],
         whatChanged: 'Showed why ${...} is required for property calls.'
+      },
+      {
+        id: 'card-tmpl-4',
+        number: '04',
+        title: 'Escaping a literal dollar sign',
+        language: 'Kotlin',
+        subtitle: 'Printing a real $ character without triggering interpolation.',
+        code: [
+          'val price = 25',
+          'println("Price: \\$price")'
+        ],
+        whatItMeans: [
+          { label: '\\$price', description: 'The backslash escapes the dollar sign, so it prints as a literal $ followed by the plain text "price" -- not the variable\'s value' }
+        ],
+        whatChanged: 'Printed a literal $ sign instead of triggering interpolation.'
       }
     ]
   },
@@ -2351,7 +2484,7 @@ export const STRING_TEMPLATES_LESSON: FiveStageLesson = {
       {
         id: 'pred-tmpl-1',
         questionNumber: 1,
-        totalQuestions: 3,
+        totalQuestions: 4,
         title: 'Simple Variable Template',
         topicMeta: 'Variable template',
         language: 'Kotlin',
@@ -2374,7 +2507,7 @@ export const STRING_TEMPLATES_LESSON: FiveStageLesson = {
       {
         id: 'pred-tmpl-2',
         questionNumber: 2,
-        totalQuestions: 3,
+        totalQuestions: 4,
         title: 'Missing Braces Bug',
         topicMeta: 'Expression braces',
         language: 'Kotlin',
@@ -2397,7 +2530,7 @@ export const STRING_TEMPLATES_LESSON: FiveStageLesson = {
       {
         id: 'pred-tmpl-3',
         questionNumber: 3,
-        totalQuestions: 3,
+        totalQuestions: 4,
         title: 'Expression with Braces',
         topicMeta: 'Expression evaluation',
         language: 'Kotlin',
@@ -2415,6 +2548,29 @@ export const STRING_TEMPLATES_LESSON: FiveStageLesson = {
         explanation: {
           codeRef: '"${count + 1}"',
           detail: 'The curly braces evaluate the expression count + 1 (5 + 1 = 6) before placing it in the string.'
+        }
+      },
+      {
+        id: 'pred-tmpl-4',
+        questionNumber: 4,
+        totalQuestions: 4,
+        title: 'Escaping the Dollar Sign',
+        topicMeta: 'Literal $ with \\$',
+        language: 'Kotlin',
+        code: [
+          'val price = 25',
+          'println("Price: \\$price")'
+        ],
+        prompt: 'What does this print?',
+        options: [
+          { id: 'A', label: 'Price: $price', isCorrect: true },
+          { id: 'B', label: 'Price: 25', isCorrect: false },
+          { id: 'C', label: 'Price: ${price}', isCorrect: false },
+          { id: 'D', label: 'Compile error', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: '"Price: \\$price"',
+          detail: 'The backslash escapes the dollar sign, so it prints as literal text -- "$" followed by the plain characters "price" -- instead of interpolating the price variable.'
         }
       }
     ]
@@ -2683,10 +2839,12 @@ export const WORLD_1_BOSS_LESSON: FiveStageLesson = {
       'Declare the user profile variables:\n' +
       '• val name = "CodeDo"\n' +
       '• val grade = \'A\'\n' +
-      '• val score = 100\n\n' +
-      '1. Use string templates to combine the values.\n\n' +
-      '2. Print the profile summary:\n' +
-      '"User: $name | Grade: $grade | Score: $score"',
+      '• var score = 88 (mutable, since a bonus still needs to be added)\n' +
+      '• val bonus = 12\n\n' +
+      '1. Add bonus to score using score += bonus.\n\n' +
+      '2. Compute val passed: Boolean = score >= 90.\n\n' +
+      '3. Print the profile summary:\n' +
+      '"User: $name | Grade: $grade | Score: $score | Passed: $passed"',
     requirements: {
       name: 'main',
       params: '(none)',
@@ -2696,21 +2854,29 @@ export const WORLD_1_BOSS_LESSON: FiveStageLesson = {
     initialCode: `fun main() {
     val name = "CodeDo"
     val grade = 'A'
-    val score = 100
+    var score = 88
+    val bonus = 12
 
-    // 1. Print "User: $name | Grade: $grade | Score: $score" using string templates:
+    // 1. Add bonus to score using +=:
+
+    // 2. Compute passed (score >= 90):
+
+    // 3. Print "User: $name | Grade: $grade | Score: $score | Passed: $passed":
 }`,
     solutionCode: `fun main() {
     val name = "CodeDo"
     val grade = 'A'
-    val score = 100
-    println("User: $name | Grade: $grade | Score: $score")
+    var score = 88
+    val bonus = 12
+    score += bonus
+    val passed: Boolean = score >= 90
+    println("User: $name | Grade: $grade | Score: $score | Passed: $passed")
 }`,
     sampleInput: 'main()',
-    expectedOutput: 'User: CodeDo | Grade: A | Score: 100',
+    expectedOutput: 'User: CodeDo | Grade: A | Score: 100 | Passed: true',
     testCase: {
       call: '',
-      expected: 'User: CodeDo | Grade: A | Score: 100'
+      expected: 'User: CodeDo | Grade: A | Score: 100 | Passed: true'
     }
   },
   debug: {
@@ -2741,12 +2907,12 @@ export const WORLD_1_BOSS_LESSON: FiveStageLesson = {
   },
   mastered: {
     topicTitle: 'Personal Profile Program',
-    summary: 'You defeated the World 1 Boss! You demonstrated full mastery of Kotlin Awakening: entry points, comments, console I/O, immutability, data types, and string templates.',
+    summary: 'You defeated the World 1 Boss! This capstone combined String, Char, Int, var mutation, and a Boolean comparison into one working profile program -- the individual Long, Float, and Double lessons each verified those types separately.',
     passedCount: '3 / 3 PASSED',
     verificationItems: [
       { title: 'Core syntax mastered', subtitle: 'main(), println(), and comments' },
-      { title: 'Data types mastered', subtitle: 'Int, Long, Float, Double, Boolean, Char, String' },
-      { title: 'Immutability & Templates', subtitle: 'val vs var and clean $template interpolation' },
+      { title: 'Types integrated in this capstone', subtitle: 'String, Char, Int (with var mutation), and a comparison-derived Boolean' },
+      { title: 'State updates & templates', subtitle: 'Reassigning a var with += and formatting the result with $template interpolation' },
       { title: 'World 1 Boss Defeated', subtitle: 'Awarded Kotlin Awakening Master Badge' }
     ],
     xpEarned: 50,

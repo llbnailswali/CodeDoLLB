@@ -4,10 +4,7 @@
 >
 > **North Star:** “I’m not studying programming. I’m playing my way toward becoming a developer.”
 
-> **Curriculum authoring:** Follow the [coverage-first authoring rule in the master plan](CODEDO_MASTER_PLAN.md#required-authoring-rule--analyze-coverage-before-choosing-counts).
-> Analyze all commonly used concepts before deciding example/prediction counts;
-> there are no fixed quotas. Carry supported concept coverage through Write & Run
-> and Debug, recording execution limitations and deferred practice explicitly.
+> **Curriculum quality:** Follow [LESSON_QUALITY_STANDARD.md](LESSON_QUALITY_STANDARD.md), the authoritative coverage, authoring and verification rule.
 
 ---
 

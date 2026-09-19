@@ -794,3 +794,332 @@ or JVM inlining/performance. Do not grade those compiler/runtime guarantees as
 if they were simulated. Execute each new lesson's particular code before marking
 it supported in `CodeDo_Editor_capacity_per_lesson_status.xlsx`. The deleted
 `CODEDO_EDITOR_CAPACITY.md` must not be recreated as a second capacity tracker.
+
+### World 10 collections
+
+Use `KotlinList` for list factories and transformation results so chained operations retain Kotlin behavior. Do not reinstall collection helpers on native Array.prototype. Pair is an iterable object with `.first`/`.second`; JS Map constructors require conversion to two-element arrays. Partition must evaluate its predicate once per element. Validate chunk/window size and step before entering synchronous loops.
+
+Run `npm run test:collection-runner`; optionally compare the shared fixtures against a local Kotlin compiler with `npm run test:collection-kotlin`. See [WORLD_10_CAPACITY_AUDIT.md](WORLD_10_CAPACITY_AUDIT.md) for numeric type filtering, equality, formatting and content-coverage limits. Keep those limits in the existing XLSX tracker.
+
+## `toFloat()` printed raw float32-rounding noise instead of Kotlin's shortest decimal
+
+Found while fixing World 1's Float & Double lesson (`WORLD_1_CONTENT_REVIEW.md`
+finding W1-06): `Number.prototype.toFloat` returned `Math.fround(Number(this))`
+directly -- the nearest true 32-bit float value, but as a raw JS double. JS has
+no separate float32 printing path, so `println`ing that value showed the
+double's full decimal expansion of the float32 approximation (e.g.
+`19.989999771118164` for `19.99`), while real Kotlin's `Float.toString()`
+prints the shortest decimal that round-trips to the same float32 (`19.99`).
+Any `writeRun`/`debug` exercise built around a `.toFloat()` conversion would
+have graded byte-for-byte-correct Kotlin as wrong, exactly like the `Int / Int`
+truncation bug above.
+
+Fixed by rounding to 7 significant digits (float32's precision ceiling) before
+converting back to a plain number: `Number(Math.fround(Number(this)).toPrecision(7))`.
+This isn't a full shortest-round-trip algorithm (real Kotlin/Java's
+`Float.toString` is more precise about it for edge cases), but it reproduces
+the expected output for the lesson-scale values this app's content actually
+uses. If a future lesson needs a Float value where this heuristic visibly
+diverges from real Kotlin, verify with `compileAndRunKotlin` before shipping,
+the same as every other numeric-formatting entry on this page.
+
+## `kotlinFunctions.ts` has its OWN tokenizer, and it split decimal literals into three tokens
+
+Found while auditing World 2 (Operator Forge)'s Arithmetic Operators lesson:
+an Explore card's `println(a / 2.0)` (Int variable divided by a Double
+literal, meant to demonstrate Double-promotion -- the exact opposite of Int
+truncation) failed with `Runtime error: missing ) after argument list`.
+
+Root cause: `kotlinFunctions.ts` (the function/lambda lowering pass) does
+**not** reuse `kotlinSource.ts`'s shared `scanKotlin` tokenizer -- it has its
+own private `lex()`, and that lexer's numeric-literal handling was folded
+into the generic alnum-run branch (`/[A-Za-z_0-9]/`), which stops at the
+first non-alphanumeric character. Since `.` isn't in that character class,
+`2.0` tokenized as THREE separate tokens: `2`, `.`, `0` -- unlike
+`scanKotlin`, which already scans a decimal literal as one token. This
+silently broke the Int/Long division-truncation check a few lines later
+(`kotlinFunctions.ts` has its own, independent copy of that logic, separate
+from `kotlinRunner.ts`'s `wrapIntDivision` -- see the entry above; the two
+never shared an implementation): the check only looks at the token
+immediately after `/`, expecting either a real number token or an
+Int/Long-typed variable, and a bare `2` (the split-off integer part) matched
+`/^\d+$/` and got wrapped as `Math.trunc(a / 2)`, with the literal `.0` from
+the original source left dangling right after -- `Math.trunc(a / 2).0`, a
+syntax error the moment ANY Int variable was divided by an inline Double
+literal like `2.0` (dividing by a Double VARIABLE, or by an Int variable,
+never hit this, since both of those are still single tokens either way --
+that's exactly why this had never been caught until an Explore example
+happened to use this precise shape).
+
+Fixed by giving `lex()` its own numeric-literal branch (checked before the
+generic alnum branch), scanning the same shape `scanKotlin` does: optional
+digit-group separators, an optional decimal part guarded by `(?!\.)` (so a
+range like `5..10` still tokenizes as `5`, `..`, `10`, not `5.` followed by
+garbage), an optional exponent, and an optional type suffix.
+
+**Rule, reinforced:** this file has TWO independent tokenizers
+(`kotlinSource.ts`'s `scanKotlin`, shared broadly, and `kotlinFunctions.ts`'s
+private `lex()`) and TWO independent Int/Long division-truncation
+implementations (`kotlinRunner.ts`'s `wrapIntDivision`, string/regex-based,
+and `kotlinFunctions.ts`'s token-based one at the bottom of `lower()`). A
+fix to one does NOT automatically cover the other -- when touching numeric-
+literal handling or division-truncation logic, grep for both
+implementations and verify both with `compileAndRunKotlin`, specifically
+including the case of an Int identifier divided by an inline Double literal
+(`a / 2.0`), not just two bare identifiers or two bare literals.
+
+**Immediate follow-up regression from the fix above, in the same file:**
+fixing `lex()` to scan a decimal literal as one token broke a SEPARATE piece
+of logic that had been silently depending on the old three-token split:
+`infer()`'s numeric-literal branch detected `Double` by checking
+`top(a, b, '.') >= 0` -- "is there a standalone `.` token in this range" --
+which only ever found one because the old lexer bug happened to produce a
+literal `.` token between the two half-tokens of a decimal literal. Once
+`lex()` correctly emitted `10.0` as ONE token, that standalone `.` token no
+longer existed, so `top(a, b, '.')` always returned -1 and every decimal
+literal was misclassified as `Int`. This silently broke `__kt_decimalText`
+formatting (see the "Kotlin `Int / Int` division never truncated" pitfall
+above for that helper) for EVERY bare Double reference -- `val total = 10.0;
+println(total)` printed `10`, not `10.0` -- and, far more visibly, broke
+compound assignment on an explicitly-typed Double var entirely: `var total:
+Double = 10.0; total *= 1.5` raised `Compilation error: Type mismatch:
+expected Double, got Int`, because the RHS of the compound assignment was
+also misinferred as Int against the declared Double type. Fixed by checking
+the literal's own source text for a decimal point (`/\.\d/.test(text(a,
+b))`) instead of hunting for a top-level `.` token that no longer exists.
+
+**Rule, reinforced again, harder this time:** a fix to a tokenizer is not
+"done" once the bug it targeted is verified fixed -- grep every OTHER place
+in the same file that inspects token structure (`top(...)`, token-count
+comparisons like `a + 1 === b`, etc.) for anything that might have been
+unknowingly relying on the exact SHAPE of tokens the old (buggy) tokenizer
+produced. This is why `WORLD_1_CONTENT_REVIEW.md`/`WORLD_2_CONTENT_REVIEW.md`
+authoring now specifically tests bare `var`/`val` Double references and
+compound assignment on a Double, not just Double arithmetic expressions --
+the arithmetic-expression case alone did not surface this regression, since
+`infer()`'s `+`/`-`/`*`/`/` branches recurse into their operands rather than
+re-checking `top(a, b, '.')` themselves.
+
+## `mutableMapOf(...).remove(key)` was never synthesized, unlike Set's `.remove()`
+
+Found while auditing World 6 (Collection Valley). The "Finishing World 6"
+entry above documents adding `.remove(item)` to `mutableSetOf` results,
+delegating to `Set.prototype.delete` -- but the equivalent method was never
+added to `mutableMapOf` results. `withMapChecks` only ever added
+`containsKey`/`containsValue`/`isEmpty`, so `scores.remove("Tom")` on a
+`mutableMapOf` result threw `scores.remove is not a function`, even though
+this is completely ordinary, commonly-taught Kotlin (`MutableMap.remove`
+deletes the entry for a given key). This is exactly the kind of loud,
+easy-to-miss-until-you-actually-run-it capability gap this file exists to
+catch -- it went unnoticed because no lesson content had exercised Map
+removal until this audit pass tried to add it.
+
+Fixed by giving `__kt_mutableMapOf`'s result its own `.remove(key)`,
+delegating to `Map.prototype.has`/`.get`/`.delete` (mirroring Kotlin's own
+`remove` semantics: return the removed value, or null if the key wasn't
+present) rather than JS's native `Map.prototype.delete` directly, which is
+differently named and returns a boolean instead of the removed value.
+Scoped to `__kt_mutableMapOf`'s own returned instance only -- `__kt_mapOf`
+(the read-only factory) still has no `.remove` at all, correctly matching
+that real Kotlin's read-only `Map` has no such method either. Verified a
+read-only `mapOf(...).remove(...)` call still fails, and a
+`mutableMapOf(...).remove(...)` call now both removes the entry and
+returns the correct leftover map.
+
+## Escaped `\$` inside a string template was wrongly turned into `${identifier}`
+
+Found while auditing World 1's String Templates lesson against the new
+"commonly used features" rule in `LESSON_QUALITY_STANDARD.md`: the lesson's
+own Learn section teaches escaping a literal dollar sign with `\$` (e.g. so
+`"Price: \$price"` prints the literal text `Price: $price`, not an
+interpolated value) but had no Explore/Predict exercising it -- and
+attempting to add one immediately surfaced that the engine got it wrong:
+`println("Price: \$price")` printed `Price: ${price}` (with literal curly
+braces!) instead of `Price: $price`.
+
+Root cause: `transpileKotlinToJS`'s string-template transform
+(`inner.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)/g, '${$1}')`) blindly wraps
+every `$identifier` it finds in `${...}`, with no awareness that a
+preceding backslash means Kotlin's own escape for a literal dollar rather
+than an interpolation marker. So `\$price` (backslash, dollar, "price")
+became `\${price}` in the generated JS template literal. JS's OWN escape
+rules for `\$` (escaping only the dollar, not a following `{`) then kicked
+in: since a literal `{` immediately followed the escaped `$`, JS printed
+the `$` as literal text but rendered `{price}` as its own literal text too
+(no interpolation, since the `$` right before it was already consumed as
+an escape) -- producing the wrong `${price}` instead of correctly leaving
+`price` as ordinary trailing text with no braces at all.
+
+Fixed with a negative lookbehind, `(?<!\\)\$([a-zA-Z_][a-zA-Z0-9_]*)`, so a
+backslash-escaped `$identifier` is left completely untouched by this
+transform. This works because JS's own template-literal escaping already
+treats a bare `\$` (not followed by `{`) as producing a literal `$`
+character with no further special handling of what follows it -- so once
+this transform stops adding synthetic braces, the pre-existing backslash
+already produces the exact right output on its own, with zero extra code
+needed for the "already correctly escaped" case.
+
+**Rule, reinforced:** this bug was found specifically because the new
+"commonly used features" rule requires testing a feature the Learn section
+itself claims to teach (`\$` escaping) rather than stopping once the
+lesson's *existing* Explore/Predict examples all pass. A lesson's Learn
+prose describing a behavior is not evidence that the behavior actually
+works in this simulator -- run it through `compileAndRunKotlin` before
+authoring an Explore/Predict example around it, the same as every other
+entry on this page.
+
+## Named arguments silently reordered wrong instead of failing or working
+
+Found while auditing World 5 (Function Forge)'s Named Arguments lesson.
+Every prior note about this feature (see the "Functions needed real engine
+support before World 5" entry above) said named arguments at a call site
+were simply **not transpiled** -- meaning code using them should either be
+confined to non-executed Learn/Predict text or avoided in
+`writeRun`/`debug`. In practice the engine did something worse: it silently
+ran `move(y = 4, x = 2)` and printed `4, 2` -- treating the WRITTEN order of
+the named arguments as if it were plain positional order, completely
+ignoring the `x =`/`y =` labels, instead of either reordering correctly
+(`2, 4`) or failing loudly. This is exactly the "plausible-looking wrong
+answer" failure mode this file warns about repeatedly, and it slipped past
+World 5's own audit script because that script only checked that Explore
+cards ran *successfully*, never that their output was actually correct.
+
+Root cause: `kotlinFunctions.ts`'s named-argument reordering logic already
+existed, but the `names` array driving it (the ordered list of parameter
+names a `paramName = value` argument gets matched against) was populated
+**only** for two hardcoded collection helpers, `windowed` and `chunked`
+(`collectionNames[info.name]`, gated on a leading `.` receiver call) --
+never for an ordinary user-defined function. So for any regular function, the
+"is this argument named?" branch never activated, and each argument's full
+source text (including the `paramName = ` prefix) got passed straight
+through to `lower(...)` as a plain expression. `y = 4` and `x = 2` are each
+independently valid JS assignment expressions (assigning to a same-named
+identifier and evaluating to the assigned value), so `move(y = 4, x = 2)`
+transpiled to something that behaved like `move(4, 2)` -- silently correct
+looking JS, silently wrong Kotlin semantics.
+
+Fixed by also populating `names` from the callee's own declared parameter
+list (`info.signature?.params.map(p => p.name)`) for an ordinary function
+call, reusing the same reordering logic already in place for
+windowed/chunked. Unfilled positions (a caller relying on a default value)
+are left as the literal string `'undefined'` rather than reconstructed from
+each parameter's own default-value expression -- a user-defined function is
+already transpiled with real JS default parameters (see where `fun`
+declarations are lowered), and JS applies those defaults itself whenever it
+receives an `undefined` argument, so no separate default-lookup is needed.
+Verified against reordered args, labeled same-type args, mixed positional +
+named args, and a named call that omits a defaulted parameter -- all now
+match real Kotlin. Also verified zero regressions across the full existing
+test suite (all five worlds' audit scripts, lambda-runner, collection-
+runner, World 11 content).
+
+**Rule, reinforced:** an Explore/Predict card that merely *runs without
+throwing* is not proof it teaches the right thing -- add an explicit
+expected-output assertion (not just a success/failure check) for any
+example whose entire teaching point is a specific printed value, the same
+way `writeRun`/`debug` are already checked against `expectedOutput`. This
+bug would have been caught immediately by such a check; it was invisible to
+a check that only asks "did it crash."
+
+## World 7 audit: null operators need expression boundaries, not line regexes
+
+The earlier “World 7 ... building from zero” entry describes the original
+implementation. Its one-assertion-per-line limit and direct Elvis substitution
+are superseded by this audit's token-based lowering in `kotlinFunctions.ts`.
+
+**High — silently wrong output.** A safe call used directly in println printed
+`null`, but storing it and interpolating/concatenating it printed `undefined`.
+The old formatter normalized only final print arguments; JavaScript had already
+converted undefined into part of a string before that formatter ran. Safe-call
+expression results now coalesce to actual null before composition, and template
+expressions use the shared Kotlin value formatter. Tests cover direct printing,
+stored results, `$value`, `${receiver?.length}` and concatenation.
+
+**High — Elvis precedence.** Replacing `?:` with `??` did not preserve Kotlin's
+precedence relative to comparisons and Boolean operators. `n ?: 0 > 1` with
+n=2 printed `2` instead of `true`; mixing Elvis with || could fail JS parsing.
+The function lowerer now splits expressions at token/delimiter boundaries and
+emits explicit grouping. Elvis fallback functions remain lazy. A declaration
+such as `val text = name ?: return 0` now lowers to a value assignment followed
+by a null guard and the existing scoped return handling. This adds the ordinary
+guard-return form; it is not a claim to implement every throw/return expression.
+
+**High — assertions and casts bound to the wrong operand.** The line regex
+could not handle two `!!` uses, quoted map indices, or function-call receivers.
+Assertions now wrap the complete postfix expression; independent/chained uses,
+left-associative arithmetic and integer division are regression-tested. A null
+assertion still throws, including when it is the second assertion on a line.
+The old safe-cast regex also repeated its operand and could not parse a function
+call. The replacement evaluates that operand once using a local lambda value.
+
+**High — a numeric safe cast silently converted the wrong type.** All numeric
+targets previously used typeof number, so `val x: Any = 2.5; x as? Int` returned
+2.5 instead of null. For statically known immutable primitive values, the
+lowerer retains the initializer's type and distinguishes numeric targets.
+Numeric safe casts from mutable or erased/unknown sources are explicitly
+rejected; this is an editor limit, not a Kotlin restriction. Char targets and
+known Char-to-String safe casts also fail explicitly rather than pretending
+that JS string values preserve Kotlin Char identity. Full runtime type tagging,
+generic casts and comprehensive flow analysis are still not implemented.
+
+**High — a known null numeric value acted like zero.** `val n: Int? = null;
+println(n + 1)` printed 1. The lowerer now rejects arithmetic and unguarded
+member access on tracked known-null locals, with guards for the checked branch
+and ordinary short-circuit forms. This is a limited diagnostic improvement, not
+full Kotlin smart-cast verification for arbitrary parameters, aliases, mutable
+properties or callbacks. Language explanations must describe Kotlin's compile-
+time rejection, even where the simulator's remaining checks are incomplete.
+
+Verification: `npm run audit:world7-quality` compares exact Learn/Explore/Predict
+outcomes, all writing/debugging pairs, and `null-safety-runner-cases.ts` boundary
+probes. `test:world7-kotlin` optionally checks these against a local compiler.
+Never replace these output assertions with success-only checks: that would
+reintroduce the blind spot which hid the interpolation, Elvis and cast defects.
+
+## World 8 audit: a class was never type-compatible with the interface it implements
+
+Auditing World 8's Interfaces lesson found `interfaces-explore-3` -- an
+entirely ordinary, correct piece of Kotlin (`fun announce(g: Greetable)`
+called as `announce(p)` where `p: Person` and `class Person(...) :
+Greetable`) -- failing with `Compilation error: Type mismatch: expected
+Greetable, got Person`. Root cause in `kotlinFunctions.ts`: the loose
+class/class name-compatibility check `compatible()` uses to avoid rejecting
+valid calls only ever consults a `classes: Set<string>` populated by `class`
+declarations; `interface` declarations were never added to that same set,
+so a class name and the interface it implements were never recognized as
+compatible at all. Fixed with a one-line addition right after the existing
+`class` registration: `if (at(i) === 'interface') classes.add(at(i + 1));`
+-- interfaces now register into the exact same set the class/class check
+already treats as mutually compatible. This is not real subtype
+tracking -- like the pre-existing class/class case, it just treats any two
+known declared type names as compatible -- but it's enough to stop a valid
+implements-and-passes-as-the-interface-type call from being wrongly
+rejected. Verified via `compileAndRunKotlin` (the exact failing call now
+prints `Hi, I'm Zoe`) and the full existing regression suite (Worlds 1, 5,
+6, 7, lambda-runner, collection-runner, World 11 content, `tsc --noEmit`)
+-- zero regressions.
+
+**Same audit, a content-only finding, not an engine bug:** all 12 of World
+8's lessons with both a Write & Run and a Debug stage had `debug.fixedCode`
+byte-for-byte identical to their own `writeRun.solutionCode` -- the same
+systemic issue already found and fixed in Worlds 4, 5, 6, and 7 (see
+`LESSON_QUALITY_STANDARD.md` section 2's rule against this). Every one of
+Classes, Objects, Properties, Methods, Constructors, Primary Constructors,
+Data Classes, Enums, Basic Inheritance, Interfaces, Overriding Members, and
+the Boss was affected -- the worst case of any world audited so far (100%
+of the eligible lessons, versus 9/10 for World 6 and smaller counts
+elsewhere). Fixed the same way as every prior instance: gave each Debug
+exercise its own scenario (different class/variable names, values, and in
+several cases domain) while keeping the exact bug mechanism the lesson
+already taught (swapped constructor property order, reading an undeclared
+property, subtract-instead-of-add, a missing multiplication factor, reading
+`this.param` instead of the bare constructor parameter, a missing `val`,
+a missing `data` keyword, wrong enum constant arguments, a wrong operator
+inside an override, an unexplained subtraction inside an override, a
+missing `override` entirely, and the Boss's off-by-boundary `>` vs `>=`
+comparison). Verified every new scenario individually via
+`compileAndRunKotlin` before editing, then confirmed zero remaining
+duplicates with a `writeRun.solutionCode`/`debug.fixedCode` comparison
+script across all of World 8, `npm run audit:world8-quality` (42 examples,
+42 predictions, 52 execution checks, all passing), and the same full
+cross-world regression suite as above.

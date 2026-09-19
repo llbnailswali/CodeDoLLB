@@ -1,3 +1,5 @@
+import { prepareKotlinSource, scanKotlin, KotlinSourceError } from './kotlinSource';
+import { KotlinList, KotlinPair } from './kotlinCollections';
 import { lowerKotlinFunctions, KotlinFunctionError } from './kotlinFunctions';
 
 /**
@@ -41,98 +43,17 @@ interface VarDeclaration {
 function staticValidateKotlin(code: string): KotlinDiagnostic | null {
   const lines = code.split('\n');
 
-  // 1. Check unclosed string literals
-  for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i];
-    // Strip comments
-    const commentIdx = rawLine.indexOf('//');
-    const line = commentIdx !== -1 ? rawLine.slice(0, commentIdx) : rawLine;
-
-    let inString = false;
-    let escaped = false;
-    for (let c = 0; c < line.length; c++) {
-      const char = line[c];
-      if (char === '\\' && inString) {
-        escaped = !escaped;
-      } else if (char === '"' && !escaped) {
-        inString = !inString;
-      } else {
-        escaped = false;
-      }
-    }
-    if (inString) {
-      return {
-        message: "Syntax error: Unclosed string literal",
-        line: i + 1,
-        type: 'syntax_error',
-        codeSnippet: rawLine.trim(),
-      };
+  const stack: { text: string; line: number }[] = [];
+  for (const token of scanKotlin(code)) {
+    if (token.kind !== 'symbol') continue;
+    const line = code.slice(0, token.start).split('\n').length;
+    if ('({['.includes(token.text)) stack.push({ text: token.text, line });
+    else if (')}]'.includes(token.text)) {
+      const open = stack.pop();
+      if (!open || '({['.indexOf(open.text) !== ')}]'.indexOf(token.text)) return { message: 'Syntax error: mismatched closing delimiter', line, type: 'syntax_error' };
     }
   }
-
-  // 2. Check balanced braces, brackets, and parentheses
-  const stack: { char: string; line: number; col: number }[] = [];
-  for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i];
-    const commentIdx = rawLine.indexOf('//');
-    const line = commentIdx !== -1 ? rawLine.slice(0, commentIdx) : rawLine;
-
-    let inString = false;
-    let escaped = false;
-    for (let c = 0; c < line.length; c++) {
-      const char = line[c];
-      if (char === '\\' && inString) {
-        escaped = !escaped;
-        continue;
-      }
-      if (char === '"' && !escaped) {
-        inString = !inString;
-        continue;
-      }
-      if (inString) continue;
-
-      if (char === '{' || char === '(' || char === '[') {
-        stack.push({ char, line: i + 1, col: c + 1 });
-      } else if (char === '}' || char === ')' || char === ']') {
-        const top = stack.pop();
-        if (!top) {
-          return {
-            message: `Syntax error: Unexpected closing '${char}'`,
-            line: i + 1,
-            column: c + 1,
-            type: 'syntax_error',
-            codeSnippet: rawLine.trim(),
-          };
-        }
-        const matches =
-          (top.char === '{' && char === '}') ||
-          (top.char === '(' && char === ')') ||
-          (top.char === '[' && char === ']');
-        if (!matches) {
-          const expected = top.char === '{' ? '}' : top.char === '(' ? ')' : ']';
-          return {
-            message: `Syntax error: Mismatched '${char}', expected '${expected}'`,
-            line: i + 1,
-            column: c + 1,
-            type: 'syntax_error',
-            codeSnippet: rawLine.trim(),
-          };
-        }
-      }
-    }
-  }
-
-  if (stack.length > 0) {
-    const unclosed = stack[stack.length - 1];
-    const expected = unclosed.char === '{' ? '}' : unclosed.char === '(' ? ')' : ']';
-    return {
-      message: `Syntax error: Expecting '${expected}' to close '${unclosed.char}' opened on line ${unclosed.line}`,
-      line: unclosed.line,
-      column: unclosed.col,
-      type: 'syntax_error',
-      codeSnippet: lines[unclosed.line - 1]?.trim(),
-    };
-  }
+  if (stack.length) return { message: 'Syntax error: unclosed delimiter', line: stack.at(-1)!.line, type: 'syntax_error' };
 
   // 3. Track val vs var declarations and catch val reassignment
   const declaredVars: Map<string, VarDeclaration> = new Map();
@@ -180,7 +101,7 @@ function staticValidateKotlin(code: string): KotlinDiagnostic | null {
 
       // Check simple static type mismatch on declaration
       if (type && initialExpr) {
-        if (type === 'Int' && (initialExpr.startsWith('"') || initialExpr.includes('.'))) {
+        if (type === 'Int' && (initialExpr.startsWith('"') || /^-?\d[\d_]*\.\d/.test(initialExpr))) {
           return {
             message: `Type mismatch: Inferred type is not Int`,
             line: i + 1,
@@ -327,7 +248,17 @@ function wrapIntDivision(line: string, intVars: Set<string>): string {
   const stringRanges = findStringRanges(line);
   const isInString = (idx: number) => stringRanges.some(([s, e]) => idx > s && idx < e);
 
-  const divRe = /(?<![.\d])(-?\d[\d_]*|[a-zA-Z_][a-zA-Z0-9_]*)\s*\/\s*(-?\d[\d_]*|[a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+  // The trailing `(?!\.\d)` on each digit-literal alternative stops this from
+  // matching just the INTEGER part of a decimal literal on either side (e.g.
+  // the `2` in `a / 2.0`) -- without it, `a / 2.0` becomes
+  // `Math.trunc(a / 2).0`, a syntax error, because the regex greedily
+  // consumes "2" (a `\b` word boundary already exists between "2" and ".")
+  // and leaves the ".0" dangling right after the inserted `Math.trunc(...)`
+  // call. The leading `(?<![.\d])` lookbehind already protects the mirror
+  // case (matching the fractional digits of a decimal literal, e.g. the `0`
+  // in `5.0 / b`, as its own operand); this closes the equivalent gap on the
+  // other side of the decimal point.
+  const divRe = /(?<![.\d])(-?\d[\d_]*(?!\.\d)|[a-zA-Z_][a-zA-Z0-9_]*)\s*\/\s*(-?\d[\d_]*(?!\.\d)|[a-zA-Z_][a-zA-Z0-9_]*)\b/g;
 
   return line.replace(divRe, (match, left, right, offset) => {
     if (isInString(offset)) return match;
@@ -459,55 +390,6 @@ function transformTypeChecks(line: string): string {
 }
 
 /**
- * Rewrites `expr as? Type` into a runtime typeof-guarded ternary, the same
- * narrow Int/Long/Float/Double/String/Boolean-only subset `is`/`!is`
- * already support (see `transformTypeChecks`) -- never Char, for the same
- * indistinguishable-from-String reason documented in PITFALLS.md. Plain
- * (non-safe) `as` is intentionally NOT supported -- it isn't in World 7's
- * topic list, and force-casting isn't otherwise used by any lesson yet.
- */
-function transformSafeCasts(line: string): string {
-  const typeofMap: Record<string, string> = {
-    Int: 'number', Long: 'number', Float: 'number', Double: 'number',
-    String: 'string', Boolean: 'boolean',
-  };
-  return line.replace(
-    /([a-zA-Z_][a-zA-Z0-9_.]*|\([^()]*\))\s+as\?\s+(Int|Long|Float|Double|String|Boolean)\b/g,
-    (_m, expr, type) => `(typeof (${expr}) === '${typeofMap[type]}' ? (${expr}) : null)`
-  );
-}
-
-/**
- * Rewrites Kotlin's Elvis operator (`a ?: b`) into JS's nullish-coalescing
- * operator (`a ?? b`). The two are semantically equivalent for this
- * simulator's purposes: Kotlin null maps to JS null/undefined (a `?.`
- * chain that short-circuits produces JS undefined, not null -- see
- * `formatKotlinValue`'s undefined-to-"null" handling below, which keeps
- * both printing the same as Kotlin's single null), and `??` treats both as
- * "nothing there" exactly like Kotlin's Elvis operator does.
- */
-function transformElvisOperator(line: string): string {
-  return line.replace(/\?:/g, '??');
-}
-
-/**
- * Rewrites Kotlin's non-null assertion (`expr!!`) into a runtime check that
- * throws if the expression is null/undefined, otherwise passes the value
- * through -- mirroring Kotlin's own NullPointerException-on-null-assert
- * behavior rather than silently treating `!!` as a no-op. Deliberately
- * scoped to exactly ONE `!!` per line, on a simple identifier/property/
- * index chain immediately to its left (`user!!`, `user!!.name`,
- * `list[0]!!`) -- a non-global match, so a line with two independent `!!`
- * uses would only convert the first and leave the second as invalid JS,
- * surfacing as a loud syntax error rather than silently mishandling the
- * chain. Lesson content authored against this engine keeps to one `!!` per
- * line for exactly this reason.
- */
-function transformNonNullAssertion(line: string): string {
-  return line.replace(/([a-zA-Z_][a-zA-Z0-9_.[\]]*)!!/, '__kt_notNull($1)');
-}
-
-/**
  * Recursively converts a Kotlin if-expression (including chained `else if`)
  * into nested JS ternaries.
  */
@@ -599,7 +481,7 @@ function transpileMultilineIfExpressions(code: string): string {
  * e.g. mutableListOf<Int>() -> mutableListOf()
  */
 function stripCollectionGenerics(code: string): string {
-  return code.replace(/\b(listOf|mutableListOf|arrayOf|setOf|mutableSetOf|mapOf|mutableMapOf)<[a-zA-Z0-9_?,<>\s]+>\s*\(/g, '$1(');
+  return code.replace(/\b(emptyList|listOf|mutableListOf|arrayOf|setOf|mutableSetOf|mapOf|mutableMapOf)<[a-zA-Z0-9_?,<>\s]+>\s*\(/g, '$1(');
 }
 
 /**
@@ -753,6 +635,8 @@ function inferMapVars(code: string): Set<string> {
   for (const line of code.split('\n')) {
     const match = line.match(/\b(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)[^=]*=\s*(?:__kt_)?(?:mapOf|mutableMapOf)\s*\(/);
     if (match) mapVars.add(match[1]);
+    const derived = line.match(/\b(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)[^=]*=\s*.*\.(?:groupBy|associate|associateBy|associateWith)\s*\(/);
+    if (derived) mapVars.add(derived[1]);
   }
   return mapVars;
 }
@@ -1271,14 +1155,7 @@ function transpileKotlinToJS(kotlinCode: string): string {
     line = transformTypeChecks(line);
     line = transformRanges(line);
 
-    // Null-safety operators -- see `transformSafeCasts`/
-    // `transformElvisOperator`/`transformNonNullAssertion` above. Safe
-    // casts must run before the Elvis transform since `as? Type` never
-    // contains a literal `?:`, so order between these three doesn't
-    // otherwise matter.
-    line = transformSafeCasts(line);
-    line = transformElvisOperator(line);
-    line = transformNonNullAssertion(line);
+    // Null-safety expressions are lowered with token boundaries in kotlinFunctions.ts.
 
     // Replace Kotlin val -> const, var -> let
     // Handle: val name: Type = expr -> const name = expr
@@ -1310,7 +1187,16 @@ function transpileKotlinToJS(kotlinCode: string): string {
       if (inner.includes('$')) {
         // Convert ${expr} -> ${expr}
         // Convert $varName -> ${varName}
-        let transformed = inner.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)/g, '${$1}');
+        // A `$` immediately preceded by a backslash is Kotlin's OWN escape
+        // for a literal, non-interpolating dollar sign (`\$price` should
+        // print the two characters "$price", not run price as a template
+        // reference) -- the negative lookbehind skips converting that one
+        // into `${price}`. The backslash+dollar is then left exactly as
+        // written in the resulting JS template literal, where `\$` (not
+        // followed by `{`) is ALSO already a literal-dollar escape in JS,
+        // so no further rewriting is needed for it to print correctly.
+        let transformed = inner.replace(/(?<!\\)\$([a-zA-Z_][a-zA-Z0-9_]*)/g, '${$1}');
+        transformed = transformed.replace(/(?<!\\)\$\{([^{}]+)\}/g, (_whole: string, expression: string) => '${__kt_format(' + lowerKotlinFunctions(expression) + ')}');
         return `\`${transformed}\``;
       }
       return match;
@@ -1343,7 +1229,7 @@ function transpileKotlinToJS(kotlinCode: string): string {
     line = line.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\?\.size\b/g, '($1 == null ? null : __kt_size($1))');
     line = line.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\.size\b/g, '__kt_size($1)');
     line = line.replace(/\barrayOf\(/g, '__kt_arrayOf(');
-    line = line.replace(/\blistOf\(/g, '__kt_listOf(');
+    line = line.replace(/\b(?:listOf|emptyList)\(/g, '__kt_listOf(');
     line = line.replace(/\bmutableListOf\(/g, '__kt_mutableListOf(');
     line = line.replace(/\bsetOf\(/g, '__kt_setOf(');
     line = line.replace(/\bmutableSetOf\(/g, '__kt_mutableSetOf(');
@@ -1368,6 +1254,11 @@ export async function compileAndRunKotlin(
 ): Promise<KotlinExecutionResult> {
   const startTime = performance.now();
   const timeoutMs = options?.timeoutMs || 2000;
+
+  try { code = prepareKotlinSource(code); }
+  catch (err) {
+    return { success: false, output: '', logs: [], error: { message: `Syntax error: ${(err as Error).message}`, line: err instanceof KotlinSourceError ? err.line : 1, type: 'syntax_error' }, executionTimeMs: 0, exitCode: 1 };
+  }
 
   // 1. Static Validation (Lexical, Syntax, Immutability, Type Constraints)
   const validationError = staticValidateKotlin(code);
@@ -1428,11 +1319,37 @@ export async function compileAndRunKotlin(
     // would print "undefined" for a null x while `x` itself prints "null",
     // an inconsistency with no equivalent in real Kotlin.
     if (value === undefined) return 'null';
+    if (value instanceof KotlinPair) return `(${formatKotlinValue(value.first)}, ${formatKotlinValue(value.second)})`;
     if (Array.isArray(value)) return `[${value.map(formatKotlinValue).join(', ')}]`;
     if (value instanceof Set) return `[${[...value].map(formatKotlinValue).join(', ')}]`;
     if (value instanceof Map) return `{${[...value.entries()].map(([k, v]) => `${formatKotlinValue(k)}=${formatKotlinValue(v)}`).join(', ')}}`;
     return String(value);
   };
+
+  if (!(Number.prototype as any).toLong) {
+    Object.defineProperties(Number.prototype, {
+      toLong: { value: function () { const value = Math.trunc(Number(this)); if (!Number.isSafeInteger(value)) throw new Error('Long conversion outside the editor safe-integer range'); return value; } },
+      toInt: { value: function () { return Math.trunc(Number(this)); } },
+      toDouble: { value: function () { return Number(this); } },
+      // Math.fround alone gives the nearest true 32-bit float value, but
+      // printing that raw double (e.g. 19.989999771118164 for 19.99f)
+      // exposes float32-rounding noise that real Kotlin's Float.toString
+      // never shows -- it prints the shortest decimal that round-trips to
+      // the same float32, e.g. "19.99". Rounding to 7 significant digits
+      // (float32's precision ceiling) before converting back to a plain
+      // number reproduces that shortest-decimal behavior for lesson-scale
+      // values without needing a full float32 shortest-round-trip algorithm.
+      toFloat: { value: function () { return Number(Math.fround(Number(this)).toPrecision(7)); } },
+    });
+  }
+  if (!(String.prototype as any).trimIndent) Object.defineProperty(String.prototype, 'trimIndent', { value: function () {
+    const lines = String(this).split(/\r?\n/);
+    if (lines.length && !lines[0].trim()) lines.shift();
+    if (lines.length && !lines.at(-1)!.trim()) lines.pop();
+    const nonblank = lines.filter(line => line.trim());
+    const indent = nonblank.length ? Math.min(...nonblank.map(line => line.match(/^\s*/)![0].length)) : 0;
+    return lines.map(line => line.trim() ? line.slice(indent) : '').join('\n');
+  } });
 
   // Standard Kotlin String and Collection utility prototypes
   if (typeof (String.prototype as any).reversed !== 'function') {
@@ -1470,44 +1387,6 @@ export async function compileAndRunKotlin(
       return [...this].reverse();
     };
   }
-  // Kotlin-style collection operations used by Collection Wizardry. These
-  // are deliberately eager Array operations: they model Kotlin's standard
-  // Iterable APIs, not lazy Sequence behavior (which is taught later).
-  if (typeof (Array.prototype as any).mapNotNull !== 'function') {
-    (Array.prototype as any).mapNotNull = function (transform: (value: any) => any) {
-      return this.map(transform).filter((value: any) => value !== null && value !== undefined);
-    };
-    (Array.prototype as any).filterNot = function (predicate: (value: any) => boolean) {
-      return this.filter((value: any) => !predicate(value));
-    };
-    (Array.prototype as any).flatten = function () { return this.flatMap((value: any) => value); };
-    (Array.prototype as any).fold = function (initial: any, operation: (acc: any, value: any) => any) {
-      return this.reduce((acc: any, value: any) => operation(acc, value), initial);
-    };
-    (Array.prototype as any).groupBy = function (keySelector: (value: any) => any) {
-      const groups = new Map<any, any[]>();
-      for (const value of this) { const key = keySelector(value); groups.set(key, [...(groups.get(key) || []), value]); }
-      return groups;
-    };
-    (Array.prototype as any).associate = function (transform: (value: any) => [any, any]) { return new Map(this.map(transform)); };
-    (Array.prototype as any).partition = function (predicate: (value: any) => boolean) {
-      return [this.filter(predicate), this.filter((value: any) => !predicate(value))];
-    };
-    (Array.prototype as any).zip = function (other: any[]) { return this.slice(0, other.length).map((value: any, index: number) => [value, other[index]]); };
-    (Array.prototype as any).chunked = function (size: number) { const result = []; for (let i = 0; i < this.length; i += size) result.push(this.slice(i, i + size)); return result; };
-    (Array.prototype as any).windowed = function (size: number) { const result = []; for (let i = 0; i + size <= this.length; i++) result.push(this.slice(i, i + size)); return result; };
-    (Array.prototype as any).distinct = function () { return [...new Set(this)]; };
-    (Array.prototype as any).sorted = function () { return [...this].sort((a: any, b: any) => a < b ? -1 : a > b ? 1 : 0); };
-    (Array.prototype as any).sortedBy = function (selector: (value: any) => any) { return [...this].sort((a: any, b: any) => selector(a) < selector(b) ? -1 : selector(a) > selector(b) ? 1 : 0); };
-    (Array.prototype as any).sum = function () { return this.reduce((total: number, value: number) => total + value, 0); };
-    (Array.prototype as any).average = function () { return this.length === 0 ? NaN : this.sum() / this.length; };
-    (Array.prototype as any).any = function (predicate?: (value: any) => boolean) { return predicate ? this.some(predicate) : this.length > 0; };
-    (Array.prototype as any).all = function (predicate: (value: any) => boolean) { return this.every(predicate); };
-    (Array.prototype as any).none = function (predicate?: (value: any) => boolean) { return predicate ? !this.some(predicate) : this.length === 0; };
-    (Array.prototype as any).minOrNull = function () { return this.length ? Math.min(...this) : null; };
-    (Array.prototype as any).maxOrNull = function () { return this.length ? Math.max(...this) : null; };
-  }
-
   const customPrintln = (...args: any[]) => {
     const text = args.map(formatKotlinValue).join(' ');
     appendOutput(text);
@@ -1541,9 +1420,9 @@ export async function compileAndRunKotlin(
     return set;
   };
   const __kt_arrayOf = (...items: any[]) => withArrayContains([...items]);
-  const __kt_listOf = (...items: any[]) => withArrayContains([...items]);
+  const __kt_listOf = (...items: any[]) => new KotlinList(items);
   const __kt_mutableListOf = (...items: any[]) => {
-    const list = withArrayContains([...items]) as any[] & { add?: (item: any) => boolean; remove?: (item: any) => boolean; removeAt?: (index: number) => any };
+    const list = new KotlinList(items) as unknown as any[] & { add?: (item: any) => boolean; remove?: (item: any) => boolean; removeAt?: (index: number) => any };
     list.add = (item: any) => { list.push(item); return true; };
     list.remove = (item: any) => {
       const index = list.indexOf(item);
@@ -1560,8 +1439,21 @@ export async function compileAndRunKotlin(
     (map as any).isEmpty = () => map.size === 0;
     return map;
   };
-  const __kt_mapOf = (...pairs: [any, any][]) => withMapChecks(new Map(pairs));
-  const __kt_mutableMapOf = (...pairs: [any, any][]) => withMapChecks(new Map(pairs));
+  const __kt_mapOf = (...pairs: [any, any][]) => withMapChecks(new Map(pairs.map(pair => Array.from(pair) as [any, any])));
+  const __kt_mutableMapOf = (...pairs: [any, any][]) => {
+    const map = withMapChecks(new Map(pairs.map(pair => Array.from(pair) as [any, any]))) as Map<any, any> & { remove?: (key: any) => any };
+    // Kotlin's MutableMap.remove(key) returns the removed value (or null if
+    // absent) and deletes the entry -- mirroring how mutableSetOf's .remove
+    // already delegates to Set.prototype.delete, this delegates to
+    // Map.prototype.delete/get rather than JS's own differently-named,
+    // differently-behaved (returns a boolean) native method.
+    map.remove = (key: any) => {
+      const existing = map.has(key) ? map.get(key) : null;
+      map.delete(key);
+      return existing;
+    };
+    return map;
+  };
   const __kt_setOf = (...items: any[]) => withSetContains(new Set(items));
   const __kt_mutableSetOf = (...items: any[]) => {
     const set = withSetContains(new Set(items)) as Set<any> & { remove?: (item: any) => boolean };
@@ -1591,6 +1483,7 @@ export async function compileAndRunKotlin(
         }
       };
 
+      const __kt_decimalText = (value) => value == null ? 'null' : Number.isInteger(value) ? String(value) + '.0' : String(value);
       const __kt_run = (action) => action();
       const __kt_repeat = (times, action) => {
         for (let index = 0; index < times; index++) {
@@ -1632,6 +1525,8 @@ export async function compileAndRunKotlin(
       '__kt_mutableSetOf',
       '__kt_size',
       '__kt_notNull',
+      'Pair',
+      '__kt_format',
       runnerScript
     );
 
@@ -1649,7 +1544,9 @@ export async function compileAndRunKotlin(
           __kt_setOf,
           __kt_mutableSetOf,
           __kt_size,
-          __kt_notNull
+          __kt_notNull,
+          (a: any, b: any) => new KotlinPair(a, b),
+          formatKotlinValue
         );
         resolve(res);
       } catch (e) {

@@ -4,7 +4,7 @@
  * This is a teaching subset, not a replacement for Kotlin compiler diagnostics.
  */
 type Token = { text: string; start: number; end: number };
-type Type = { name: string; nullable?: boolean; params?: Type[]; result?: Type; receiver?: Type };
+type Type = { mutable?: boolean; runtimeName?: string; name: string; nullable?: boolean; params?: Type[]; result?: Type; receiver?: Type };
 type Parameter = { name: string; type?: Type; mode?: string; defaultCode?: string };
 type Signature = { params: Parameter[]; result?: Type; inline: boolean; receiver?: Type };
 type Frame = { token: string; label?: string; kind: 'function' | 'lambda'; inline: boolean; used: boolean; result?: Type };
@@ -39,6 +39,18 @@ function lex(source: string): Token[] {
         if (source[i] === '\\') { i += 2; continue; }
         if (source[i++] === quote) break;
       }
+    } else if (/[0-9]/.test(source[i])) {
+      // Numeric literals must be scanned as ONE token (including an optional
+      // decimal part, exponent, and type suffix) -- the generic alnum branch
+      // below stops at the first non-alnum character, so "2.0" would
+      // otherwise split into three separate tokens ("2", ".", "0"), fooling
+      // the Int/Long division-truncation check further down into treating
+      // the bare "2" as a standalone Int literal and wrapping it in
+      // Math.trunc(...), leaving the ".0" dangling right after as invalid
+      // syntax. The `(?!\.)` after the decimal point additionally keeps a
+      // range like "5..10" from being misread as "5." followed by ".10".
+      const m = source.slice(i).match(/^\d[\d_]*(?:\.(?!\.)[\d_]+)?(?:[eE][+-]?\d+)?[fFdDL]?/)!;
+      i += m[0].length;
     } else if (/[A-Za-z_0-9]/.test(source[i])) {
       while (i < source.length && /[A-Za-z_0-9]/.test(source[i])) i++;
     } else {
@@ -72,6 +84,14 @@ export function lowerKotlinFunctions(source: string): string {
       if (pairs.has(i) && pairs.get(i)! > i) i = pairs.get(i)!;
     }
     return -1;
+  };
+  const lastOperator = (a: number, b: number, operators: string[]) => {
+    let found = -1;
+    for (let i = a; i < b; i++) {
+      if (i > a && operators.includes(at(i))) found = i;
+      if (pairs.has(i) && pairs.get(i)! > i) i = pairs.get(i)!;
+    }
+    return found;
   };
   const split = (a: number, b: number, separator = ',', types = false): [number, number][] => {
     const parts: [number, number][] = []; let start = a; let angle = 0;
@@ -161,6 +181,16 @@ export function lowerKotlinFunctions(source: string): string {
         const colon = top(a, b, ':'); const eq = top(a, b, '='); return readType(colon + 1, eq < 0 ? b : eq);
       }));
     }
+    // Interfaces are registered the same way classes are (into the shared
+    // `classes` set the loose `compatible()` name-check below consults) so
+    // that passing an implementing class instance to a parameter typed as
+    // the interface it implements type-checks. This is not real subtype
+    // tracking -- like the class/class case already handled below, it just
+    // treats any two known declared type names as mutually compatible --
+    // but it is enough to stop a real, valid Kotlin call like
+    // `announce(person)` (where `fun announce(g: Greetable)` and `Person :
+    // Greetable`) from being wrongly rejected as a type mismatch.
+    if (at(i) === 'interface') classes.add(at(i + 1));
     if (['class', 'object', 'interface'].includes(at(i))) {
       for (let j = i + 2; j < t.length; j++) {
         if (at(j) === '{') { declarationBodies.add(j); break; }
@@ -205,6 +235,14 @@ export function lowerKotlinFunctions(source: string): string {
   function infer(a: number, b: number, ctx: Context): Type {
     if (a >= b) return unit;
     if (at(a) === '(' && pairs.get(a) === b - 1) return infer(a + 1, b - 1, ctx);
+    if (at(b - 1) === '!!') return { ...infer(a, b - 1, ctx), nullable: false };
+    const cast = top(a, b, 'as');
+    if (cast >= 0 && at(cast + 1) === '?' && cast + 3 === b) return { name: at(cast + 2), nullable: true };
+    const elvis = top(a, b, '?:');
+    if (elvis > a && !['val', 'var', 'fun'].includes(at(a))) {
+      const left = infer(a, elvis, ctx), right = infer(elvis + 1, b, ctx);
+      return { ...left, nullable: !!right.nullable };
+    }
     if (at(a) === 'null') return { name: 'Nothing', nullable: true };
     if (at(a) === 'return') return infer(a + 1, b, ctx);
     const h = headers.get(a);
@@ -234,11 +272,23 @@ export function lowerKotlinFunctions(source: string): string {
       const index = top(a, b, op);
       if (index > a) return infer(a, index, ctx);
     }
+    if (at(b - 1) === ')' && at(b - 2) === '(' && at(b - 4) === '.') {
+      const conversions: Record<string, string> = { toLong: 'Long', toInt: 'Int', toFloat: 'Float', toDouble: 'Double', trimIndent: 'String' };
+      if (conversions[at(b - 3)]) return { name: conversions[at(b - 3)] };
+    }
     if (at(b - 1) === 'length' || at(b - 1) === 'size') return { name: 'Int' };
     if (at(a).startsWith('"')) return { name: 'String' };
     if (at(a).startsWith("'")) return { name: 'Char' };
     if (['true', 'false'].includes(at(a))) return { name: 'Boolean' };
-    if (/^-?\d/.test(at(a)) || (at(a) === '-' && /^\d/.test(at(a + 1)))) return { name: top(a, b, '.') >= 0 ? 'Double' : 'Int' };
+    // A decimal point inside a numeric literal (e.g. "10.0") is now part of
+    // ONE token (see `lex()`'s dedicated numeric branch), not a separate
+    // top-level "." token -- `top(a, b, '.')` can never find it there. Check
+    // the literal's own text for a decimal point directly instead. Using
+    // `top(...)` here used to appear to work only because the OLD, buggy
+    // lexer split a decimal literal into three tokens ("10", ".", "0"),
+    // making the "." briefly visible as its own top-level token -- see
+    // PITFALLS.md for the tokenizer fix this relied on before it was fixed.
+    if (/^-?\d/.test(at(a)) || (at(a) === '-' && /^\d/.test(at(a + 1)))) return { name: /[fF]$/.test(text(a, b)) ? 'Float' : /L$/.test(text(a, b)) ? 'Long' : /\.\d/.test(text(a, b)) ? 'Double' : 'Int' };
     if (at(a + 1) === '(' && pairs.get(a + 1) === b - 1) {
       if (['println', 'print'].includes(at(a))) return unit;
       if (classes.has(at(a))) return { name: at(a) };
@@ -311,12 +361,67 @@ export function lowerKotlinFunctions(source: string): string {
   }
   function lower(a: number, b: number, ctx: Context, expected?: Type, callLabel?: string, inline = false): string {
     if (a >= b) return '';
+    const expression = !['val', 'var', 'fun', 'return', 'if', 'for', 'while', 'when', 'class', 'throw'].includes(at(a)) && expressionEnd(a, b) === b;
+    if (expression) {
+      const elvis = top(a, b, '?:');
+      const assertion = lastOperator(a, b, ['!!']);
+      const cast = top(a, b, 'as');
+      if (elvis >= 0 || assertion >= 0 || cast >= 0 || top(a, b, '?.') >= 0) {
+        // Kotlin Elvis binds more tightly than comparisons and Boolean operators.
+        for (const operators of [['||'], ['&&'], ['==', '!=', '===', '!=='], ['<', '>', '<=', '>=']]) {
+          const splitAt = lastOperator(a, b, operators);
+          if (splitAt > a) {
+            const expression = `(${lower(a, splitAt, ctx)} ${at(splitAt)} ${lower(splitAt + 1, b, ctx)})`;
+            return at(splitAt) === '/' && ['Int', 'Long'].includes(infer(a, splitAt, ctx).name) && ['Int', 'Long'].includes(infer(splitAt + 1, b, ctx).name) ? `Math.trunc(${expression})` : expression;
+          }
+        }
+        if (elvis > a) return `(${lower(a, elvis, ctx)} ?? ${lower(elvis + 1, b, ctx)})`;
+        for (const operators of [['+', '-'], ['*', '/', '%']]) {
+          const splitAt = lastOperator(a, b, operators);
+          if (splitAt > a) {
+            const expression = `(${lower(a, splitAt, ctx)} ${at(splitAt)} ${lower(splitAt + 1, b, ctx)})`;
+            return at(splitAt) === '/' && ['Int', 'Long'].includes(infer(a, splitAt, ctx).name) && ['Int', 'Long'].includes(infer(splitAt + 1, b, ctx).name) ? `Math.trunc(${expression})` : expression;
+          }
+        }
+        if (cast > a && at(cast + 1) === '?') {
+          const target = at(cast + 2);
+          if (!['String', 'Boolean', 'Int', 'Long', 'Float', 'Double'].includes(target) || cast + 3 !== b) fail('Unsupported safe cast target; Char and generic casts are not simulated', cast);
+          const sourceType = infer(a, cast, ctx);
+          const runtimeType = sourceType.runtimeName ?? sourceType.name;
+          if (runtimeType === 'Char') fail('Char/String runtime casts are not simulated', cast);
+          if (['Int', 'Long', 'Float', 'Double'].includes(target) && sourceType.mutable) fail('Numeric runtime casts from mutable sources are not simulated', cast);
+          if (['Int', 'Long', 'Float', 'Double'].includes(target) && !['Int', 'Long', 'Float', 'Double', 'String', 'Boolean', 'Nothing'].includes(runtimeType)) fail('Numeric runtime cast needs a known primitive source type in this editor', cast);
+          const condition = target === 'String' ? 'typeof __kt_value === "string"' : target === 'Boolean' ? 'typeof __kt_value === "boolean"' : runtimeType === target ? 'typeof __kt_value === "number"' : 'false';
+          return `((__kt_value) => ${condition} ? __kt_value : null)(${lower(a, cast, ctx)})`;
+        }
+        if (assertion > a) return `__kt_notNull(${lower(a, assertion, ctx)})${lower(assertion + 1, b, ctx)}`;
+      }
+    }
+    const to = top(a, b, 'to');
+    if (to > a && !['val', 'var', 'fun', 'return', 'if'].includes(at(a)) && expressionEnd(a, b) === b) {
+      return `Pair(${lower(a, to, ctx)}, ${lower(to + 1, b, ctx)})`;
+    }
     let out = ''; let cursor = t[a].start;
     const emit = (start: number, end: number, replacement: string) => {
       out += source.slice(cursor, t[start].start) + replacement;
       cursor = t[end - 1].end;
     };
     for (let i = a; i < b; i++) {
+      const variable = ctx.vars.get(at(i));
+      const guardedInCondition = (text(a, i).includes(`${at(i)} != null &&`) || text(a, i).includes(`${at(i)} == null ||`));
+      if (variable?.nullable && variable.name !== 'Function' && variable.runtimeName === 'Nothing' && !guardedInCondition) {
+        if (at(i + 1) === '.' && !['toString'].includes(at(i + 2))) fail('Only safe (?.) or non-null asserted (!!.) calls are allowed on this nullable receiver', i);
+        if (['Int', 'Long', 'Float', 'Double'].includes(variable.name) && ((i + 1 < b && ['+', '-', '*', '/', '%'].includes(at(i + 1))) || (i > a && ['+', '-', '*', '/', '%'].includes(at(i - 1))))) fail('Nullable numeric value requires a null check or fallback before arithmetic', i);
+      }
+      if (at(i) === 'filterIsInstance' && at(i + 1) === '<') {
+        const type = at(i + 2);
+        if (at(i + 3) !== '>' || at(i + 4) !== '(' || at(i + 5) !== ')') fail('Unsupported filterIsInstance type', i);
+        if (!['String', 'Boolean', 'Number'].includes(type) && !classes.has(type)) fail('filterIsInstance supports String, Boolean, Number and declared classes; primitive numeric distinctions are not supported', i);
+        if (type === 'String' && t.some(token => token.text.startsWith("'"))) fail('String/Char distinction in filterIsInstance is not supported', i);
+        const condition = type === 'String' ? 'typeof __kt_item === "string"' : type === 'Boolean' ? 'typeof __kt_item === "boolean"' : type === 'Number' ? 'typeof __kt_item === "number"' : `__kt_item instanceof ${type}`;
+        emit(i, i + 6, `filter((__kt_item) => ${condition})`); i += 5; continue;
+      }
+      if (at(i) === 'is' && at(i + 1) === 'Char') fail('Char runtime type checks are not simulated', i);
       if (at(i) === 'typealias') { const end = expressionEnd(i + 3, b); emit(i, end, ''); i = end - 1; continue; }
       if (at(i) === 'inline' && at(i + 1) === 'fun') { emit(i, i + 1, ''); continue; }
       const h = headers.get(i);
@@ -337,13 +442,22 @@ export function lowerKotlinFunctions(source: string): string {
         const end = at(h.body) === '{' ? pairs.get(h.body)! + 1 : expressionEnd(h.body + 1, b);
         const body = at(h.body) === '{' ? lower(h.body + 1, end - 1, inner) : valueBody(h.body + 1, end, inner, result);
         if (!sig.result && at(h.body) === '=') sig.result = infer(h.body + 1, end, inner);
-        const paramCode = (receiverParam ? [receiverParam] : []).concat(params.map(p => `${p.mode === 'vararg' ? 'vararg ' : ''}${p.name}${h.anonymous ? '' : ': ' + (p.type.name === 'Function' ? 'Function' : p.type.name === '?' ? 'Any' : p.type.name)}${p.defaultCode ? ' = ' + p.defaultCode : ''}`)).join(', ');
+        const paramCode = (receiverParam ? [receiverParam] : []).concat(params.map(p => `${p.mode === 'vararg' ? 'vararg ' : ''}${p.name}${h.anonymous ? '' : ': ' + (p.type.name === 'Function' ? 'Function' : p.type.name === '?' ? 'Any' : p.type.name) + (p.type.nullable ? '?' : '')}${p.defaultCode ? ' = ' + p.defaultCode : ''}`)).join(', ');
         if (h.anonymous) {
           const actual: Type = { name: 'Function', params: params.map(p => p.type), receiver: sig.receiver ?? fnExpected?.receiver, result: sig.result ?? result ?? unknown };
           check(fnExpected, actual, i);
         }
         emit(i, end, `${h.anonymous ? 'function' : 'fun ' + (sig.receiver ? '__kt_extension_' : '') + h.name}(${paramCode})${h.anonymous ? '' : ': ' + (sig.result?.name === 'Function' ? 'Function' : (sig.result?.name === '?' ? 'Any' : sig.result?.name) ?? 'Any')} {\n${wrap(body, f)}\n}`);
         i = end - 1; continue;
+      }
+      if (['val', 'var'].includes(at(i)) && at(i + 1) === '(') {
+        const close = pairs.get(i + 1)!;
+        if (at(close + 1) === '=') {
+          const names = split(i + 2, close).map(([start]) => at(start));
+          names.forEach(name => ctx.vars.set(name, unknown));
+          emit(i, close + 1, `${at(i) === 'val' ? 'const' : 'let'} [${names.join(', ')}]`);
+          i = close; continue;
+        }
       }
       if (['val', 'var'].includes(at(i)) && isName(at(i + 1))) {
         const end = expressionEnd(i + 2, b);
@@ -352,7 +466,16 @@ export function lowerKotlinFunctions(source: string): string {
         const declared = colon >= 0 ? readType(colon + 1, eq < 0 ? end : eq) : undefined;
         if (eq >= 0) {
           const name = at(i + 1);
-          const inferred = declared ?? infer(eq + 1, end, ctx);
+          const actual = infer(eq + 1, end, ctx);
+          const inferred = declared ? { ...declared, mutable: at(i) === 'var', runtimeName: actual.runtimeName ?? actual.name } : { ...actual, mutable: at(i) === 'var' };
+          const elvisReturn = top(eq + 1, end, '?:');
+          if (elvisReturn > eq && at(elvisReturn + 1) === 'return') {
+            const value = lower(eq + 1, elvisReturn, ctx);
+            const earlyReturn = lower(elvisReturn + 1, end, ctx);
+            ctx.vars.set(name, { ...infer(eq + 1, elvisReturn, ctx), nullable: false });
+            emit(i, end, `${at(i)} ${name} = ${value};\nif (${name} == null) { ${earlyReturn}; }`);
+            i = end - 1; continue;
+          }
           const rhs = lower(eq + 1, end, ctx, declared);
           if (!['{', 'fun'].includes(at(eq + 1))) check(declared, infer(eq + 1, end, ctx), eq + 1);
           ctx.vars.set(name, inferred);
@@ -363,6 +486,7 @@ export function lowerKotlinFunctions(source: string): string {
       if (isName(at(i)) && at(i + 1) === '=' && ctx.vars.has(at(i))) {
         const end = expressionEnd(i + 2, b);
         const type = ctx.vars.get(at(i));
+        if (type && type.name !== 'Function') ctx.vars.set(at(i), { ...type, runtimeName: infer(i + 2, end, ctx).runtimeName ?? infer(i + 2, end, ctx).name });
         if (type?.name === 'Function') {
           const rhs = lower(i + 2, end, ctx, { ...type, nullable: false });
           if (!['{', 'fun'].includes(at(i + 2))) check(type, infer(i + 2, end, ctx), i + 2);
@@ -446,11 +570,42 @@ ${lower(body + 1, end, child(ctx))}
           if (args.length + Number(trailing) < required || (!info.signature.params.some(p => p.mode === 'vararg') && args.length + Number(trailing) > info.signature.params.length)) fail(`Wrong argument count for ${info.name}: expected ${info.signature.params.length}`, i);
           if (ctx.vars.get(info.name)?.nullable && !(at(i - 1) === 'invoke' && at(i - 2) === '?.')) fail(`Nullable function ${info.name} requires a safe call or non-null assertion`, i);
         }
-        const rendered = args.map(([x, y], index) => {
+        // Named-argument reordering. Collection helpers (windowed/chunked) are
+        // real JS functions with their own fixed parameter order, so their
+        // names are hardcoded; an ordinary user-defined function already
+        // carries its own declared parameter names in `info.signature`, which
+        // doubles as the reordering key for a named call to it (e.g.
+        // `move(y = 4, x = 2)`).
+        const collectionNames: Record<string, string[]> = { windowed: ['size', 'step', 'partialWindows'], chunked: ['size'] };
+        const names = at(i - 2) === '.' ? collectionNames[info.name] : info.signature?.params.map(p => p.name);
+        let rendered = args.map(([x, y], index) => {
           const param = info.signature?.params[index];
           if (!['{', 'fun'].includes(at(x))) check(param?.type, infer(x, y, ctx), x);
-          return lower(x, y, ctx, param?.type, callable ? info.name : undefined, info.inline && !param?.mode);
+          return lower(names && at(x + 1) === '=' ? x + 2 : x, y, ctx, param?.type, callable ? info.name : undefined, info.inline && !param?.mode);
         });
+        if (['println', 'print'].includes(info.name) && !functions.has(info.name)) {
+          rendered = rendered.map((value, index) => ['Float', 'Double'].includes(infer(args[index][0], args[index][1], ctx).name) ? `__kt_decimalText(${value})` : value);
+        }
+        if (names && args.some(([x]) => at(x + 1) === '=')) {
+          // Every unfilled position is left as the literal string 'undefined'
+          // rather than reconstructed from the parameter's own default-value
+          // expression: a user-defined function is transpiled with real JS
+          // default parameters (see the `fun` declaration lowering above), and
+          // JS already applies those defaults itself when called with an
+          // `undefined` argument -- so no separate default-lookup is needed
+          // here. windowed/chunked are plain JS helper functions instead
+          // (not real Kotlin defaults), so they keep their own literal
+          // fallback values.
+          const ordered = info.name === 'windowed' ? ['undefined', '1', 'false']
+            : info.name === 'chunked' ? ['undefined']
+            : names.map(() => 'undefined');
+          args.forEach(([x], index) => {
+            const position = at(x + 1) === '=' ? names.indexOf(at(x)) : index;
+            if (position < 0 || position >= names.length) fail('Unsupported named argument', x);
+            ordered[position] = rendered[index];
+          });
+          rendered = ordered;
+        }
         if (trailing) {
           const last = info.signature?.params.at(-1);
           const end = pairs.get(trailingStart)!;
@@ -471,7 +626,19 @@ ${lower(body + 1, end, child(ctx))}
         else if (trailing) {
           const info = callInfo(i, ctx), param = info.signature?.params.at(-1);
           emit(i, end + 1, `(${lambda(i, end, ctx, param?.type, info.name, info.inline && !param?.mode)})`);
-        } else emit(i, end + 1, `{\n${lower(i + 1, end, child(ctx))}\n}`);
+        } else {
+          const branch = child(ctx);
+          const close = i - 1;
+          const open = pairs.get(close);
+          if (at(close) === ')' && open !== undefined && at(open - 1) === 'if') {
+            const condition = text(open + 1, close);
+            if (!condition.includes('||')) for (const match of condition.matchAll(/\b([A-Za-z_]\w*)\s*!=\s*null/g)) {
+              const type = branch.vars.get(match[1]);
+              if (type) branch.vars.set(match[1], { ...type, nullable: false });
+            }
+          }
+          emit(i, end + 1, `{\n${lower(i + 1, end, branch)}\n}`);
+        }
         i = end; continue;
       }
       if (at(i) === '::') {
@@ -489,7 +656,8 @@ ${lower(body + 1, end, child(ctx))}
         emit(i - 1, i + 2, `Math.trunc(${at(i - 1)} / ${at(i + 1)})`); i++;
       }
     }
-    return out + source.slice(cursor, t[b - 1].end);
+    const result = out + source.slice(cursor, t[b - 1].end);
+    return expression && top(a, b, '?.') >= 0 ? `(${result} ?? null)` : result;
   }
   return lower(0, t.length, { vars: new Map(), frames: [] });
 }

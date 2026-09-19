@@ -1683,42 +1683,42 @@ export const WHEN_AS_EXPRESSION_LESSON: FiveStageLesson = {
     testCase: { call: '', expected: "It's Warm outside" }
   },
   debug: {
-    title: 'Diagnose the Grade Boundary Bug',
-    subtitle: "A perfect boundary score of 90 is being marked wrong -- find the range that's excluding it.",
+    title: 'Diagnose the Unused Expression Result',
+    subtitle: 'The computed grade is never actually printed -- find and fix what gets passed to println.',
     challengeNumber: 1,
     totalChallenges: 1,
     difficulty: 'medium',
     bugType: 'logic',
-    bugLabel: 'Logic Bug: Off-by-One Range Boundary',
+    bugLabel: 'Logic Bug: Printed the Wrong Variable',
     brokenCode: `fun main() {
-    val score = 90
-    // BUG: this range's lower bound excludes 90 entirely!
-    val grade = when (score) {
-        in 91..100 -> "A"
-        in 80..89 -> "B"
-        in 70..79 -> "C"
-        else -> "F"
-    }
-    println("Score: $score, Grade: $grade")
-}`,
-    fixedCode: `fun main() {
-    val score = 90
+    val score = 72
     val grade = when (score) {
         in 90..100 -> "A"
         in 80..89 -> "B"
         in 70..79 -> "C"
         else -> "F"
     }
-    println("Score: $score, Grade: $grade")
+    // BUG: this prints the raw score, not the grade the when-expression computed!
+    println("Grade: $score")
 }`,
-    expectedOutput: 'Score: 90, Grade: A',
+    fixedCode: `fun main() {
+    val score = 72
+    val grade = when (score) {
+        in 90..100 -> "A"
+        in 80..89 -> "B"
+        in 70..79 -> "C"
+        else -> "F"
+    }
+    println("Grade: $grade")
+}`,
+    expectedOutput: 'Grade: C',
     hints: [
-      'Something is wrong with the range boundaries in the grade branches.',
-      'What grade should a score of exactly 90 receive -- and does the first branch\'s range actually include 90?',
-      'Check the lower bound of the very first range: in 91..100 excludes 90 entirely -- it should start at 90.'
+      'The when-expression on the right runs and assigns a result to grade -- but check what actually gets interpolated in the println below it.',
+      'println("Grade: $score") prints the raw score (72), not the letter grade the when-expression computed and stored in grade.',
+      'Change $score to $grade in the println so the computed result is what actually gets printed.'
     ],
     explanation:
-      "The first branch's range was in 91..100, which excludes 90 -- so a perfect score of 90 didn't match it. It also doesn't match 80..89 or 70..79, so it fell all the way through to else, printing Grade: F instead of Grade: A. Changing the lower bound to 90..100 lets that branch correctly include 90, producing the right grade."
+      'The whole point of using when as an expression is that its result is a value you go on to use -- here, that value was assigned to grade, but the println below still referenced score instead. Since score is 72, the broken version prints "Grade: 72" -- the computed grade ("C") is calculated but never actually used. Printing $grade instead of $score correctly shows the letter grade the when-expression produced.'
   },
   mastered: {
     topicTitle: 'when as an Expression',

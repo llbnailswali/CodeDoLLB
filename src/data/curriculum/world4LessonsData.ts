@@ -913,9 +913,10 @@ export const RANGES_LESSON: FiveStageLesson = {
       { number: 2, title: 'Use #1: driving a for-loop', description: 'for (i in a..b) { ... } visits every value in the range, from a up to b, one at a time.' },
       { number: 3, title: 'Use #2: testing membership', description: 'x in a..b asks whether x falls inside the range, producing true or false -- perfect for if conditions.' },
       { number: 4, title: '!in tests the opposite', description: 'x !in a..b is true whenever x falls outside the range entirely.' },
-      { number: 5, title: 'Both endpoints are always included', description: 'In 1..5, both 1 and 5 count as being inside the range -- neither boundary is ever skipped.' }
+      { number: 5, title: 'Both endpoints are always included', description: 'In 1..5, both 1 and 5 count as being inside the range -- neither boundary is ever skipped.' },
+      { number: 6, title: 'until is the exclusive counterpart', description: 'a until b behaves just like a..b for driving a for-loop, except the upper bound b is never included -- only values strictly less than b are visited.' }
     ],
-    keyTakeaway: 'a..b describes an inclusive sequence of values -- use it to drive a for-loop, or to ask "is this value in between?" with in / !in. Both ends always count.'
+    keyTakeaway: 'a..b describes an inclusive sequence of values -- use it to drive a for-loop, or to ask "is this value in between?" with in / !in. Both ends always count. a until b works the same way but excludes its upper bound.'
   },
   explore: {
     title: 'Explore the Concept',
@@ -989,6 +990,19 @@ export const RANGES_LESSON: FiveStageLesson = {
       {
         id: 'card-ranges-6',
         number: '06',
+        title: 'until excludes its upper bound',
+        language: 'Kotlin',
+        subtitle: "A for-loop range that stops one short, on purpose.",
+        code: ['for (i in 0 until 5) {', '    println(i)', '}'],
+        whatItMeans: [
+          { label: '0 until 5', description: 'Visits every value from 0 up to, but NOT including, 5' },
+          { label: 'Result', description: 'Prints 0, 1, 2, 3, 4 -- five values total, with 5 itself never visited' }
+        ],
+        whatChanged: "Introduced until as a for-loop range that excludes its upper bound, unlike .. which always includes it."
+      },
+      {
+        id: 'card-ranges-7',
+        number: '07',
         title: 'Combining a loop range with a membership check',
         language: 'Kotlin',
         subtitle: 'The two supported uses of a range can work together in the same program.',
@@ -1009,7 +1023,7 @@ export const RANGES_LESSON: FiveStageLesson = {
       {
         id: 'pred-ranges-1',
         questionNumber: 1,
-        totalQuestions: 6,
+        totalQuestions: 7,
         title: 'Basic For-Loop Range',
         topicMeta: 'a..b driving a loop',
         language: 'Kotlin',
@@ -1026,7 +1040,7 @@ export const RANGES_LESSON: FiveStageLesson = {
       {
         id: 'pred-ranges-2',
         questionNumber: 2,
-        totalQuestions: 6,
+        totalQuestions: 7,
         title: 'Accumulating Across a Range',
         topicMeta: 'Inclusive upper bound',
         language: 'Kotlin',
@@ -1043,7 +1057,7 @@ export const RANGES_LESSON: FiveStageLesson = {
       {
         id: 'pred-ranges-3',
         questionNumber: 3,
-        totalQuestions: 6,
+        totalQuestions: 7,
         title: 'Membership Check with in',
         topicMeta: 'x in a..b',
         language: 'Kotlin',
@@ -1060,7 +1074,7 @@ export const RANGES_LESSON: FiveStageLesson = {
       {
         id: 'pred-ranges-4',
         questionNumber: 4,
-        totalQuestions: 6,
+        totalQuestions: 7,
         title: 'Membership Check with !in',
         topicMeta: 'x !in a..b',
         language: 'Kotlin',
@@ -1077,7 +1091,7 @@ export const RANGES_LESSON: FiveStageLesson = {
       {
         id: 'pred-ranges-5',
         questionNumber: 5,
-        totalQuestions: 6,
+        totalQuestions: 7,
         title: 'Inclusive Upper Boundary',
         topicMeta: 'Boundary value in a membership check',
         language: 'Kotlin',
@@ -1094,7 +1108,7 @@ export const RANGES_LESSON: FiveStageLesson = {
       {
         id: 'pred-ranges-6',
         questionNumber: 6,
-        totalQuestions: 6,
+        totalQuestions: 7,
         title: 'Loop Range Combined with a Membership Check',
         topicMeta: 'Two ranges working together',
         language: 'Kotlin',
@@ -1107,6 +1121,23 @@ export const RANGES_LESSON: FiveStageLesson = {
           { id: 'D', label: '3', isCorrect: false }
         ],
         explanation: { codeRef: 'if (i in 5..8)', detail: 'The outer loop visits 1 through 10, but only i = 5, 6, 7, and 8 satisfy the inner membership check, so count is incremented 4 times.' }
+      },
+      {
+        id: 'pred-ranges-7',
+        questionNumber: 7,
+        totalQuestions: 7,
+        title: 'until Excludes Its Upper Bound',
+        topicMeta: 'Exclusive range in a for-loop',
+        language: 'Kotlin',
+        code: ['fun main() {', '    for (i in 0 until 4) {', '        print(i)', '    }', '}'],
+        prompt: 'What will this code print?',
+        options: [
+          { id: 'A', label: '0123', isCorrect: true },
+          { id: 'B', label: '01234', isCorrect: false },
+          { id: 'C', label: '1234', isCorrect: false },
+          { id: 'D', label: '123', isCorrect: false }
+        ],
+        explanation: { codeRef: '0 until 4', detail: 'until excludes its upper bound, so the loop visits 0, 1, 2, and 3 -- 4 itself is never a candidate value. print() has no separator, so the digits run together as "0123".' }
       }
     ]
   },
@@ -1705,8 +1736,8 @@ export const DOWNTO_LESSON: FiveStageLesson = {
     testCase: { call: '', expected: '5\n4\n3\n2\n1\nGo!' }
   },
   debug: {
-    title: 'Fix the Broken Countdown',
-    subtitle: 'The countdown timer is supposed to count down from 5 to 1, but nothing prints except the final message.',
+    title: 'Fix the Broken Launch Sequence',
+    subtitle: 'The launch sequence is supposed to count down from 4 to 0, but nothing prints except the final message.',
     challengeNumber: 1,
     totalChallenges: 1,
     difficulty: 'easy',
@@ -1714,25 +1745,25 @@ export const DOWNTO_LESSON: FiveStageLesson = {
     bugLabel: 'Logic Bug: Backwards Range Instead of downTo',
     brokenCode: `fun main() {
     // BUG: this range never counts down!
-    for (i in 5..1) {
+    for (i in 4..0) {
         println(i)
     }
-    println("Go!")
+    println("Blast off!")
 }`,
     fixedCode: `fun main() {
-    for (i in 5 downTo 1) {
+    for (i in 4 downTo 0) {
         println(i)
     }
-    println("Go!")
+    println("Blast off!")
 }`,
-    expectedOutput: '5\n4\n3\n2\n1\nGo!',
+    expectedOutput: '4\n3\n2\n1\n0\nBlast off!',
     hints: [
       'Something is wrong with how the loop is supposed to count downward.',
       'A plain .. range only ever counts up -- what happens when its start is already bigger than its end?',
-      'Replace 5..1 with 5 downTo 1 so the loop actually counts backwards.'
+      'Replace 4..0 with 4 downTo 0 so the loop actually counts backwards.'
     ],
     explanation:
-      'for (i in 5..1) uses a plain range, which always counts UP from its left value to its right value. Since 5 is already greater than 1, the loop\'s condition is false immediately, so the body never runs at all -- only "Go!" prints. Replacing 5..1 with 5 downTo 1 makes the loop actually count backwards from 5 to 1, printing all five numbers before "Go!".'
+      'for (i in 4..0) uses a plain range, which always counts UP from its left value to its right value. Since 4 is already greater than 0, the loop\'s condition is false immediately, so the body never runs at all -- only "Blast off!" prints. Replacing 4..0 with 4 downTo 0 makes the loop actually count backwards from 4 to 0, printing all five numbers before "Blast off!".'
   },
   mastered: {
     topicTitle: 'downTo',

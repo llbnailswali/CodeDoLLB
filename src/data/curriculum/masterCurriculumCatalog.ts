@@ -122,7 +122,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Decimal numbers: 64-bit Double by default and 32-bit Float with the mandatory f suffix.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "float-double"
       },
       {
@@ -144,7 +144,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Single characters: strict single-quote 'A' syntax vs double-quote Strings and escape sequences.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "char"
       },
       {
@@ -166,7 +166,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Clean interpolation: embedding variables with $variable and expressions with ${expression}.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "string-templates"
       },
       {
@@ -213,7 +213,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Structural equality with ==, inequality with !=, and relational ordering with <, >, <=, >=.",
-        "questionsCount": 5,
+        "questionsCount": 6,
         "fiveStageLessonKey": "world-2-comparison-operators"
       },
       {
@@ -224,7 +224,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Combining conditions with && (AND) and || (OR), negating with ! (NOT), and how precedence groups them.",
-        "questionsCount": 5,
+        "questionsCount": 6,
         "fiveStageLessonKey": "world-2-logical-operators"
       },
       {
@@ -235,7 +235,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Plain assignment with = and the compound shorthand +=, -=, *=, /=, and %=, all of which require var.",
-        "questionsCount": 4,
+        "questionsCount": 6,
         "fiveStageLessonKey": "world-2-assignment-operators"
       },
       {
@@ -246,7 +246,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "The ++ and -- operators, prefix vs postfix form, and why they only work on var.",
-        "questionsCount": 5,
+        "questionsCount": 7,
         "fiveStageLessonKey": "world-2-increment-decrement"
       },
       {
@@ -438,8 +438,8 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "loops-ranges-progressions",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Using a..b both to drive a for-loop and to test membership with in / !in, inclusive on both ends.",
-        "questionsCount": 6,
+        "description": "Using a..b both to drive a for-loop and to test membership with in / !in, inclusive on both ends, plus the exclusive a until b form.",
+        "questionsCount": 7,
         "fiveStageLessonKey": "world-4-ranges"
       },
       {
@@ -541,7 +541,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Define focused reusable functions and distinguish defining a function from calling it.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-5-defining-functions"
       },
       {
@@ -552,7 +552,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Pass typed input values into a function and use them in its body.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-5-function-parameters"
       },
       {
@@ -563,7 +563,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Return computed values to a caller using a declared return type and return expression.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-5-return-values"
       },
       {
@@ -574,7 +574,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Give parameters sensible fallback values that callers can omit or override.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-5-default-parameters"
       },
       {
@@ -585,7 +585,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use Kotlin named arguments to make call sites readable and safely reorder values.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-5-named-arguments"
       },
       {
@@ -596,7 +596,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Write concise functions whose single expression is automatically returned.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-5-single-expression-functions"
       },
       {
@@ -618,7 +618,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Accept a flexible number of trailing inputs with vararg and process every value.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-5-vararg"
       },
       {
@@ -629,7 +629,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 10,
         "xpReward": 50,
         "description": "Build and repair a reusable collection of focused functions using the World 5 toolkit.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "isBoss": true,
         "fiveStageLessonKey": "world-5-boss"
       }
@@ -719,8 +719,8 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "collections",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Change a mutable List with add, remove(value), removeAt(index), and [] = for in-place position updates.",
-        "questionsCount": 4,
+        "description": "Change a mutable List with add, remove(value), removeAt(index), and [] = for in-place position updates, plus remove on a mutable Set and Map.",
+        "questionsCount": 6,
         "fiveStageLessonKey": "world-6-adding-removing-updating-mutable-element"
       },
       {
@@ -741,8 +741,8 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "collections",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "Use isEmpty()/isNotEmpty(), indexOf, and sorted() to check, search, and order collections without a manual loop.",
-        "questionsCount": 4,
+        "description": "Use isEmpty()/isNotEmpty(), indexOf, sorted(), and contains() to check, search, and order collections without a manual loop.",
+        "questionsCount": 5,
         "fiveStageLessonKey": "world-6-basic-collection-operations"
       },
       {
@@ -789,7 +789,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Mark a type with ? to allow null, and see that null is distinct from an empty string or zero.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-7-nullable-types"
       },
       {
@@ -800,7 +800,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Reassign a nullable var freely between null and a real value, in either direction.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-7-nullable-variables"
       },
       {
@@ -811,7 +811,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Access a property or method only when a value is not null, avoiding a crash by producing null instead.",
-        "questionsCount": 3,
+        "questionsCount": 5,
         "fiveStageLessonKey": "world-7-safe-call"
       },
       {
@@ -822,7 +822,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Supply a fallback value for null with ?:, alone or chained after a safe call.",
-        "questionsCount": 3,
+        "questionsCount": 7,
         "fiveStageLessonKey": "world-7-elvis-operator"
       },
       {
@@ -833,7 +833,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Assert a nullable value is definitely non-null with !!, and see it crash when that assertion is wrong.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "fiveStageLessonKey": "world-7-non-null-assertion"
       },
       {
@@ -844,7 +844,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Branch on nullability with if (x != null) and if (x == null), whichever direction reads more clearly.",
-        "questionsCount": 3,
+        "questionsCount": 5,
         "fiveStageLessonKey": "world-7-null-checks"
       },
       {
@@ -854,8 +854,8 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "skill": "null-safety",
         "durationMinutes": 3,
         "xpReward": 20,
-        "description": "See how a null check unlocks safe, direct . access for the rest of its own block.",
-        "questionsCount": 3,
+        "description": "Use checks, guard returns and stable values to establish flow-based smart casts.",
+        "questionsCount": 6,
         "fiveStageLessonKey": "world-7-smart-casts"
       },
       {
@@ -866,7 +866,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Cast to a type only when the value genuinely matches, getting null instead of a crash when it doesn't.",
-        "questionsCount": 3,
+        "questionsCount": 6,
         "fiveStageLessonKey": "world-7-safe-casts-as"
       },
       {
@@ -877,7 +877,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Distinguish nullable elements inside a collection from a nullable collection reference itself.",
-        "questionsCount": 3,
+        "questionsCount": 6,
         "fiveStageLessonKey": "world-7-nullable-collections-and-collection-valu"
       },
       {
@@ -888,7 +888,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Chain ?. across multiple steps that could each independently be null, finished with one ?: fallback.",
-        "questionsCount": 3,
+        "questionsCount": 6,
         "fiveStageLessonKey": "world-7-chaining-nullable-operations"
       },
       {
@@ -899,7 +899,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 10,
         "xpReward": 50,
         "description": "Build a program that safely processes incomplete/missing data without unnecessary crashes.",
-        "questionsCount": 3,
+        "questionsCount": 4,
         "isBoss": true,
         "fiveStageLessonKey": "world-7-boss"
       }

@@ -9,6 +9,20 @@ This file has two sections that must not be conflated:
 
 ---
 
+## Quality verification (separate from content inventory)
+
+Authority: [LESSON_QUALITY_STANDARD.md](LESSON_QUALITY_STANDARD.md). A registered
+lesson or an auto-generated “Complete” row below does not mean quality-verified.
+World 1: **Changes required**, with capability blockers; first-pass evidence and
+repair queue are in [WORLD_1_CONTENT_REVIEW.md](WORLD_1_CONTENT_REVIEW.md).
+Worlds 2–6: first-pass audits are recorded in their `WORLD_N_CONTENT_REVIEW.md`
+files; see each review for status and remaining work.
+World 7: **Audit in progress** — all 11 lessons reviewed, engine/content fixes
+and execution evidence in [WORLD_7_CONTENT_REVIEW.md](WORLD_7_CONTENT_REVIEW.md).
+Browser QA and hardcode-resistance checks remain open; this is not Verified.
+Later worlds are not certified under this standard by this audit. Earlier reviews
+remain useful evidence but do not automatically establish acceptance.
+
 ## 1. Five-Stage Content Progress (source of truth for actual completion)
 
 Format: `src/data/lessonStagesData.ts` (shared lessons) + `src/data/curriculum/world1LessonsData.ts` (World 1's own lessons), registered in `AVAILABLE_FIVE_STAGE_LESSONS` and linked from `masterCurriculumCatalog.ts` via `fiveStageLessonKey`.
@@ -681,3 +695,9 @@ Reused (from legacy bank):
 Gaps found:
 - ...
 ```
+
+## 2026-09-19 — World 10 editor capacity
+
+Collection runner audit and implementation completed for the scope in [WORLD_10_CAPACITY_AUDIT.md](WORLD_10_CAPACITY_AUDIT.md). Added 31 behavior fixtures checked against real Kotlin, 5 rejection checks and execution checks for all 20 existing writing/debug solutions. Updated the ten World 10 workbook rows with verified behavior and remaining limits. Corrected the partition lesson to use Pair.first.
+
+Content authoring remains separate: existing repeated Explore/Predict templates have not been expanded. The audit maps required concepts to examples/predictions and writing/debugging targets; counts must follow that coverage analysis, not a fixed quota.
