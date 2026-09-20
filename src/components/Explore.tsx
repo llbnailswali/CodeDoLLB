@@ -40,6 +40,9 @@ export const Explore: React.FC<ExploreStageProps> = ({
   // Step 2..totalCards: card 1, card 2, ...
   const maxRevealStep = totalCards;
 
+  const indicatorRailRef = useRef<HTMLDivElement | null>(null);
+  const indicatorButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
   // Refs to decouple tap-to-select and tap-to-continue from scroll-based highlighting
   // This prevents indicator buttons from fluctuating during smooth/programmatic scrolling
   const isProgrammaticScrollRef = useRef<boolean>(false);
@@ -124,6 +127,28 @@ export const Explore: React.FC<ExploreStageProps> = ({
   };
 
   // Keep the scrolling-highlight in sync whenever the content is scrolled
+  useEffect(() => {
+    const activeButton = indicatorButtonRefs.current[exploreCardIndex];
+    const rail = indicatorRailRef.current;
+
+    if (activeButton && rail) {
+      const centerPos = rail.scrollLeft + rail.clientWidth / 2;
+      const buttonCenter = activeButton.offsetLeft + activeButton.offsetWidth / 2;
+      const centerWindow = 36;
+      const nearCenter = Math.abs(buttonCenter - centerPos) <= centerWindow;
+
+      if (nearCenter) return;
+
+      const offset = buttonCenter - rail.clientWidth / 2;
+      const maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+      const timer = window.setTimeout(() => {
+        rail.scrollTo({ left: Math.max(0, Math.min(offset, maxScroll)), behavior: 'auto' });
+      }, 30);
+
+      return () => window.clearTimeout(timer);
+    }
+  }, [exploreCardIndex]);
+
   useEffect(() => {
     const handleUserGesture = () => {
       // User manual interaction takes precedence over programmatic scroll lock
@@ -264,40 +289,47 @@ export const Explore: React.FC<ExploreStageProps> = ({
       {(!tapToRevealEnabled || revealStep >= 1) && (
         <div
           id="explore-indicator-bar"
-          className="sticky top-14 z-30 mb-2.5 py-0.5 flex justify-center w-full animate-fadeIn"
+          className="sticky top-14 z-30 mb-2.5 py-0.5 w-full animate-fadeIn"
         >
-          {/* Rectangle shape indicator navigation container */}
-          <div
-            className={`inline-flex items-center gap-1.5 p-1.5 rounded-xl border backdrop-blur-md shadow-md transition-colors duration-200 ${
-              isDark
-                ? 'bg-[#171b26]/95 border-[#262c3d] shadow-black/40'
-                : 'bg-white/95 border-slate-200/90 shadow-slate-900/10'
-            }`}
-          >
-            {data.cards.map((card, idx) => {
-              const buttonLabel = card.number || (idx < 9 ? `0${idx + 1}` : `${idx + 1}`);
-              const isHighlighted = exploreCardIndex === idx;
+          <div ref={indicatorRailRef} className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex justify-center min-w-[max-content]">
+              {/* Rectangle shape indicator navigation container */}
+              <div
+                className={`inline-flex items-center gap-1.5 p-1.5 rounded-xl border backdrop-blur-md shadow-md transition-colors duration-200 ${
+                  isDark
+                    ? 'bg-[#171b26]/95 border-[#262c3d] shadow-black/40'
+                    : 'bg-white/95 border-slate-200/90 shadow-slate-900/10'
+                }`}
+              >
+                {data.cards.map((card, idx) => {
+                  const buttonLabel = card.number || (idx < 9 ? `0${idx + 1}` : `${idx + 1}`);
+                  const isHighlighted = exploreCardIndex === idx;
 
-              return (
-                <button
-                  key={card.id}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleIndicatorClick(idx);
-                  }}
-                  className={`min-w-[42px] h-8 px-2.5 flex items-center justify-center text-xs font-bold font-mono tracking-wider rounded-lg transition-all duration-150 select-none cursor-pointer ${
-                    isHighlighted
-                      ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-500/50 scale-[1.03]'
-                      : isDark
-                      ? 'bg-[#121622] text-slate-400 border border-[#262c3d] hover:text-slate-200 hover:border-slate-500 hover:bg-[#181d2c]'
-                      : 'bg-slate-100 text-slate-500 border border-slate-200 hover:text-slate-800 hover:border-slate-300 hover:bg-slate-200/70'
-                  }`}
-                >
-                  {buttonLabel}
-                </button>
-              );
-            })}
+                  return (
+                    <button
+                      ref={(el) => {
+                        indicatorButtonRefs.current[idx] = el;
+                      }}
+                      key={card.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleIndicatorClick(idx);
+                      }}
+                      className={`min-w-[42px] h-8 px-2.5 flex items-center justify-center text-xs font-bold font-mono tracking-wider rounded-lg transition-all duration-150 select-none cursor-pointer ${
+                        isHighlighted
+                          ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-500/50 scale-[1.03]'
+                          : isDark
+                          ? 'bg-[#121622] text-slate-400 border border-[#262c3d] hover:text-slate-200 hover:border-slate-500 hover:bg-[#181d2c]'
+                          : 'bg-slate-100 text-slate-500 border border-slate-200 hover:text-slate-800 hover:border-slate-300 hover:bg-slate-200/70'
+                      }`}
+                    >
+                      {buttonLabel}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -443,7 +475,7 @@ export const Explore: React.FC<ExploreStageProps> = ({
       {/* Primary CTA / Tap Hint -- fixed (not sticky) so it stays flush with the screen
           bottom from the very first tap, instead of drifting down as content grows. */}
       <div
-        className={`fixed bottom-0 inset-x-0 z-40 pb-safe pt-1.5 pb-4 transition-all ${
+        className={`fixed bottom-0 inset-x-0 z-40 pt-1.5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] transition-all ${
           isDark
             ? 'bg-gradient-to-t from-[#0f131d] via-[#0f131d]/95 to-transparent'
             : 'bg-gradient-to-t from-[#f1f4f9] via-[#f1f4f9]/95 to-transparent'

@@ -391,16 +391,44 @@ function transformRanges(line: string): string {
  * here (see PITFALLS.md), so an `is Char` check would silently misbehave
  * exactly like the Char-vs-String debug bugs documented there.
  */
-function transformTypeChecks(line: string): string {
+/** Every declared `interface Name` in `code`, bodied or bodyless -- used by
+ * `transformTypeChecks` to pick `instanceof` (a real class/object, backed
+ * by a real prototype chain) vs the `__kt_implements_Name` marker property
+ * (an interface, erased to a plain object with none) for an `is` check,
+ * since calling `instanceof` against the latter throws a TypeError
+ * ("right-hand side ... is not callable") rather than just being wrong. */
+function getAllInterfaceNames(code: string): Set<string> {
+  const names = new Set<string>();
+  const re = /\binterface\s+([A-Za-z_][A-Za-z0-9_]*)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code)) !== null) names.add(m[1]);
+  return names;
+}
+
+function transformTypeChecks(line: string, interfaceNames: Set<string> = new Set()): string {
   const typeofMap: Record<string, string> = {
     Int: 'number', Long: 'number', Float: 'number', Double: 'number',
     String: 'string', Boolean: 'boolean',
   };
   return line.replace(
-    /([a-zA-Z_][a-zA-Z0-9_.]*|\([^()]*\))\s+(is|!is)\s+(Int|Long|Float|Double|String|Boolean)\b/g,
+    // A primitive Kotlin type maps to a typeof check (never Char -- a
+    // single-quoted Char and a same-text String are indistinguishable JS
+    // strings, see the standing pitfall on this). A known interface name
+    // (`Open is Trackable`) checks the `__kt_implements_Trackable` marker
+    // instead -- see `getAllInterfaceNames`'s doc comment for why.
+    // Anything else (a declared class/object) falls back to `instanceof`,
+    // matching the identical class-vs-primitive split already used inside
+    // a `when` branch's `is Type ->` condition (see `parseWhenBranches`)
+    // -- this is the standalone-expression form of the same check.
+    /([a-zA-Z_][a-zA-Z0-9_.]*|\([^()]*\))\s+(is|!is)\s+([A-Z][a-zA-Z0-9_]*)\b/g,
     (_m, expr, kw, type) => {
       const jsType = typeofMap[type];
-      return kw === '!is' ? `(typeof (${expr}) !== '${jsType}')` : `(typeof (${expr}) === '${jsType}')`;
+      const check = jsType
+        ? `typeof (${expr}) === '${jsType}'`
+        : interfaceNames.has(type)
+          ? `Boolean((${expr}) && (${expr}).__kt_implements_${type})`
+          : `(${expr}) instanceof ${type}`;
+      return kw === '!is' ? `!(${check})` : `(${check})`;
     }
   );
 }
@@ -501,6 +529,56 @@ function stripCollectionGenerics(code: string): string {
 }
 
 /**
+ * `inline fun <reified T> name(...): R = ...T is used inside...` has no
+ * direct JS equivalent: real Kotlin substitutes T with the actual type
+ * argument at every call site at compile time (that's what "reified"
+ * means), but this engine has no per-call-site inlining/specialization
+ * mechanism at all. Rather than build one, T is turned into an ordinary
+ * runtime parameter carrying the type NAME as a plain string (supplied by
+ * the caller's explicit type argument), and `value is T` becomes a call to
+ * `__kt_isReifiedType(value, T)`, which does the same typeof-based dispatch
+ * every other `is`/`as?` check in this file already uses (never Char, never
+ * an arbitrary declared class -- this engine has no runtime class registry
+ * keyed by a string name; see `__kt_isReifiedType`'s own doc comment).
+ *
+ * Scope, deliberately narrow (verify with `compileAndRunKotlin` before
+ * relying on anything wider): the declaration's header (`inline fun <
+ * reified T> name(params): ReturnType = expr`, `inline` and the return type
+ * both optional) must be a SINGLE line ending in a single-expression body
+ * (`= expr`) -- a block body (`{ ... }`) is not supported, matching this
+ * file's existing single-line-header convention elsewhere (see
+ * `transpileClassDeclarations`/`splitClassMembers`'s own limits). Only one
+ * reified type parameter per function is supported. A call site's explicit
+ * type argument must be a single bare type name (`name<String>(...)`), not
+ * a nested/qualified generic.
+ */
+function transpileReifiedFunctions(code: string): string {
+  const reifiedFunctions = new Map<string, string>();
+  code = code.replace(
+    /\b(?:inline\s+)?fun\s*<\s*reified\s+([A-Za-z_][A-Za-z0-9_]*)\s*>\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)(\s*:\s*[A-Za-z0-9_<>?.]+)?\s*=\s*(.+)$/gm,
+    (_whole, typeParam: string, name: string, params: string, returnType: string | undefined, body: string) => {
+      reifiedFunctions.set(name, typeParam);
+      const esc = typeParam.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const rewrittenBody = body
+        .replace(new RegExp(`([A-Za-z_][A-Za-z0-9_.]*|\\([^()]*\\))\\s+!is\\s+${esc}\\b`, 'g'), (_m: string, expr: string) => `!__kt_isReifiedType(${expr}, ${typeParam})`)
+        .replace(new RegExp(`([A-Za-z_][A-Za-z0-9_.]*|\\([^()]*\\))\\s+is\\s+${esc}\\b`, 'g'), (_m: string, expr: string) => `__kt_isReifiedType(${expr}, ${typeParam})`);
+      const trimmedParams = params.trim();
+      const newParams = trimmedParams ? `${trimmedParams}, ${typeParam}: String` : `${typeParam}: String`;
+      return `fun ${name}(${newParams})${returnType ?? ''} = ${rewrittenBody}`;
+    }
+  );
+  if (reifiedFunctions.size === 0) return code;
+  for (const [name, typeParam] of reifiedFunctions) {
+    const escName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    code = code.replace(new RegExp(`\\b${escName}\\s*<\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*>\\s*\\(([^()]*)\\)`, 'g'), (_m: string, typeArg: string, args: string) => {
+      const trimmedArgs = args.trim();
+      return `${name}(${trimmedArgs ? trimmedArgs + ', ' : ''}"${typeArg}")`;
+    });
+  }
+  return code;
+}
+
+/**
  * Transforms mapOf / mutableMapOf calls across single or multiple lines,
  * translating `key to value` pairs into `[key, value]` arrays.
  */
@@ -526,7 +604,12 @@ function transpileMapDeclarations(code: string): string {
  */
 function parseWhenBranches(body: string, subject: string | null): Array<{ condition: string | null; result: string }> {
   const branches: Array<{ condition: string | null; result: string }> = [];
-  for (const rawLine of body.split('\n')) {
+  // A `;` separates multiple branches on one physical line (Kotlin allows
+  // this the same as any other statement separator), matching the
+  // single-line `when(s){A->0;is B->s.n}` shape some lesson content uses
+  // for compactness -- naive on a literal `;` inside a branch's own
+  // string/expression, but no lesson content puts one there.
+  for (const rawLine of body.split('\n').flatMap((line) => line.split(';'))) {
     const line = rawLine.trim();
     if (!line) continue;
     const arrowIdx = line.indexOf('->');
@@ -550,6 +633,22 @@ function parseWhenBranches(body: string, subject: string | null): Array<{ condit
       const [, kw, lo, hi] = rangeMatch;
       const check = `((${subject}) >= ${lo} && (${subject}) <= ${hi})`;
       branches.push({ condition: kw === '!in' ? `!${check}` : check, result });
+      continue;
+    }
+
+    // `is Type -> ...` / `!is Type -> ...`: a primitive Kotlin type maps to
+    // a typeof check (see transformTypeChecks above, same scope: never
+    // Char, since a single-quoted Char and a same-text String are
+    // indistinguishable JS strings in this simulator); any other capitalized
+    // name is treated as a class/data-class/object variant (e.g. a sealed
+    // hierarchy member) and checked with `instanceof`, which is exactly
+    // what this engine's real JS classes support.
+    const isMatch = rawCond.match(/^(is|!is)\s+([A-Za-z_][A-Za-z0-9_]*)\??$/);
+    if (isMatch) {
+      const [, kw, type] = isMatch;
+      const typeofMap: Record<string, string> = { Int: 'number', Long: 'number', Float: 'number', Double: 'number', String: 'string', Boolean: 'boolean' };
+      const check = typeofMap[type] ? `typeof (${subject}) === '${typeofMap[type]}'` : `(${subject}) instanceof ${type}`;
+      branches.push({ condition: kw === '!is' ? `!(${check})` : check, result });
       continue;
     }
 
@@ -635,7 +734,14 @@ function cleanKotlinParams(params: string): string {
       if (!trimmed) return '';
       const varargMatch = trimmed.match(/^vararg\s+([a-zA-Z0-9_]+)/);
       if (varargMatch) return `...${varargMatch[1]}`;
-      const m = trimmed.match(/^(?:(?:val|var)\s+)?([a-zA-Z0-9_]+)(?:\s*:\s*[a-zA-Z0-9_<>?.]+)?(?:\s*=\s*(.+))?$/);
+      // `*` (a star projection, e.g. `v: List<*>`) is valid inside a type
+      // annotation's `<...>` but wasn't in this character class -- since
+      // the whole match is anchored to `$`, a type this regex can't fully
+      // consume doesn't partially match, it fails to match AT ALL, so the
+      // entire parameter (including its NAME) was silently dropped,
+      // producing a function with no parameter at all instead of one
+      // whose type was merely not stripped. See PITFALLS.md.
+      const m = trimmed.match(/^(?:(?:val|var)\s+)?([a-zA-Z0-9_]+)(?:\s*:\s*[a-zA-Z0-9_<>?.*]+)?(?:\s*=\s*(.+))?$/);
       if (!m) return '';
       const [, name, defaultVal] = m;
       return defaultVal ? `${name} = ${defaultVal.trim()}` : name;
@@ -658,6 +764,28 @@ function inferMapVars(code: string): Set<string> {
 }
 
 /**
+ * Finds names known to hold a MutableList -- from a `mutableListOf(...)`
+ * initializer, or a declared `: MutableList<...>` type (a local/property
+ * `val`/`var`, or a primary-constructor property) -- so `name += value`
+ * can be rewritten to `name.add(value)` (see the `+=` handling in the
+ * per-line pass below). Plain JS `+=` on an array coerces both sides to
+ * strings and REASSIGNS the variable to that string (`[1] + 2` is the
+ * string `"1,2"`), which is silently wrong twice over: it neither adds the
+ * element nor preserves the shared-reference aliasing a `val` MutableList
+ * (which cannot itself be reassigned) actually has in Kotlin.
+ */
+function inferMutableListVars(code: string): Set<string> {
+  const names = new Set<string>();
+  for (const line of code.split('\n')) {
+    const initMatch = line.match(/\b(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)[^=]*=\s*(?:__kt_)?mutableListOf\s*\(/);
+    if (initMatch) names.add(initMatch[1]);
+    const typeMatch = line.matchAll(/(?:\b(?:val|var)\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*MutableList</g);
+    for (const m of typeMatch) names.add(m[1]);
+  }
+  return names;
+}
+
+/**
  * Strips modifier keywords (visibility, `open`, `abstract`, `override`) that
  * precede a declaration keyword. None of these affect runtime behavior in
  * this simplified simulator -- there is no real access control, and `open`/
@@ -669,7 +797,7 @@ function inferMapVars(code: string): Set<string> {
  */
 function stripModifierKeywords(code: string): string {
   return code.replace(
-    /\b(?:(?:private|public|protected|internal|open|abstract|override)\s+)+(?=(?:class|val|var|fun|constructor)\b)/g,
+    /\b(?:(?:private|public|protected|internal|open|abstract|override|const)\s+)+(?=(?:class|val|var|fun|constructor)\b)/g,
     ''
   );
 }
@@ -765,7 +893,27 @@ function splitCodeAndStrings(line: string): Array<{ text: string; isString: bool
   return chunks;
 }
 
-function rewriteClassPropertyAccess(lines: string[], classProps: Set<string>, paramNames: Set<string>): string[] {
+/**
+ * Turns a `lazy { ... }` block's raw body text into a JS function body that
+ * `return`s its Kotlin last-expression value -- Kotlin lambda blocks are
+ * implicitly value-returning on their last statement; JS requires an
+ * explicit `return`. Splits on both real newlines and a `;`-joined single
+ * line (`lazy{println("build");7}` is valid, common Kotlin), since either
+ * form is just "a list of statements" once separated -- naive on a literal
+ * `;` inside a string, but no lesson content puts one there.
+ */
+function wrapLazyBlockBody(rawBody: string): string {
+  const statements = rawBody
+    .split('\n')
+    .flatMap((line) => line.split(';'))
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (statements.length === 0) return '';
+  const last = statements.pop()!;
+  return [...statements.map((s) => `${s};`), `return (${last});`].join('\n');
+}
+
+function rewriteClassPropertyAccess(lines: string[], classProps: Set<string>, paramNames: Set<string>, prefix = 'this.'): string[] {
   const localVars = new Set<string>();
   return lines.map((line) => {
     const declMatch = line.match(/\b(?:val|var)\s+([a-zA-Z0-9_]+)/);
@@ -774,13 +922,26 @@ function rewriteClassPropertyAccess(lines: string[], classProps: Set<string>, pa
     }
     const chunks = splitCodeAndStrings(line);
     for (const chunk of chunks) {
-      if (chunk.isString) continue;
+      if (chunk.isString) {
+        for (const prop of classProps) {
+          if (paramNames.has(prop)) continue;
+          chunk.text = chunk.text.replace(new RegExp(`\\$${prop}(?![\\w])`, 'g'), `\${${prefix}${prop}}`);
+        }
+        continue;
+      }
       for (const prop of classProps) {
         if (paramNames.has(prop) || localVars.has(prop)) continue;
         chunk.text = chunk.text.replace(new RegExp(`(?<![.\\w])(${prop})(?![\\w])`, 'g'), (m, name, offset, str) => {
           const before = str.slice(0, offset).trimEnd();
-          if (before.endsWith('.') || /(?:val|var)$/.test(before)) return m;
-          return `this.${name}`;
+          // Skip a property-declaration target (`val`/`var name`, already
+          // handled) AND a function being DECLARED with this same name
+          // (`fun name(...)`) -- a class body can legitimately have a
+          // method whose name matches an in-scope property name (an inner
+          // class's own method named the same as an outer property it
+          // reads, for instance); rewriting the declaration itself would
+          // corrupt it into `fun this.propName(...)`, not a call site.
+          if (before.endsWith('.') || /(?:val|var|fun)$/.test(before)) return m;
+          return `${prefix}${name}`;
         });
       }
     }
@@ -798,7 +959,83 @@ function transpileClassMember(rawMemberLines: string[], classProps: Set<string> 
   while (memberLines.length > 1 && memberLines[memberLines.length - 1].trim() === '') {
     memberLines.pop();
   }
+  // `private set` (or `protected`/`internal set`) directly below a
+  // property header restricts who may assign it -- compile-time-only
+  // visibility metadata with no runtime effect in this simulator (same
+  // rationale as `stripModifierKeywords` above), so once it's confirmed to
+  // be the harmless trailing line it always is here, drop it and let the
+  // property header behind it be classified as if it were a plain,
+  // single-line property.
+  while (
+    memberLines.length > 1 &&
+    /^(?:private|protected|internal)\s+set\s*;?$/.test(memberLines[memberLines.length - 1].trim())
+  ) {
+    memberLines.pop();
+  }
   const header = memberLines[0].trim();
+
+  const getterProp = header.match(/^(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*[a-zA-Z0-9_<>?,\s]+\s+get\(\)\s*=\s*(.+)$/);
+  if (getterProp && memberLines.length === 1) {
+    const [, name, expr] = getterProp;
+    const rewrittenExpr = rewriteClassPropertyAccess([expr], classProps, new Set())[0];
+    return { ctorLines: [], methodLines: [`  get ${name}() { return ${rewrittenExpr}; }`] };
+  }
+
+  // `val name[: Type] by lazy { ... }` -- computes once on first access and
+  // caches the result, backed by two hidden instance fields (a `computed`
+  // flag and the cached value) checked/set from a real JS getter, so every
+  // subsequent `instance.name` read (no parens, matching how Kotlin itself
+  // reads it) is free after the first. Two shapes: the block spans several
+  // lines (closing `}` alone on its own trailing line), or the whole thing
+  // -- header and block -- sits on one line.
+  const lazyPropBlock = header.match(/^(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?::\s*[a-zA-Z0-9_<>?,\s]+)?\s+by\s+lazy\s*\{\s*$/);
+  if (lazyPropBlock && memberLines.length > 1 && memberLines[memberLines.length - 1].trim() === '}') {
+    const [, name] = lazyPropBlock;
+    const inner = rewriteClassPropertyAccess(memberLines.slice(1, -1), classProps, new Set());
+    const wrapped = wrapLazyBlockBody(inner.join('\n'));
+    return { ctorLines: [], methodLines: [
+      `  get ${name}() {`,
+      `    if (!this.__kt_lazy_computed_${name}) {`,
+      `      this.__kt_lazy_computed_${name} = true;`,
+      `      this.__kt_lazy_value_${name} = (() => {`,
+      ...wrapped.split('\n'),
+      `      })();`,
+      `    }`,
+      `    return this.__kt_lazy_value_${name};`,
+      `  }`,
+    ] };
+  }
+  const lazyPropSingleLine = header.match(/^(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?::\s*[a-zA-Z0-9_<>?,\s]+)?\s+by\s+lazy\s*\{(.*)\}\s*$/);
+  if (lazyPropSingleLine && memberLines.length === 1) {
+    const [, name, block] = lazyPropSingleLine;
+    const rewrittenBlock = rewriteClassPropertyAccess([block], classProps, new Set())[0];
+    const wrapped = wrapLazyBlockBody(rewrittenBlock);
+    return { ctorLines: [], methodLines: [
+      `  get ${name}() {`,
+      `    if (!this.__kt_lazy_computed_${name}) {`,
+      `      this.__kt_lazy_computed_${name} = true;`,
+      `      this.__kt_lazy_value_${name} = (() => { ${wrapped.replace(/\n/g, ' ')} })();`,
+      `    }`,
+      `    return this.__kt_lazy_value_${name};`,
+      `  }`,
+    ] };
+  }
+
+  // `val name: Type` on its own line, followed by a separate `get() {
+  // ...block body with an explicit return... }` -- a class-member custom
+  // getter that (unlike `getterProp` above) is not a single expression.
+  // The body's own `return` statement is kept as-is (no implicit
+  // last-expression wrapping needed, unlike a `lazy` block).
+  const blockGetterHeader = header.match(/^(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*[a-zA-Z0-9_<>?,\s]+$/);
+  if (blockGetterHeader && memberLines.length > 1) {
+    const rest = memberLines.slice(1).join('\n');
+    const blockGetterBody = rest.match(/^\s*get\(\)\s*\{([\s\S]*)\}\s*$/);
+    if (blockGetterBody) {
+      const [, name] = blockGetterHeader;
+      const inner = rewriteClassPropertyAccess(blockGetterBody[1].split('\n'), classProps, new Set());
+      return { ctorLines: [], methodLines: [`  get ${name}() {`, ...inner, '  }'] };
+    }
+  }
 
   if (/^init\b/.test(header)) {
     const inner = memberLines.slice(0, -1).join('\n').replace(/^\s*init\s*\{/, '').split('\n');
@@ -909,7 +1146,12 @@ function splitTopLevelCommas(text: string): string[] {
  * scope, since it would require the interface to become a real mixin.
  */
 function transpileInterfaceDeclarations(code: string): string {
-  const re = /\binterface\s+[A-Za-z_][A-Za-z0-9_]*\s*\{/g;
+  // A generic interface's type parameter list (`interface Logger<in T>`) --
+  // including a variance annotation, since that's compile-time-only and
+  // has no runtime representation -- sits between the name and the body;
+  // the optional `(?:<[^>{}]*>)?` accounts for it so a generic interface
+  // isn't left completely unmatched (and therefore un-transpiled) here.
+  const re = /\binterface\s+[A-Za-z_][A-Za-z0-9_]*\s*(?:<[^>{}]*>)?\s*\{/g;
   let result = '';
   let cursor = 0;
   let match: RegExpExecArray | null;
@@ -930,9 +1172,7 @@ function transpileInterfaceDeclarations(code: string): string {
     const body = code.slice(openBraceIdx + 1, i - 1);
     const methods = [...body.matchAll(/(?:fun\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?,\s]*)?\s*=\s*([^\n}]+)|fun\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)\s*:\s*[A-Za-z_][A-Za-z0-9_<>?,\s]*\{\s*return\s+([^;}]+)[;}]|function\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)\s*\{\s*return\s+([^;}]+)[;}])/g)]
       .map((method) => [method[1] ?? method[4] ?? method[7], method[2] ?? method[5] ?? method[8], method[3] ?? method[6] ?? method[9]]);
-    const helper = methods.length
-      ? `const __kt_interface_${name} = { ${methods.map((method) => `${method[0]}(${cleanKotlinParams(method[1])}) { return ${method[2].trim()}; }`).join(', ')} };\n`
-      : '';
+    const helper = `const __kt_interface_${name} = { ${methods.map((method) => `${method[0]}(${cleanKotlinParams(method[1])}) { return ${method[2].trim()}; }`).join(', ')} };\n`;
     result += code.slice(cursor, blockStart) + helper;
     cursor = i;
     re.lastIndex = i;
@@ -950,14 +1190,21 @@ function transpileInterfaceDeclarations(code: string): string {
  * constructor calls (Kotlin never writes `new`). See the member-level
  * helpers above for how the body itself is handled.
  */
-function transpileClassDeclarations(code: string, classNamesOut: Set<string>): string {
-  const classRe = /\b(data\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s*<[^>{}]+>)?\s*(?:\(([^)]*)\))?\s*(?:\:\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*(?:\s*\([^)]*\))?)*)?\s*(\{)?/g;
+function transpileClassDeclarations(code: string, classNamesOut: Set<string>, interfaceMembers: Map<string, string[]> = new Map()): string {
+  // A supertype/interface in the `: ...` clause can itself carry a generic
+  // type argument (`: Logger<Any>`, `: Formatter<User>`) -- the optional
+  // `(?:\s*<[^>{}]+>)?` right after each supertype name (both the first
+  // and any comma-separated additional ones) accounts for it, the same way
+  // the class's own type parameter list is already handled right after its
+  // name. Without it, the `<...>` text is left unmatched and leaks out as
+  // raw, unparseable trailing source after the class block.
+  const classRe = /\b(data\s+)?class\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s*<[^>{}]+>)?\s*(?:\(([^)]*)\))?\s*(?:\:\s*(([A-Za-z_][A-Za-z0-9_]*)(?:\s*<[^>{}]+>)?(?:\s*\(([^)]*)\))?(?:\s+by\s+[A-Za-z_][A-Za-z0-9_]*)?(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*(?:\s*<[^>{}]+>)?(?:\s*\([^)]*\))?)*))?\s*(\{)?/g;
   let result = '';
   let cursor = 0;
   let match: RegExpExecArray | null;
 
   while ((match = classRe.exec(code)) !== null) {
-    const [whole, dataFlag, className, ctorParamsRaw, superName, superArgsRaw, hasBrace] = match;
+    const [whole, dataFlag, className, ctorParamsRaw, supertypesRaw, superName, superArgsRaw, hasBrace] = match;
     classNamesOut.add(className);
     const blockStart = match.index;
     let blockEnd = blockStart + whole.length;
@@ -991,18 +1238,38 @@ function transpileClassDeclarations(code: string, classNamesOut: Set<string>): s
         }
         if (companionDepth === 0) {
           companionName = companion[1];
-          companionLines = body.slice(open + 1, end - 1).split('\n');
+          companionLines = body.slice(open + 1, end - 1).split('\n').flatMap((line) => {
+            // Support the compact factory form commonly used in the lesson
+            // content: `fun of(x) { return Product(x) }`.
+            const compact = line.match(/^(\s*fun\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)(?:\s*:\s*[A-Za-z_][A-Za-z0-9_<>?,\s]*)?)\s*\{\s*return\s+(.+?)\s*\}\s*$/);
+            return compact ? [`${compact[1]} = ${compact[2]}`] : [line];
+          });
           bodyLines = (body.slice(0, companion.index) + body.slice(end)).split('\n');
         }
       }
     }
 
+    // `: Interface by delegateExpr` (class delegation) names the
+    // constructor parameter/property whose members get forwarded. Kotlin
+    // retains a reference to the delegate even when it has no `val`/`var`
+    // of its own (`class Wrap(p: P) : P by p`), so this simulator forces
+    // one into existence below rather than requiring lesson content to
+    // always write `val`/`var` on the delegate parameter.
+    const delegateVar = (supertypesRaw ?? '').match(/\bby\s+([A-Za-z_][A-Za-z0-9_]*)\s*$/)?.[1];
+
     const ctorParams = ctorParamsRaw ? parseConstructorParams(ctorParamsRaw) : [];
     const propertyAssignments = ctorParams.filter((p) => p.isProperty).map((p) => `    this.${p.name} = ${p.name};`);
+    if (delegateVar && ctorParams.some((p) => p.name === delegateVar && !p.isProperty)) {
+      propertyAssignments.push(`    this.${delegateVar} = ${delegateVar};`);
+    }
     const classProps = new Set(ctorParams.filter((p) => p.isProperty).map((p) => p.name));
+    if (delegateVar) classProps.add(delegateVar);
     for (const line of bodyLines) {
       const pm = line.trim().match(/^(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)/);
       if (pm) classProps.add(pm[1]);
+    }
+    if (superName && superArgsRaw !== undefined) {
+      for (const inherited of getClassOwnPropertyNames(code, superName)) classProps.add(inherited);
     }
 
     const members = splitClassMembers(bodyLines);
@@ -1015,7 +1282,19 @@ function transpileClassDeclarations(code: string, classNamesOut: Set<string>): s
     }
 
     const companionStaticLines: string[] = [];
-    for (const member of splitClassMembers(companionLines)) {
+    for (const rawMember of splitClassMembers(companionLines)) {
+      // A companion body that spans multiple SOURCE lines (the `{`/`}` on
+      // their own lines, as a multi-line companion naturally reads) leaves
+      // a trailing blank line attached to its last real member -- the same
+      // `splitClassMembers` artifact `transpileClassMember` itself trims
+      // for a class's own members. Trim it here too so a genuinely
+      // single-line member (`const val X = 4`) is still recognized as one
+      // instead of falling through to the general member path below, which
+      // (correctly, for an INSTANCE property) returns a constructor
+      // assignment -- discarded here, since a companion only reads
+      // `methodLines` -- silently dropping the property.
+      const member = [...rawMember];
+      while (member.length > 1 && member[member.length - 1].trim() === '') member.pop();
       const header = member[0]?.trim() ?? '';
       const property = header.match(/^(?:val|var)\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[^=]+)?\s*=\s*(.+)$/);
       if (property && member.length === 1) {
@@ -1023,7 +1302,7 @@ function transpileClassDeclarations(code: string, classNamesOut: Set<string>): s
         continue;
       }
       const { methodLines: companionMethods } = transpileClassMember(member);
-      companionStaticLines.push(...companionMethods.map((line) => line.replace(/^  /, '  static ')));
+      companionStaticLines.push(...companionMethods.map((line, index) => index === 0 ? line.replace(/^  /, '  static ') : line));
     }
 
     const superCallLine = superName && superArgsRaw !== undefined ? [`    super(${superArgsRaw});`] : [];
@@ -1050,6 +1329,11 @@ function transpileClassDeclarations(code: string, classNamesOut: Set<string>): s
     // implementing class already supplies real methods via `override fun`).
     const isRealSuperclass = Boolean(superName) && superArgsRaw !== undefined;
     const extendsClause = isRealSuperclass ? ` extends ${superName}` : '';
+    const interfaceClause = (supertypesRaw ?? '').replace(/\s+by\s+[A-Za-z_][A-Za-z0-9_]*\s*$/, '');
+    const interfaceNames = interfaceClause
+      .split(',')
+      .map((part) => part.trim().replace(/\s*\([^)]*\)$/, '').replace(/<[^>]*>$/, ''))
+      .filter((name) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) && (!isRealSuperclass || name !== superName));
     const rewritten = [
       `class ${className}${extendsClause} {`,
       `  constructor(${renderCtorParams(ctorParams)}) {`,
@@ -1061,7 +1345,29 @@ function transpileClassDeclarations(code: string, classNamesOut: Set<string>): s
       '}',
     ].join('\n');
 
-    result += code.slice(cursor, blockStart) + rewritten + (companionName ? `\n${className}.${companionName} = ${className};` : '');
+    const defaultMixins = interfaceNames.length
+      ? `\nfor (const __kt_defaults of [${interfaceNames.map((name) => `__kt_interface_${name}`).join(', ')}]) for (const [__kt_name, __kt_method] of Object.entries(__kt_defaults)) if (!Object.prototype.hasOwnProperty.call(${className}.prototype, __kt_name)) ${className}.prototype[__kt_name] = __kt_method;\n${interfaceNames.map((name) => `${className}.prototype.__kt_implements_${name} = true;`).join('\n')}`
+      : '';
+    // Interface delegation (`class Wrap(d: X) : X by d`): forward every
+    // abstract member of the delegated interface(s) the wrapper does NOT
+    // already define itself (an `override fun` in the wrapper's own body
+    // must win -- checked against the method names actually emitted into
+    // `methodLines`) onto the retained delegate reference. `...args`
+    // forwards any arity uniformly since this simulator has no per-member
+    // parameter-list introspection; every interface this world's lessons
+    // delegate to happens to declare zero-arg members, so this is not a
+    // narrowing in practice.
+    let delegationMixin = '';
+    if (delegateVar) {
+      const overridden = new Set(
+        methodLines.map((line) => line.match(/^\s*(?:static\s+)?(?:get\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*\(/)?.[1]).filter((n): n is string => Boolean(n))
+      );
+      const toForward = interfaceNames.flatMap((name) => interfaceMembers.get(name) ?? []).filter((name) => !overridden.has(name));
+      if (toForward.length) {
+        delegationMixin = `\nfor (const __kt_delegate_name of ${JSON.stringify(toForward)}) if (!Object.prototype.hasOwnProperty.call(${className}.prototype, __kt_delegate_name)) ${className}.prototype[__kt_delegate_name] = function(...__kt_delegate_args) { return this.${delegateVar}[__kt_delegate_name](...__kt_delegate_args); };`;
+      }
+    }
+    result += code.slice(cursor, blockStart) + rewritten + defaultMixins + delegationMixin + (companionName ? `\n${className}.${companionName} = ${className};` : '');
     cursor = blockEnd;
     classRe.lastIndex = blockEnd;
   }
@@ -1070,7 +1376,15 @@ function transpileClassDeclarations(code: string, classNamesOut: Set<string>): s
 }
 
 function transpileDataClassCopyCalls(code: string): string {
-  return code.replace(/\b([A-Za-z_][A-Za-z0-9_]*)\.copy\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^()]+?)\s*\)/g, '$1.copy({ $2: $3 })');
+  // The receiver can be a bare variable (`a.copy(...)`) or a fresh
+  // constructor call chained straight off (`P(1, 2).copy(...)`, real and
+  // common Kotlin) -- the optional `(?:\([^()]*\))?` covers the latter so
+  // its whole "P(1, 2)" text is kept as the receiver, not just the
+  // unmatched tail after the last `.`, which previously left `.copy(y=5)`
+  // completely untouched (no bare identifier immediately precedes it) and
+  // let it fall through to be misinterpreted as an ordinary call with a
+  // plain assignment argument -- silently ignoring the override entirely.
+  return code.replace(/\b([A-Za-z_][A-Za-z0-9_]*(?:\([^()]*\))?)\.copy\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^()]+?)\s*\)/g, '$1.copy({ $2: $3 })');
 }
 
 function eraseGenericConstructorArguments(code: string): string {
@@ -1084,7 +1398,7 @@ function eraseGenericConstructorArguments(code: string): string {
  * Kotlin's own single-shared-instance semantics. Scoped to a plain object
  * declaration -- `object Name : Interface { ... }` is not supported.
  */
-function transpileObjectDeclarations(code: string): string {
+function transpileObjectDeclarations(code: string, objectInterfaces: Map<string, string[]> = new Map()): string {
   const re = /\bobject\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{/g;
   let result = '';
   let cursor = 0;
@@ -1107,11 +1421,17 @@ function transpileObjectDeclarations(code: string): string {
     const blockEnd = i;
     const bodyLines = code.slice(openBraceIdx + 1, i - 1).split('\n');
 
+    const classProps = new Set<string>();
+    for (const line of bodyLines) {
+      const pm = line.trim().match(/^(?:val|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)/);
+      if (pm) classProps.add(pm[1]);
+    }
+
     const members = splitClassMembers(bodyLines);
     const ctorExtraLines: string[] = [];
     const methodLines: string[] = [];
     for (const member of members) {
-      const { ctorLines, methodLines: mLines } = transpileClassMember(member);
+      const { ctorLines, methodLines: mLines } = transpileClassMember(member, classProps);
       ctorExtraLines.push(...ctorLines.map((l) => `    ${l}`));
       methodLines.push(...mLines);
     }
@@ -1125,7 +1445,22 @@ function transpileObjectDeclarations(code: string): string {
       '})();',
     ].join('\n');
 
-    result += code.slice(cursor, blockStart) + rewritten;
+    // An object implementing an interface has no `extends`/prototype chain
+    // of its own to inherit a default method through (unlike a class,
+    // whose `defaultMixins` -- see `transpileClassDeclarations` -- patch
+    // the prototype); this is the instance-level equivalent, skipping any
+    // name the object's own body already defines. Also tags the instance
+    // with `__kt_implements_<Interface>` for each declared interface, so a
+    // later `x is Interface` check (see `transformTypeChecks`) has
+    // something real to read -- interfaces are erased to a plain
+    // `__kt_interface_X` object with no prototype relation, so
+    // `instanceof` can never work against one.
+    const interfaces = objectInterfaces.get(name) ?? [];
+    const defaultMixin = interfaces
+      .map((interfaceName) => `\nfor (const [__kt_name, __kt_method] of Object.entries(__kt_interface_${interfaceName})) if (typeof ${name}[__kt_name] !== 'function') ${name}[__kt_name] = __kt_method;\n${name}.__kt_implements_${interfaceName} = true;`)
+      .join('');
+
+    result += code.slice(cursor, blockStart) + rewritten + defaultMixin;
     cursor = blockEnd;
     re.lastIndex = blockEnd;
   }
@@ -1143,13 +1478,209 @@ function transpileObjectDeclarations(code: string): string {
  * (a literal `super`, never one of the collected class names).
  */
 function insertNewForInstantiation(code: string, classNames: Set<string>): string {
-  let result = code;
-  for (const name of classNames) {
+  const regexes = [...classNames].map((name) => {
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const re = new RegExp(`(?<!new\\s)\\b${escaped}\\s*\\(`, 'g');
-    result = result.replace(re, `new ${name}(`);
+    return { name, re: new RegExp(`(?<!new\\s)\\b${escaped}\\s*\\(`, 'g') };
+  });
+  // A blind whole-source replace would also rewrite `"ClassName("` text
+  // sitting inside an unrelated STRING LITERAL (e.g. a method building a
+  // display string like `"Box(" + value + ")"`) into `"new Box("` --
+  // corrupting the literal instead of leaving it alone, since this regex
+  // has no idea it isn't looking at a real instantiation there. Restricted
+  // to non-string chunks of each line, the same way `rewriteClassPropertyAccess`
+  // already avoids corrupting a string's own content elsewhere in this file.
+  return code
+    .split('\n')
+    .map((line) => {
+      const chunks = splitCodeAndStrings(line);
+      for (const chunk of chunks) {
+        if (chunk.isString) continue;
+        for (const { name, re } of regexes) chunk.text = chunk.text.replace(re, `new ${name}(`);
+      }
+      return chunks.map((c) => c.text).join('');
+    })
+    .join('\n');
+}
+
+/**
+ * Finds the start of the postfix expression ending right before `endExclusive`
+ * (a `.` position) -- either a bare identifier (`a`) or a single call whose
+ * own closing paren sits right there (`Outer("x")`). Scoped to exactly the
+ * receiver shapes World 11's inner-class lessons use; a longer chain
+ * (`a.b.Inner()`) is not walked past its last segment.
+ */
+function findReceiverExpressionStart(code: string, endExclusive: number): number {
+  let i = endExclusive - 1;
+  while (i >= 0 && /\s/.test(code[i])) i--;
+  if (i >= 0 && code[i] === ')') {
+    let depth = 1;
+    i--;
+    while (i >= 0 && depth > 0) {
+      if (code[i] === ')') depth++;
+      else if (code[i] === '(') depth--;
+      i--;
+    }
   }
-  return result;
+  while (i >= 0 && /[A-Za-z0-9_]/.test(code[i])) i--;
+  return i + 1;
+}
+
+/**
+ * Supported World 11 inner-class subset: `inner class Inner(...) { ... }`
+ * declared as the sole nested block inside `class Outer(...) { ... }`.
+ * Kotlin constructs it as `outerInstance.Inner(...)`, capturing that
+ * specific outer instance for the lifetime of the inner object -- unlike a
+ * plain nested class (no `inner`), which captures nothing. Lowered to an
+ * ordinary top-level class taking the outer instance as a real (property)
+ * constructor parameter named `__outer`, so the shared class transpiler
+ * that runs after this needs no changes of its own: `this@Outer.prop` and
+ * a bare, unshadowed outer property reference both become
+ * `this.__outer.prop`, reusing `rewriteClassPropertyAccess` (the same
+ * string-template-aware rewrite an ordinary class body already gets) with
+ * `this.__outer.` as its prefix instead of the default `this.`.
+ */
+function transpileInnerClasses(code: string): string {
+  const innerClasses: Array<{ innerName: string; loweredName: string }> = [];
+  const outerRe = /\bclass\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?\s*\{/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = outerRe.exec(code)) !== null) {
+    const [whole, outerName, outerCtorRaw] = match;
+    const openBraceIdx = match.index + whole.length - 1;
+    let depth = 1;
+    let i = openBraceIdx + 1;
+    for (; i < code.length && depth > 0; i++) {
+      if (code[i] === '{') depth++;
+      else if (code[i] === '}') depth--;
+    }
+    if (depth !== 0) { outerRe.lastIndex = openBraceIdx + 1; continue; }
+    const blockEnd = i;
+    const body = code.slice(openBraceIdx + 1, blockEnd - 1);
+
+    const innerRe = /\binner\s+class\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?\s*\{/;
+    const innerMatch = innerRe.exec(body);
+    if (!innerMatch) continue;
+    const [innerWhole, innerName, innerCtorRaw] = innerMatch;
+    const innerOpenIdx = innerMatch.index! + innerWhole.length - 1;
+    let innerDepth = 1;
+    let j = innerOpenIdx + 1;
+    for (; j < body.length && innerDepth > 0; j++) {
+      if (body[j] === '{') innerDepth++;
+      else if (body[j] === '}') innerDepth--;
+    }
+    if (innerDepth !== 0) continue;
+    const innerBlockEnd = j;
+    const innerBodyRaw = body.slice(innerOpenIdx + 1, innerBlockEnd - 1);
+
+    const outerProps = new Set(
+      (outerCtorRaw ?? '').split(',').map((p) => p.trim().match(/^(?:val|var)\s+([A-Za-z_][A-Za-z0-9_]*)/)?.[1]).filter((n): n is string => Boolean(n))
+    );
+    const innerParamNames = new Set(
+      (innerCtorRaw ?? '').split(',').map((p) => p.trim().match(/^(?:(?:val|var)\s+)?([A-Za-z_][A-Za-z0-9_]*)/)?.[1]).filter((n): n is string => Boolean(n))
+    );
+
+    let innerBody = innerBodyRaw.replace(new RegExp(`this@${outerName}\\.([A-Za-z_][A-Za-z0-9_]*)`, 'g'), 'this.__outer.$1');
+    innerBody = rewriteClassPropertyAccess(innerBody.split('\n'), outerProps, innerParamNames, 'this.__outer.').join('\n');
+
+    const loweredName = `__KtInner_${outerName}_${innerName}`;
+    const loweredClass = `\nclass ${loweredName}(val __outer${innerCtorRaw ? `, ${innerCtorRaw}` : ''}) {${innerBody}}`;
+    innerClasses.push({ innerName, loweredName });
+
+    const newBody = body.slice(0, innerMatch.index!) + body.slice(innerBlockEnd);
+    const newWhole = code.slice(match.index, openBraceIdx + 1) + newBody + '}' + loweredClass;
+    code = code.slice(0, match.index) + newWhole + code.slice(blockEnd);
+    outerRe.lastIndex = match.index + newWhole.length;
+  }
+
+  for (const { innerName, loweredName } of innerClasses) {
+    const marker = `.${innerName}(`;
+    let searchFrom = 0;
+    for (;;) {
+      const dotIdx = code.indexOf(marker, searchFrom);
+      if (dotIdx === -1) break;
+      const openParenIdx = dotIdx + marker.length - 1;
+      let depth = 1;
+      let k = openParenIdx + 1;
+      for (; k < code.length && depth > 0; k++) {
+        if (code[k] === '(') depth++;
+        else if (code[k] === ')') depth--;
+      }
+      const closeParenIdx = k;
+      const argsText = code.slice(openParenIdx + 1, k - 1).trim();
+      const receiverStart = findReceiverExpressionStart(code, dotIdx);
+      const receiverText = code.slice(receiverStart, dotIdx);
+      const replacement = `new ${loweredName}(${receiverText}${argsText ? `, ${argsText}` : ''})`;
+      code = code.slice(0, receiverStart) + replacement + code.slice(closeParenIdx);
+      searchFrom = receiverStart + replacement.length;
+    }
+  }
+  return code;
+}
+
+/**
+ * Supported World 11 nested-class subset: an ordinary (non-`inner`) class
+ * declared inside another class's body -- with or without its own `{ ...
+ * }` body, and regardless of whether the OUTER class itself has
+ * constructor parameters. Unlike `transpileInnerClasses`, a nested class
+ * captures nothing from its outer -- Kotlin gives it no implicit outer
+ * receiver at all, so any outer state it needs must arrive as an ordinary,
+ * explicit parameter (`fun f(o: Outer) = o.x`, real Kotlin and exactly
+ * what this lowering already handles for free once the class is a
+ * perfectly normal top-level one). Lowering is therefore just "move the
+ * declaration to the top level under a unique name, then rewrite every
+ * `Outer.Nested` reference (construction or bare name) to it" -- run
+ * AFTER `transpileInnerClasses`, so an `inner class` has already been
+ * extracted and cannot be mistaken for a nested one here.
+ */
+function transpileNestedClasses(code: string): string {
+  const nestedNames: Array<{ outer: string; nested: string; lowered: string }> = [];
+  const outerRe = /\bclass\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\([^)]*\))?\s*\{/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = outerRe.exec(code)) !== null) {
+    const [whole, outerName] = match;
+    const openBraceIdx = match.index + whole.length - 1;
+    let depth = 1;
+    let i = openBraceIdx + 1;
+    for (; i < code.length && depth > 0; i++) {
+      if (code[i] === '{') depth++;
+      else if (code[i] === '}') depth--;
+    }
+    if (depth !== 0) { outerRe.lastIndex = openBraceIdx + 1; continue; }
+    const blockEnd = i;
+    const body = code.slice(openBraceIdx + 1, blockEnd - 1);
+
+    const nestedRe = /(?<!inner\s+)\bclass\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(([^)]*)\))?\s*(\{)?/;
+    const nestedMatch = nestedRe.exec(body);
+    if (!nestedMatch) continue;
+    const [nestedWhole, nestedName, nestedCtorRaw, hasBrace] = nestedMatch;
+    const loweredName = `__KtNested_${outerName}_${nestedName}`;
+    nestedNames.push({ outer: outerName, nested: nestedName, lowered: loweredName });
+
+    let nestedEnd = nestedMatch.index! + nestedWhole.length;
+    let nestedBody = '';
+    if (hasBrace) {
+      let nestedDepth = 1;
+      let j = nestedEnd;
+      for (; j < body.length && nestedDepth > 0; j++) {
+        if (body[j] === '{') nestedDepth++;
+        else if (body[j] === '}') nestedDepth--;
+      }
+      nestedBody = body.slice(nestedEnd, j - 1);
+      nestedEnd = j;
+    }
+
+    const loweredClass = `\nclass ${loweredName}${nestedCtorRaw !== undefined ? `(${nestedCtorRaw})` : ''} {${nestedBody}}`;
+    const newBody = body.slice(0, nestedMatch.index) + body.slice(nestedEnd);
+    const newWhole = code.slice(match.index, openBraceIdx + 1) + newBody + '}' + loweredClass;
+    code = code.slice(0, match.index) + newWhole + code.slice(blockEnd);
+    outerRe.lastIndex = match.index + newWhole.length;
+  }
+
+  for (const { outer, nested, lowered } of nestedNames) {
+    code = code.replace(new RegExp(`\\b${outer}\\.${nested}\\b`, 'g'), lowered);
+  }
+  return code;
 }
 
 /**
@@ -1164,27 +1695,451 @@ function insertNewForInstantiation(code: string, classNames: Set<string>): strin
 function transpileOOPDeclarations(code: string): string {
   code = stripAbstractMemberDeclarations(code);
   code = stripModifierKeywords(code);
+  // Captured before any interface-erasing transform below (both replace
+  // the ORIGINAL `interface X { ... }` text entirely), since class
+  // delegation (`: X by d`, further down) needs to know which abstract
+  // members to forward and there is no representation of them left once
+  // an interface has been lowered to its runtime `__kt_interface_X`
+  // default-method-only object.
+  const interfaceMembers = getAllInterfaceMemberNames(code);
+  // The supported sealed subset has ordinary runtime class/object behavior;
+  // exhaustiveness remains a separate compiler-validation concern.
+  code = code.replace(/\bsealed\s+(?=(?:class|interface)\b)/g, '');
+  code = code.replace(/\bdata\s+object\b/g, 'object');
+  code = code.replace(/\binterface\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?=\n|$)/g, 'const __kt_interface_$1 = {};');
+  // Capture each object's interface supertype (if any) before discarding
+  // the `: Interface` clause, so an object implementing an interface with
+  // a default method (`object O : X` where `X` has `fun f() = ...`) still
+  // gets that default mixed in below -- otherwise `O.f()` would throw
+  // "not a function", since the object literal this lowers to has no
+  // other way to inherit it.
+  const objectInterfaces = new Map<string, string[]>();
+  // As with a class's supertype clause, an object's interface can itself
+  // carry a generic type argument (`object UserFormatter : Formatter<User>`)
+  // -- the optional `(?:<[^>{}]+>)?` after each name accounts for it, and
+  // it is stripped back off (kept out of the captured interface name)
+  // before being recorded, since the interface lookups below key on the
+  // bare declared name.
+  code = code.replace(/\bobject\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([A-Za-z_][A-Za-z0-9_]*(?:<[^>{}]+>)?(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*(?:<[^>{}]+>)?)*)(?=\s*(?:\{|\n|$))/g, (_whole, name, interfaceClause) => {
+    objectInterfaces.set(name, interfaceClause.split(',').map((n: string) => n.trim().replace(/<[^>]*>$/, '')));
+    return `object ${name}`;
+  });
+  code = code.replace(/\bobject\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?=\n|$)/g, 'object $1 {}');
+  code = transpileInnerClasses(code);
+  code = transpileNestedClasses(code);
+  // Visibility on a primary constructor is compile-time metadata; remove it
+  // before class declaration matching so `class X private constructor(...)`
+  // is parsed as a normal constructor while retaining the runtime shape.
+  code = code.replace(/\b(?:private|public|protected|internal)\s+constructor\b/g, '');
+  code = code.replace(/\bconstructor\s*(?=\()/g, '');
+  // Kotlin permits a bodyless class declaration; give the JavaScript
+  // transpiler an explicit empty body so it cannot swallow the next top-level
+  // function declaration.
   code = transpileDataClassCopyCalls(code);
   code = eraseGenericConstructorArguments(code);
   code = transpileEnumClasses(code);
   code = transpileInterfaceDeclarations(code);
   const classNames = new Set<string>();
-  code = transpileClassDeclarations(code, classNames);
-  code = transpileObjectDeclarations(code);
+  code = transpileClassDeclarations(code, classNames, interfaceMembers);
+  code = transpileObjectDeclarations(code, objectInterfaces);
   code = insertNewForInstantiation(code, classNames);
+  // Runs last: any `by lazy { ... }` still in the source at this point is
+  // NOT a class member (transpileClassDeclarations, above, has already
+  // consumed and replaced every one inside a class/object body with a
+  // real getter), so it must be a top-level or local declaration instead.
+  code = transpileTopLevelLazyProperties(code);
+  code = transpileTopLevelCustomDelegatedProperties(code, inferMapVars(code));
+  return code;
+}
+
+/** Keeps companion members in Kotlin form while the general function lowerer
+ * processes top-level functions. The lowerer intentionally understands
+ * anonymous `object` expressions, but a companion is a class member and must
+ * be handled by `transpileClassDeclarations` instead. */
+function protectCompanionBlocks(code: string): { code: string; blocks: string[] } {
+  const blocks: string[] = [];
+  const companionRe = /\bcompanion\s+object(?:\s+[A-Za-z_][A-Za-z0-9_]*)?(?:\s*:\s*[A-Za-z_][A-Za-z0-9_]*)?\s*\{/g;
+  let result = '';
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+  while ((match = companionRe.exec(code)) !== null) {
+    const open = match.index + match[0].length - 1;
+    let depth = 1;
+    let end = open + 1;
+    for (; end < code.length && depth > 0; end++) {
+      if (code[end] === '{') depth++;
+      else if (code[end] === '}') depth--;
+    }
+    if (depth !== 0) continue;
+    const marker = `__KT_COMPANION_${blocks.length}__`;
+    blocks.push(code.slice(match.index, end));
+    result += code.slice(cursor, match.index) + marker;
+    cursor = end;
+    companionRe.lastIndex = end;
+  }
+  return { code: result + code.slice(cursor), blocks };
+}
+
+/**
+ * Shields a class-member computed-getter property (`val name: Type get() =
+ * expr`, handled later by `transpileClassMember`'s own `getterProp` branch)
+ * from the general function lowerer the same way `protectCompanionBlocks`
+ * shields a companion. kotlinFunctions.ts's own `val`/`var` handling has no
+ * concept of a `get()` accessor -- it treats everything between the `:` and
+ * the final `=` as one (bogus) declared type, and `readType`'s fallback
+ * reconstructs that "type" by concatenating token text with NO original
+ * whitespace between tokens, so `List<String> get()` collapses into
+ * `List<String>get()`. That corrupted text then fails every later
+ * text-based transform that expects a plain type annotation (including the
+ * `val`->`const` per-line rewrite), leaving a literal, invalid `val` in the
+ * final JS. Protecting the whole line keeps kotlinFunctions.ts from ever
+ * seeing it in the first place. Single-line only, matching the getter
+ * shape this simulator actually supports.
+ */
+function protectGetterProperties(code: string): { code: string; blocks: string[] } {
+  const blocks: string[] = [];
+  const newCode = code.replace(
+    /^[ \t]*(?:val|var)\s+[A-Za-z_][A-Za-z0-9_]*\s*:\s*[A-Za-z_][A-Za-z0-9_<>?,\s]*\s+get\(\)\s*=\s*[^\n]+$/gm,
+    (whole) => {
+      const marker = `__KT_GETTERPROP_${blocks.length}__`;
+      blocks.push(whole);
+      return marker;
+    }
+  );
+  return { code: newCode, blocks };
+}
+
+/**
+ * Shields a class-member property whose getter has a BLOCK body split
+ * across its own line(s) (`val name: Type` then, on a separate line,
+ * `get() { ... }` -- as opposed to `protectGetterProperties`'s
+ * single-expression, single-line `val name: Type get() = expr`) from the
+ * general function lowerer. `get` is an ordinary identifier to
+ * kotlinFunctions.ts; `get()` immediately followed by `{` matches its
+ * generic trailing-lambda heuristic, and a `return` inside that
+ * synthetic lambda then fails with "return is not allowed outside a
+ * function" since it isn't a real recognized function frame. Balanced-
+ * brace scanned so a multi-statement getter body is captured whole.
+ * `transpileClassMember`'s `blockGetterProp` branch does the real
+ * lowering once this is restored.
+ */
+function protectBlockGetterProperties(code: string): { code: string; blocks: string[] } {
+  const blocks: string[] = [];
+  const re = /\b(?:val|var)\s+[A-Za-z_][A-Za-z0-9_]*\s*:\s*[A-Za-z_][A-Za-z0-9_<>?,\s]*\n\s*get\(\)\s*\{/g;
+  let result = '';
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(code)) !== null) {
+    const openIdx = match.index + match[0].length - 1;
+    let depth = 1;
+    let end = openIdx + 1;
+    for (; end < code.length && depth > 0; end++) {
+      if (code[end] === '{') depth++;
+      else if (code[end] === '}') depth--;
+    }
+    if (depth !== 0) continue;
+    const marker = `__KT_BLOCKGETTER_${blocks.length}__`;
+    blocks.push(code.slice(match.index, end));
+    result += code.slice(cursor, match.index) + marker;
+    cursor = end;
+    re.lastIndex = end;
+  }
+  return { code: result + code.slice(cursor), blocks };
+}
+
+/**
+ * Shields a property-delegation `by lazy { ... }` block (class-member --
+ * see `transpileClassMember`'s `lazyPropBlock`/`lazyPropSingleLine`
+ * branches -- or top-level/local, see `transpileTopLevelLazyProperties`)
+ * from the general function lowerer. `lazy` is an ordinary identifier to
+ * kotlinFunctions.ts, not a keyword, so a `{` immediately after it (with
+ * nothing else marking it as special) matches its generic trailing-lambda
+ * heuristic and gets rewritten into a real `lazy(...)` CALL with an arrow
+ * function -- valid-looking JS, but not a shape either lazy-property
+ * transform below still recognizes, and `lazy` is never actually defined
+ * as a runtime helper. Balanced-brace scanned, since a lazy block's own
+ * body can contain further nested braces (an `if`, a lambda argument).
+ */
+function protectLazyBlocks(code: string): { code: string; blocks: string[] } {
+  const blocks: string[] = [];
+  const re = /\bby\s+lazy\s*\{/g;
+  let result = '';
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(code)) !== null) {
+    const openIdx = match.index + match[0].length - 1;
+    let depth = 1;
+    let end = openIdx + 1;
+    for (; end < code.length && depth > 0; end++) {
+      if (code[end] === '{') depth++;
+      else if (code[end] === '}') depth--;
+    }
+    if (depth !== 0) continue;
+    const marker = `__KT_LAZYBLOCK_${blocks.length}__`;
+    blocks.push(code.slice(match.index, end));
+    result += code.slice(cursor, match.index) + marker;
+    cursor = end;
+    re.lastIndex = end;
+  }
+  return { code: result + code.slice(cursor), blocks };
+}
+
+/**
+ * Supported top-level/local subset of property delegation: `val name[:
+ * Type] by lazy { ... }` outside any class body (a class-member lazy
+ * property is handled separately by `transpileClassMember`, which has
+ * already consumed and removed every one inside a class/object body by
+ * the time this runs). Since a plain local/top-level binding has no
+ * receiver to hang a real getter off of, the property name itself
+ * becomes a memoized zero-arg function, and every later bare read of
+ * that name is rewritten to a call to it -- the same
+ * declare-then-rewrite-call-sites strategy `transpileExtensionProperties`
+ * already uses. Declarations are replaced with a placeholder marker
+ * first and substituted back in only AFTER usage sites are rewritten, so
+ * the declaration's own internal references to the name are not
+ * themselves mistaken for a usage site and double-wrapped.
+ */
+function transpileTopLevelLazyProperties(code: string): string {
+  const lazyNames: string[] = [];
+  const declarations: string[] = [];
+  code = code.replace(
+    /\b(?:val|var)\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[A-Za-z_][A-Za-z0-9_<>?,\s]*)?\s+by\s+lazy\s*\{([^{}]*)\}/g,
+    (_whole, name, block) => {
+      const wrapped = wrapLazyBlockBody(block);
+      const marker = `__KT_LAZYDECL_${declarations.length}__`;
+      declarations.push(
+        `let __kt_lazy_computed_${name} = false, __kt_lazy_value_${name}; const ${name} = () => { if (!__kt_lazy_computed_${name}) { __kt_lazy_computed_${name} = true; __kt_lazy_value_${name} = (() => {\n${wrapped}\n})(); } return __kt_lazy_value_${name}; };`
+      );
+      lazyNames.push(name);
+      return marker;
+    }
+  );
+  for (const name of lazyNames) {
+    code = code.replace(new RegExp(`\\b${name}\\b(?!\\s*\\()`, 'g'), `${name}()`);
+  }
+  declarations.forEach((decl, index) => {
+    code = code.replace(`__KT_LAZYDECL_${index}__`, decl);
+  });
+  return code;
+}
+
+/**
+ * Supported top-level/local subset of the two remaining, non-`lazy`
+ * property-delegation forms this world's lessons use, read-only (`val`)
+ * only -- a mutable (`var`) custom delegate would also need every
+ * assignment site rewritten to a `setValue(...)` call, which no lesson
+ * content here actually exercises:
+ *  - Map-backed (`val name: Type by someMap`, `someMap` a known
+ *    `mapOf`/`mutableMapOf` variable per `mapVars`): Kotlin looks up the
+ *    entry whose key is the property's OWN name. Read-only and eager (the
+ *    map already exists), so this becomes a plain `const`, no accessor
+ *    function needed.
+ *  - Custom delegate (`val name by SomeDelegate()`): Kotlin calls the
+ *    delegate's `operator fun getValue(thisRef, property)` on every read,
+ *    passing a `KProperty`-shaped object whose `.name` is the delegated
+ *    property's own name -- reproduced here as a plain `{ name: '...' }`
+ *    object literal, this simulator's stand-in for real `KProperty`
+ *    reflection metadata. Uses the same declare-a-marker-then-rewrite-call-
+ *    sites strategy as `transpileTopLevelLazyProperties`.
+ */
+function transpileTopLevelCustomDelegatedProperties(code: string, mapVars: Set<string>): string {
+  code = code.replace(/^\s*import\s+[A-Za-z0-9_.]+\s*$/gm, '');
+  const accessorNames: string[] = [];
+  const declarations: string[] = [];
+  code = code.replace(
+    // `insertNewForInstantiation` (an earlier pass) has already turned a
+    // constructor-call delegate expression into `new D()` by the time
+    // this runs, hence the optional leading `new `.
+    /\bval\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*[A-Za-z_][A-Za-z0-9_<>?,\s]*)?\s+by\s+((?:new\s+)?[A-Za-z_][A-Za-z0-9_]*(?:\([^()]*\))?)\s*(?=\n|;|$)/g,
+    (whole, name, delegateExpr) => {
+      const delegateHead = delegateExpr.replace(/^new\s+/, '').match(/^[A-Za-z_][A-Za-z0-9_]*/)[0];
+      if (delegateHead === 'lazy') return whole;
+      const marker = `__KT_CUSTOMDELEGATE_${declarations.length}__`;
+      if (mapVars.has(delegateHead)) {
+        declarations.push(`const ${name} = ${delegateExpr}.get('${name}');`);
+        return marker;
+      }
+      declarations.push(
+        `const __kt_delegate_${name} = ${delegateExpr}; const ${name} = () => __kt_delegate_${name}.getValue(null, { name: '${name}' });`
+      );
+      accessorNames.push(name);
+      return marker;
+    }
+  );
+  for (const name of accessorNames) {
+    code = code.replace(new RegExp(`\\b${name}\\b(?!\\s*\\()`, 'g'), `${name}()`);
+  }
+  declarations.forEach((decl, index) => {
+    code = code.replace(`__KT_CUSTOMDELEGATE_${index}__`, decl);
+  });
+  return code;
+}
+
+/** Finds every `interface Name { ... }` in `code` and lists its abstract
+ * member names (a `fun` header, with or without a default `=`/`{ ... }`
+ * body -- class delegation forwards a name regardless of whether the
+ * interface itself supplies a default, since an explicit wrapper override
+ * must still be able to win either way). Used only by class delegation
+ * (`: Interface by delegate`); see `transpileClassDeclarations`. */
+function getAllInterfaceMemberNames(code: string): Map<string, string[]> {
+  const result = new Map<string, string[]>();
+  const re = /\binterface\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{([^{}]*)\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code)) !== null) {
+    const names: string[] = [];
+    const fnRe = /\bfun\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/g;
+    let fm: RegExpExecArray | null;
+    while ((fm = fnRe.exec(m[2])) !== null) names.push(fm[1]);
+    result.set(m[1], names);
+  }
+  return result;
+}
+
+/** Finds a class's own primary-constructor property names in `code`, for
+ * rewriting bare references to them inside an extension property's getter
+ * (see `transpileExtensionProperties`). Returns an empty set for a type
+ * with no user-declared class in this program (e.g. `String`). */
+function getClassPropertyNames(code: string, typeName: string): Set<string> {
+  const m = new RegExp(`\\b(?:data\\s+)?class\\s+${typeName}\\s*\\(([^)]*)\\)`).exec(code);
+  if (!m) return new Set();
+  return new Set(
+    m[1].split(',').map((p) => p.trim().match(/^(?:val|var)\s+([A-Za-z_][A-Za-z0-9_]*)/)?.[1]).filter((n): n is string => Boolean(n))
+  );
+}
+
+/** Finds ALL of a class's own properties visible to a subclass -- both
+ * primary-constructor properties and plain body `val`/`var` declarations
+ * (leading visibility modifiers like `protected` stripped first) -- used
+ * so a subclass's bare reference to an inherited property (`fun read() =
+ * code`, reading a `protected val code` declared on the base class) is
+ * still recognized as `this.code` rather than an undefined bare
+ * identifier. This is real Kotlin's inheritance-visibility model
+ * simplified to "any base property is reachable by name from a
+ * subclass" -- adequate for this simulator's single-inheritance depth. */
+function getClassOwnPropertyNames(code: string, typeName: string): Set<string> {
+  const names = new Set<string>();
+  const propLine = /^(?:(?:private|protected|internal|open)\s+)?(?:val|var)\s+([A-Za-z_][A-Za-z0-9_]*)/;
+  const withBody = new RegExp(`\\bclass\\s+${typeName}\\b\\s*(?:\\(([^)]*)\\))?\\s*(?:\\:[^{]*)?\\{`).exec(code);
+  if (withBody) {
+    if (withBody[1]) {
+      for (const p of withBody[1].split(',')) {
+        const match = p.trim().match(propLine);
+        if (match) names.add(match[1]);
+      }
+    }
+    const openIdx = withBody.index + withBody[0].length - 1;
+    let depth = 1;
+    let i = openIdx + 1;
+    for (; i < code.length && depth > 0; i++) {
+      if (code[i] === '{') depth++;
+      else if (code[i] === '}') depth--;
+    }
+    for (const line of code.slice(openIdx + 1, i - 1).split('\n')) {
+      const match = line.trim().match(propLine);
+      if (match) names.add(match[1]);
+    }
+    return names;
+  }
+  const bodyless = new RegExp(`\\bclass\\s+${typeName}\\s*\\(([^)]*)\\)`).exec(code);
+  if (bodyless) {
+    for (const p of bodyless[1].split(',')) {
+      const match = p.trim().match(propLine);
+      if (match) names.add(match[1]);
+    }
+  }
+  return names;
+}
+
+/**
+ * Supported World 11 extension-property subset: `val Type(?).name: RetType
+ * get() = expr` (single line, or the property header and `get()` split
+ * across two lines), with a single-expression getter body and no setter.
+ * An extension property is semantically a zero-argument extension
+ * function wearing property syntax (same static, receiver-type-based
+ * resolution, same "member wins" rule) -- so rather than reimplementing
+ * that dispatch logic a second time, this canonicalizes the declaration
+ * into `fun Type(?).name() = expr` and every bare `receiver.name` call
+ * site into `receiver.name()`, and lets the already-supported extension
+ * FUNCTION pipeline (lowerKotlinFunctions in kotlinFunctions.ts) do the
+ * rest. A bare, unqualified reference to the receiver's own
+ * primary-constructor property inside the getter body (`width*height`,
+ * not `this.width*this.height`) is rewritten to `this.width*this.height`
+ * first via the same `rewriteClassPropertyAccess` helper an ordinary
+ * class body already uses -- kotlinFunctions.ts then substitutes that
+ * `this` for the real receiver parameter, exactly like any other
+ * extension function.
+ */
+function transpileExtensionProperties(code: string): string {
+  const propNames: string[] = [];
+  code = code.replace(
+    /\bval\s+([A-Za-z_][A-Za-z0-9_]*)(\?)?\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*[A-Za-z_][A-Za-z0-9_<>?]*\s*\n?\s*get\(\)\s*=\s*([^\n]+)/g,
+    (_whole, receiverType, nullable, propName, body) => {
+      const receiverProps = getClassPropertyNames(code, receiverType);
+      const rewrittenBody = rewriteClassPropertyAccess([body], receiverProps, new Set(), 'this.')[0];
+      propNames.push(propName);
+      return `fun ${receiverType}${nullable ?? ''}.${propName}() = ${rewrittenBody}`;
+    }
+  );
+  for (const propName of propNames) {
+    code = code.replace(new RegExp(`\\.${propName}\\b(?!\\()`, 'g'), `.${propName}()`);
+  }
   return code;
 }
 
 /**
  * Transpiles Kotlin code into an isolated JavaScript execution function.
  */
-function transpileKotlinToJS(kotlinCode: string): string {
+export function transpileKotlinToJS(kotlinCode: string): string {
+  // A custom property-delegate's `getValue`/`setValue` signature takes a
+  // `KProperty<*>` parameter (real reflection metadata this simulator does
+  // not model) -- the star-projected generic `<*>` breaks
+  // kotlinFunctions.ts's parameter-list parsing (it silently drops the
+  // whole parameter, not just its type), so it is erased before that pass
+  // ever sees it. `operator` is a modifier `stripModifierKeywords` doesn't
+  // reach until AFTER function lowering has already run; strip it here too
+  // so it never lingers as stray leftover text in front of the generated
+  // `function getValue(...)`.
+  kotlinCode = kotlinCode.replace(/KProperty<[^>]*>/g, 'KProperty').replace(/\boperator\s+(?=fun\b)/g, '');
+  // A `where T : X, T : Y` clause (multiple upper bounds on one type
+  // parameter) is compile-time-only constraint metadata with no runtime
+  // meaning, but kotlinFunctions.ts's return-type reader has no concept of
+  // it: it just keeps consuming tokens up to the next `=`/`{`, so the whole
+  // clause gets glued onto the return type with no spaces between tokens
+  // (`StringwhereT:Named,T:Prioritized`) -- corrupt text that then fails to
+  // parse as either a type or a function body. Erased before that pass
+  // ever runs; non-greedy up to the next `=`/`{`, since a `where` clause's
+  // own comma list never itself contains one.
+  kotlinCode = kotlinCode.replace(/\s*\bwhere\s+[A-Za-z_][\s\S]*?(?=[={])/g, '');
+  kotlinCode = transpileReifiedFunctions(kotlinCode);
   // Capture Map-producing declarations before lambda lowering expands a
   // chained expression across lines. The post-lowering scan below still
   // catches declarations introduced or normalized by the lowering passes.
   const sourceMapVars = inferMapVars(kotlinCode);
+  const sourceInterfaceNames = getAllInterfaceNames(kotlinCode);
+  const sourceMutableListVars = inferMutableListVars(kotlinCode);
+  kotlinCode = transpileExtensionProperties(kotlinCode);
   kotlinCode = stripCollectionGenerics(kotlinCode);
+  const protectedCompanions = protectCompanionBlocks(kotlinCode);
+  kotlinCode = protectedCompanions.code;
+  const protectedGetters = protectGetterProperties(kotlinCode);
+  kotlinCode = protectedGetters.code;
+  const protectedBlockGetters = protectBlockGetterProperties(kotlinCode);
+  kotlinCode = protectedBlockGetters.code;
+  const protectedLazyBlocks = protectLazyBlocks(kotlinCode);
+  kotlinCode = protectedLazyBlocks.code;
   kotlinCode = lowerKotlinFunctions(kotlinCode);
+  protectedLazyBlocks.blocks.forEach((block, index) => {
+    kotlinCode = kotlinCode.replace(`__KT_LAZYBLOCK_${index}__`, block);
+  });
+  protectedBlockGetters.blocks.forEach((block, index) => {
+    kotlinCode = kotlinCode.replace(`__KT_BLOCKGETTER_${index}__`, block);
+  });
+  protectedGetters.blocks.forEach((block, index) => {
+    kotlinCode = kotlinCode.replace(`__KT_GETTERPROP_${index}__`, block);
+  });
+  protectedCompanions.blocks.forEach((block, index) => {
+    kotlinCode = kotlinCode.replace(`__KT_COMPANION_${index}__`, block);
+  });
   kotlinCode = transpileMapDeclarations(kotlinCode);
   kotlinCode = transpileOOPDeclarations(kotlinCode);
   kotlinCode = transpileWhenBlocks(kotlinCode);
@@ -1193,6 +2148,7 @@ function transpileKotlinToJS(kotlinCode: string): string {
   const jsLines: string[] = [];
   const intVars = inferIntTypedVars(kotlinCode);
   const mapVars = new Set([...sourceMapVars, ...inferMapVars(kotlinCode)]);
+  const mutableListVars = new Set([...sourceMutableListVars, ...inferMutableListVars(kotlinCode)]);
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
@@ -1229,7 +2185,7 @@ function transpileKotlinToJS(kotlinCode: string): string {
 
     // `is`/`!is` type checks and `in`/`!in` range checks -- see
     // `transformTypeChecks`/`transformRanges` above.
-    line = transformTypeChecks(line);
+    line = transformTypeChecks(line, sourceInterfaceNames);
     line = transformRanges(line);
 
     // Null-safety expressions are lowered with token boundaries in kotlinFunctions.ts.
@@ -1302,6 +2258,17 @@ function transpileKotlinToJS(kotlinCode: string): string {
       const access = new RegExp(`\\b${escaped}\\s*\\[([^\\]]+)\\]`, 'g');
       line = line.replace(access, (_whole, key) => `${mapVar}.get(${key})`);
     }
+    for (const listVar of mutableListVars) {
+      const escaped = listVar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // `receiver.xs += value` as well as a bare `xs += value` -- an
+      // optional leading `identifier.` receiver chain covers a mutable
+      // list reached through a property (`b.xs += 2`), not just a local
+      // variable. The `[^;\n]+` value stops at the next statement
+      // (several statements often share one physical line here), so it
+      // never swallows a trailing `; nextStatement()` as part of the value.
+      const plusAssign = new RegExp(`((?:[a-zA-Z_][a-zA-Z0-9_]*\\.)?${escaped})\\s*\\+=\\s*([^;\\n]+)`, 'g');
+      line = line.replace(plusAssign, (_whole, target, value) => `${target}.add(${value.trim()})`);
+    }
     // A nullable collection reference's safe-call size (`bonuses?.size`) is
     // handled separately from plain `.size` -- JS's own `?.` short-circuits
     // to `undefined` before ever reaching a property, but `__kt_size`
@@ -1309,8 +2276,16 @@ function transpileKotlinToJS(kotlinCode: string): string {
     // receiver instead of safely producing null. Must run before the plain
     // `.size` replace below (which wouldn't match the `?` anyway, but this
     // keeps the safe-call case handled first and explicitly).
-    line = line.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\?\.size\b/g, '($1 == null ? null : __kt_size($1))');
-    line = line.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\.size\b/g, '__kt_size($1)');
+    line = line.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\?\.size\b(?!\s*\()/g, '($1 == null ? null : __kt_size($1))');
+    // The receiver can itself be a member-access chain (`service.items.size`,
+    // not just a bare `list.size`) -- capture every dotted segment leading
+    // up to the final `.size`, not just the single identifier closest to
+    // it, so the whole chain becomes the argument to `__kt_size` instead of
+    // only its last segment (`service.__kt_size(items)`, invalid). The
+    // negative lookahead excludes a real `.size(...)` METHOD call (a class
+    // or object member happens to be named `size`, distinct from a
+    // collection's `.size` PROPERTY) from being mistaken for one.
+    line = line.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\.size\b(?!\s*\()/g, '__kt_size($1)');
     line = line.replace(/\barrayOf\(/g, '__kt_arrayOf(');
     line = line.replace(/\b(?:listOf|emptyList)\(/g, '__kt_listOf(');
     line = line.replace(/\bmutableListOf\(/g, '__kt_mutableListOf(');
@@ -1322,6 +2297,10 @@ function transpileKotlinToJS(kotlinCode: string): string {
 
   return jsLines.join('\n');
 }
+
+
+
+
 
 /**
  * Compiles and runs a Kotlin program in-browser with sandboxing,
@@ -1460,6 +2439,16 @@ export async function compileAndRunKotlin(
       return parseFloat(this);
     };
   }
+  if (typeof (String.prototype as any).isBlank !== 'function') {
+    (String.prototype as any).isBlank = function () {
+      return this.trim().length === 0;
+    };
+  }
+  if (typeof (String.prototype as any).isNotBlank !== 'function') {
+    (String.prototype as any).isNotBlank = function () {
+      return this.trim().length > 0;
+    };
+  }
   if (typeof (Array.prototype as any).joinToString !== 'function') {
     (Array.prototype as any).joinToString = function (separator = ', ') {
       return this.map(formatKotlinValue).join(separator);
@@ -1514,6 +2503,7 @@ export async function compileAndRunKotlin(
       return true;
     };
     list.removeAt = (index: number) => list.splice(index, 1)[0];
+    (list as any).toList = () => new KotlinList([...list]);
     return list;
   };
   const withMapChecks = (map: Map<any, any>) => {
@@ -1553,6 +2543,24 @@ export async function compileAndRunKotlin(
   const __kt_equals = (left: any, right: any) => {
     if (left === null || left === undefined || right === null || right === undefined) return left === right;
     return typeof left.equals === 'function' ? left.equals(right) : left === right;
+  };
+  // Backs `value is T` inside an `inline fun <reified T>` body once T has
+  // been rewritten (see `transpileReifiedFunctions`) into an ordinary
+  // runtime parameter carrying the type NAME as a string (e.g. "String"),
+  // supplied by the caller's explicit type argument (`isType<String>(x)`
+  // -> `isType(x, "String")`). Scoped to the same primitive set every
+  // other `is`/`as?` check in this file supports -- never Char (a
+  // single-quoted Char and same-text String are indistinguishable JS
+  // values here, see the standing pitfall on this) and never an arbitrary
+  // declared class (this engine has no runtime class registry keyed by a
+  // string name to look up).
+  const __kt_isReifiedType = (value: any, typeName: string): boolean => {
+    switch (typeName) {
+      case 'Int': case 'Long': case 'Float': case 'Double': return typeof value === 'number';
+      case 'String': return typeof value === 'string';
+      case 'Boolean': return typeof value === 'boolean';
+      default: throw new Error(`Reified type check for "${typeName}" is not supported`);
+    }
   };
 
   let returnValue: any = undefined;
@@ -1613,6 +2621,7 @@ export async function compileAndRunKotlin(
       '__kt_size',
       '__kt_notNull',
       '__kt_equals',
+      '__kt_isReifiedType',
       'Pair',
       '__kt_format',
       runnerScript
@@ -1634,6 +2643,7 @@ export async function compileAndRunKotlin(
           __kt_size,
           __kt_notNull,
           __kt_equals,
+          __kt_isReifiedType,
           (a: any, b: any) => new KotlinPair(a, b),
           formatKotlinValue
         );

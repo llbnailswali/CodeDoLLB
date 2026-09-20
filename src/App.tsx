@@ -45,6 +45,7 @@ export default function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(1); // Question 2 (Step 2 of 5: val x = 10, val y = 20)
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => StorageManager.getSoundEnabled());
   const [fontSize, setFontSize] = useState<FontSize>(() => StorageManager.getFontSize());
+  const [pathGap, setPathGap] = useState(0);
 
   // Apply persisted font combo to DOM on startup
   useEffect(() => {
@@ -264,7 +265,7 @@ export default function App() {
   const handleLessonComplete = (earnedXP: number, completedWorldId?: string) => {
     setUserStats((prev) => {
       const nextCompletedLessons = prev.completedLessons + 1;
-      let nextCompletedWorlds = prev.completedWorlds ?? 4;
+      let nextCompletedWorlds = prev.completedWorlds ?? 0;
 
       if (completedWorldId) {
         const orderMatch = completedWorldId.match(/\d+/);
@@ -301,6 +302,11 @@ export default function App() {
 
   const handleResetProgress = () => {
     StorageManager.resetAll();
+    try {
+      localStorage.removeItem('codedo_detailed_tutorial_hint_dismissed');
+    } catch {
+      // Ignore storage failures; progress reset still completes.
+    }
     setUserStats(DEFAULT_USER_STATS);
     setNavigationStack([{ kind: 'tab', tab: 'learn' }]);
   };
@@ -318,6 +324,8 @@ export default function App() {
               openTab('profile');
             }}
             onToggleTheme={toggleTheme}
+            pathGap={pathGap}
+            onPathGapChange={setPathGap}
             // Tabs stay visually clean; Android Back returns them to Home.
             // Curriculum is part of the explicit learning path, so it keeps
             // its visible Back affordance.
@@ -392,6 +400,7 @@ export default function App() {
               }}
               onOpenCurriculum={handleOpenCurriculum}
               onSelectWorld={handleOpenCurriculum}
+              pathGap={pathGap}
             />
           ) : activeTab === 'practice' ? (
             /* Practice & Code Sandbox */

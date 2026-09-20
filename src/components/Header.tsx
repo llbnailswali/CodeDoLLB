@@ -7,6 +7,8 @@ interface HeaderProps {
   activeTab: TabType;
   onProfileClick: () => void;
   onToggleTheme: () => void;
+  pathGap?: number;
+  onPathGapChange?: (value: number) => void;
   title?: string;
   showBack?: boolean;
   onBack?: () => void;
@@ -17,6 +19,8 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onProfileClick,
   onToggleTheme,
+  pathGap,
+  onPathGapChange,
   title,
   showBack,
   onBack,
@@ -83,6 +87,39 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Side: Theme Toggle & Profile Avatar */}
         <div className="flex items-center gap-1.5">
+          {pathGap !== undefined && onPathGapChange && (
+            <div
+              className={`inline-flex items-center gap-0.5 rounded-xl border px-1 py-0.5 ${
+                isDark ? 'bg-[#151b28] border-white/10' : 'bg-[#e8eaf0] border-black/5'
+              }`}
+              title="Adjust space between world nodes"
+            >
+              <span className="px-1 text-[8px] font-mono font-bold tracking-wider text-slate-500 dark:text-slate-400">
+                GAP
+              </span>
+              <button
+                type="button"
+                aria-label="Decrease path gap"
+                onClick={() => onPathGapChange(Math.max(0, pathGap - 4))}
+                className="w-5 h-5 rounded-md flex items-center justify-center text-slate-500 hover:text-indigo-500 disabled:opacity-30"
+                disabled={pathGap === 0}
+              >
+                <span className="material-symbols-outlined text-[14px]">remove</span>
+              </button>
+              <span className="min-w-7 text-center text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                {pathGap}px
+              </span>
+              <button
+                type="button"
+                aria-label="Increase path gap"
+                onClick={() => onPathGapChange(Math.min(32, pathGap + 4))}
+                className="w-5 h-5 rounded-md flex items-center justify-center text-slate-500 hover:text-indigo-500 disabled:opacity-30"
+                disabled={pathGap === 32}
+              >
+                <span className="material-symbols-outlined text-[14px]">add</span>
+              </button>
+            </div>
+          )}
           {/* Quick Theme Toggle */}
           <button
             aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}

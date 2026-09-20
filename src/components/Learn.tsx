@@ -4,7 +4,6 @@ import { soundFX } from '../utils/audio';
 import { FunctionAnimatedExplainer } from './FunctionAnimatedExplainer';
 import { WORLD_1_LESSON_VISUALS } from '../data/world1LessonVisuals';
 import { renderKotlinCodeLines } from '../utils/codeHighlighter';
-import { getDetailedTutorial } from '../data/detailedTutorialsData';
 
 interface LearnStageProps {
   data: Stage1LearnData;
@@ -17,10 +16,6 @@ interface LearnStageProps {
    * Predict, etc.) -- stages can be skipped per-lesson, so this must not be
    * hardcoded. Defaults to 'Explore' only as a last-resort fallback. */
   nextStageLabel?: string;
-  lessonId?: string;
-  topicTitle?: string;
-  onOpenTutorial?: () => void;
-  hasTutorial?: boolean;
 }
 
 // Reveal stages:
@@ -38,14 +33,7 @@ export const Learn: React.FC<LearnStageProps> = ({
   onContinue,
   tapToRevealEnabled = true,
   nextStageLabel = 'Explore',
-  lessonId,
-  topicTitle,
-  onOpenTutorial,
-  hasTutorial,
 }) => {
-  const detailedTutorial = getDetailedTutorial(lessonId) || getDetailedTutorial(topicTitle);
-  const canShowTutorial = (hasTutorial || !!detailedTutorial) && !!onOpenTutorial;
-
   // Total steps = 2 (subtitle + example) + data.keyIdeas.length + 1 (key takeaway)
   const totalKeyIdeas = data.keyIdeas.length;
   const maxRevealStep = 2 + totalKeyIdeas + 1;
@@ -89,18 +77,6 @@ export const Learn: React.FC<LearnStageProps> = ({
     const visualNorm = normalize(v.lessonId);
     const visualTitleNorm = normalize(v.title);
 
-    if (lessonId) {
-      if (v.lessonId === lessonId) return true;
-      const lessonNorm = normalize(lessonId);
-      if (lessonNorm === visualNorm) return true;
-      if (lessonNorm.length > 3 && visualNorm.length > 3) {
-        if (lessonNorm.includes(visualNorm) || visualNorm.includes(lessonNorm)) return true;
-      }
-    }
-    if (topicTitle) {
-      const topicNorm = normalize(topicTitle);
-      if (topicNorm === visualTitleNorm || topicNorm.includes(visualNorm)) return true;
-    }
     if (data.title) {
       const titleNorm = normalize(data.title);
       if (titleNorm === visualTitleNorm || titleNorm.includes(visualNorm)) return true;
@@ -135,82 +111,6 @@ export const Learn: React.FC<LearnStageProps> = ({
         >
           {data.subtitle}
         </p>
-      )}
-
-      {/* Detailed Tutorial Deep Dive Banner (Available for World 1 Lessons 1, 2, 3) */}
-      {canShowTutorial && (
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={(e) => {
-            e.stopPropagation();
-            soundFX.playClick();
-            onOpenTutorial?.();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.stopPropagation();
-              soundFX.playClick();
-              onOpenTutorial?.();
-            }
-          }}
-          className={`mb-4 p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer active:scale-[0.99] group shadow-sm flex items-center justify-between animate-fadeIn ${
-            isDark
-              ? 'bg-gradient-to-r from-[#151c2f] via-[#1a233b] to-[#141b2c] border-indigo-500/30 hover:border-indigo-400/60 shadow-indigo-950/20'
-              : 'bg-gradient-to-r from-indigo-50/90 via-purple-50/50 to-indigo-50/80 border-indigo-200 hover:border-indigo-300 shadow-indigo-100/50'
-          }`}
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 shadow-xs ${
-                isDark
-                  ? 'bg-indigo-950/80 border border-indigo-700/50 text-indigo-400'
-                  : 'bg-white border border-indigo-100 text-indigo-600 shadow-sm'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[22px]">auto_stories</span>
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`font-['Outfit'] font-bold text-xs uppercase tracking-wider ${
-                    isDark ? 'text-indigo-400' : 'text-indigo-700'
-                  }`}
-                >
-                  Detailed Tutorial
-                </span>
-                <span
-                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                    isDark
-                      ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
-                      : 'bg-indigo-100 text-indigo-700 border-indigo-200'
-                  }`}
-                >
-                  Deep Dive
-                </span>
-              </div>
-              <p
-                className={`text-xs mt-0.5 truncate ${
-                  isDark ? 'text-slate-300' : 'text-slate-600'
-                }`}
-              >
-                Comprehensive guide, code deep dive & cheatsheet
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 pl-2 shrink-0">
-            <span
-              className={`hidden sm:inline font-['Outfit'] text-[11px] font-bold ${
-                isDark ? 'text-indigo-400' : 'text-indigo-600'
-              }`}
-            >
-              Read Guide
-            </span>
-            <span className="material-symbols-outlined text-indigo-500 text-[20px] group-hover:translate-x-1 transition-transform">
-              arrow_forward
-            </span>
-          </div>
-        </div>
       )}
 
       {/* 1.5: Interactive Mental Model / Visual for World 1 lessons in Step 1 */}
@@ -389,7 +289,7 @@ export const Learn: React.FC<LearnStageProps> = ({
           fixed (not sticky) so it stays flush with the screen bottom from the very first tap,
           instead of only reaching the bottom once revealed content grows tall enough. */}
       <div
-        className={`fixed bottom-0 inset-x-0 z-40 pb-safe pt-1.5 pb-4 transition-all ${
+        className={`fixed bottom-0 inset-x-0 z-40 pt-1.5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] transition-all ${
           isDark
             ? 'bg-gradient-to-t from-[#0f131d] via-[#0f131d]/95 to-transparent'
             : 'bg-gradient-to-t from-[#f1f4f9] via-[#f1f4f9]/95 to-transparent'

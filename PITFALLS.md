@@ -1180,3 +1180,279 @@ an ordinary/noinline parameter needs a storable callback. Regression cases
 live in `scripts/world9-inline-validation-cases.ts`, and both the World 9
 runner audit and real-Kotlin reference test require compilation rejection.
 This is scoped validation of these forms, not complete Kotlin escape analysis.
+
+## Content rule: lesson code arrays must be properly formatted, not semicolon-crammed
+
+Found repeatedly across World 11's audit (six separate lessons): an
+Explore/Predict `code` array entry that squeezes multiple class/object
+members onto one physical line with `;` (e.g. `class Counter{var n=0;private
+set;fun inc(){n++}}`) is not just hard to read -- it silently breaks
+execution. `splitClassMembers` in `kotlinRunner.ts` divides a class/object
+body into members by scanning **line by line**, matching a new member only
+when a line trimmed-starts with `val`/`var`/`fun`/`init`/`constructor`. Every
+member after the first on a semicolon-joined line is invisible to this scan
+and gets absorbed into the previous member's body text instead of being
+recognized as its own declaration, producing anything from a silent wrong
+answer to a hard parse failure -- and the *exact same code*, reformatted
+onto separate lines with no other change, works correctly.
+
+The same failure mode also hit a `when(s) { A->0;is B->s.n }` single-line,
+semicolon-joined branch list (`parseWhenBranches` also only split on
+newline until fixed) and a `by lazy { stmt1; stmt2 }` single-line lazy
+block. All three were fixed by teaching the respective parser to also split
+on top-level `;`, but new lesson content should not rely on that -- write
+every class/object body, `when` branch list, and `lazy`/other block body
+across real lines from the start, matching this file's own multi-line
+style everywhere else. This is now a standing authoring rule, not just a
+one-off fix: see `LESSON_QUALITY_STANDARD.md` section 4's formatting
+paragraph, and check any newly authored `code`/`codeSnippet` array against
+it before shipping, the same way every other pitfall on this page insists
+on running the code rather than reading it.
+
+## `insertNewForInstantiation` corrupted a class name that appeared inside an unrelated string literal
+
+A generic class's own method building a display string, `"Wrapped(" +
+value + ")"`, got silently corrupted into `"new Wrapped(" + value + ")"`.
+`insertNewForInstantiation` (`kotlinRunner.ts`) is the final pass that
+inserts `new` before every `ClassName(` occurrence in the whole source, but
+it was a blind whole-string regex replace with no idea whether a given
+match sat inside an actual instantiation or inside a string literal that
+merely happened to contain the same text. Any Kotlin string literal
+containing `"<SomeKnownClassName>("` -- not just a `toString()`-style
+override (already worked around by building those via concatenation, see
+the data-class `toString()` pitfall above) but *any* ordinary string a
+method returns -- was silently corrupted the same way.
+
+Fixed by restricting the replace to non-string chunks of each line, reusing
+`splitCodeAndStrings` (the same string/code split `rewriteClassPropertyAccess`
+already uses) instead of running the regex over raw, undifferentiated
+source text. If you add another whole-source text transform to this file,
+check whether it needs the same string-literal exclusion before assuming a
+plain global regex replace is safe.
+
+## World 12 (Generic Realm): generic class/interface names with `<...>` broke parsing wherever they appeared
+
+Building World 12 surfaced a cluster of bugs, all variations on the same
+theme: earlier code (`kotlinRunner.ts`'s class/interface/object regexes,
+and `kotlinFunctions.ts`'s type reader) was written and tested before any
+lesson used a GENERIC class/interface as a supertype or return type, so
+none of it accounted for a `<...>` argument sitting where only a bare name
+was expected.
+
+1. **`where T : X, T : Y` multi-bound clauses corrupted the return type and
+   body.** `kotlinFunctions.ts`'s return-type reader has no concept of a
+   `where` clause, so it kept consuming tokens past it, gluing it onto the
+   return type with no whitespace (`StringwhereT:Named,T:Prioritized`) --
+   corrupt text that then failed to parse as either a type or a function
+   body. Fixed in `kotlinRunner.ts` by stripping `\bwhere\s+...` (up to the
+   next `=`/`{`) before any other transform runs.
+
+2. **`interface Logger<in T>{...}` itself failed to parse.**
+   `transpileInterfaceDeclarations`'s regex required the interface name to
+   be immediately followed by `{`, with no room for a generic type
+   parameter list. Fixed by allowing an optional `(?:<[^>{}]*>)?` between
+   the name and the brace.
+
+3. **A generic supertype broke both `class X : Interface<Arg>{...}` and
+   `object X : Interface<Arg>{...}`.** Neither `classRe` (class
+   declarations) nor the separate `objectInterfaces` capture regex (object
+   declarations) allowed a `<...>` after a supertype/interface name, so the
+   `<Arg>{...}` tail leaked through as raw, unparseable trailing text. Both
+   were fixed the same way (allowing an optional generic argument after
+   each supertype name), and the `interfaceNames` derivation also needed to
+   strip a trailing `<...>` in addition to the trailing `(...)` it already
+   stripped, so the interface-default-mixin/`__kt_implements_X` logic still
+   recognized the bare interface name underneath. **This retroactively
+   uncovered a real, previously undetected bug in World 11's own Boss
+   lesson** (`object UserFormatter:Formatter<User>{...}`) that had been
+   silently broken since it was written -- it was never caught by the
+   World 11 audit because that specific Explore card is labeled
+   `'Behavior'`, not `'Output'`, so it was never exact-execution-checked.
+   **Rule, reinforced:** a card without an exact-output check is not a card
+   that's been verified to run at all; run it anyway, the same as every
+   other card, even when nothing will diff its result.
+
+4. **`insertNewForInstantiation` also needed string-literal awareness for
+   an unrelated reason found in the same pass -- see the dedicated entry
+   above.**
+
+## World 12: generic type ARGUMENTS were never actually inferred, only accidentally guessed at via string shape
+
+`kotlinFunctions.ts`'s `readType()` builds a declared type's `.name` as the
+raw source text including any `<Arg>` (e.g. a `val b: Box<Int>` declaration
+reads as `.name = "Box<Int>"`), but a CONSTRUCTOR CALL's inferred type
+(`Box("seven")`) only ever resolved to the bare class name with no argument
+at all (`.name = "Box"`) -- there was no mechanism to infer what `T` had
+actually been instantiated as. This produced two different failures
+depending on which way the accidental string mismatch cut:
+
+- **False rejection:** `class MutableBox<T>(var value:T)` with
+  `val b: MutableBox<String> = MutableBox("draft")` -- a completely valid,
+  matching assignment -- was rejected as `Type mismatch: expected
+  MutableBox<String>, got MutableBox`, purely because the actual side never
+  carried its `<String>` argument at all.
+- **Accidental pass, for the wrong reason:** the existing Generic Classes
+  lesson's Predict question relies on `val b: Box<Int> = Box("seven")`
+  being flagged as a compile error -- and it was, but only because
+  `"Box<Int>"` happened to not equal the bare string `"Box"`, not because
+  the engine understood that a String was passed where an Int was
+  expected. A genuinely matching case in the same shape (`Box<String> =
+  Box("draft")`) would have hit the exact same false-rejection bug above
+  had anyone tried it before this audit.
+
+Fixed properly rather than patched around: added `classTypeParams` (a
+class name -> its own declared type parameter names, e.g. `Box` -> `['T']`)
+and fixed constructor registration to actually run for a GENERIC class
+(the pre-existing check `at(i + 2) === '('` never matched when a `<T>`
+clause came first, so `constructors` was silently empty for every generic
+class beforehand). Then, for the common case of a single type parameter
+whose constructor parameter is declared with that exact bare name, the
+constructor-call inference in `infer()` now looks up which constructor
+parameter position corresponds to `T` and infers the real argument type
+from the actual expression passed there, returning e.g. `{name:
+"Box<String>"}` for `Box("seven")` instead of a bare `{name: "Box"}`. This
+makes both cases above correct for the RIGHT reason: `MutableBox<String> =
+MutableBox("draft")` now compares `"MutableBox<String>"` against
+`"MutableBox<String>"` (match, correctly accepted), and `Box<Int> =
+Box("seven")` now compares `"Box<Int>"` against `"Box<String>"` (mismatch,
+correctly rejected with an honest error message naming the real inferred
+type, not a coincidental string collision).
+
+**Scope limit:** only single-type-parameter classes get this treatment
+(`Cell<K, V>` still falls back to the old bare-name behavior) -- extend
+`classTypeParams`/the inference lookup to multiple type parameters
+together only once a lesson actually needs it, verifying with
+`compileAndRunKotlin` the same way as everywhere else on this page.
+
+## World 12: a use-site variance annotation only stripped ONE side of a generic comparison, and a generic function's own type parameter names were hardcoded to only "T"/"R"
+
+Two related but separate bugs, both in `compatible()`/`readType()` in
+`kotlinFunctions.ts`:
+
+1. **`Array<in String>` (a function parameter's use-site-projected type)
+   correctly stripped down to a bare `"Array"` once `readType` recognized
+   the projection, but the ACTUAL argument passed at the call site (e.g.
+   `val a: Array<Any> = arrayOf(0)`, with no variance keyword of its own)
+   kept its full `"Array<Any>"` name -- so `compatible()` compared `"Array"`
+   against `"Array<Any>"` and still rejected a genuinely valid call.
+   Fixed by adding a narrow fallback in `compatible()`: when the two names
+   differ, also compare their BASE names (text before `<`) for a fixed set
+   of built-in generic collection types (`Array`, `List`, `MutableList`,
+   `Set`, `MutableSet`, `Map`, `MutableMap`, `Pair`) -- this engine has no
+   real generic-argument tracking for these built-ins anyway (unlike the
+   user-defined-class case, which deliberately keeps comparing full
+   bracketed names so a genuine mismatch like `Box<Int> = Box("seven")`
+   above still gets flagged for the right reason).
+
+2. **A generic function's own type parameter name was hardcoded.**
+   `compatible()` treated the literal names `"T"` and `"R"` as always
+   wildcard-compatible (since this engine has no real per-call-site generic
+   substitution), but `header()` never recorded a function's ACTUAL
+   declared type parameter names anywhere -- so a function declared as
+   `fun <A, B> transform(v: A, f: (A) -> B): B = f(v)` had its parameter
+   type `"A"` compared literally against a real argument's type (e.g.
+   `"Int"`) and always failed with a false `Type mismatch: expected A, got
+   Int`, even though the call was completely valid Kotlin. This had gone
+   unnoticed until World 12's Boss lesson, since every earlier generic
+   function in the curriculum happened to use the literal name `T`. Fixed
+   by having `header()` capture whatever type parameter names a function
+   actually declares (`fun <A, B, ...>`) into a shared
+   `genericTypeParamNames` set (seeded with `'T'`/`'R'` for backward
+   compatibility), and having `compatible()` consult that set instead of
+   the two hardcoded literals.
+
+**Rule, reinforced by both bugs above:** don't assume a generic mechanism
+"already works" just because it happens to work for the ONE letter every
+prior lesson used (`T`) or the ONE built-in every prior lesson happened to
+compare against a matching bracketed shape -- a hardcoded special case for
+a specific name/shape is a strong signal that the general case was never
+actually implemented. Test a lesson's own concrete class/type-parameter
+names, not a renamed copy of a previously-verified example.
+
+## World 12: a class body crammed onto one semicolon-joined line broke parsing again, in NEW lessons written after the rule already existed
+
+Two of World 12's lessons (Type-safe Generic APIs' `MemoryStore` and the
+World Boss's `DataStore`) were authored with exactly the semicolon-crammed
+single-line class body pattern the "Content rule: lesson code arrays must
+be properly formatted" entry above already documents as a known, standing
+authoring hazard (`class MemoryStore<T>{private val
+items=mutableListOf<T>();fun add(v:T){items.add(v)};fun
+first():T?=items.firstOrNull()}`) -- both failed with `Unexpected
+identifier 'items'` for exactly the reason already written down:
+`splitClassMembers` only recognizes a new member at the start of a
+physical line, so every member after the first on a `;`-joined line is
+invisible to it. Reformatting both across real lines (matching this file's
+own multi-line style) fixed both immediately, with zero other changes.
+
+**Rule, reinforced once more, because it was violated again just one world
+later:** this is not merely a style preference to clean up during review --
+treat any semicolon-joined multi-member one-liner in NEW content as a
+correctness bug to fix before ever running it, not just a readability nit
+to fix afterward. See `LESSON_QUALITY_STANDARD.md` section 4's formatting
+paragraph.
+
+## World 12: Star Projections (`List<*>`) silently dropped the WHOLE parameter, not just its type
+
+`cleanKotlinParams` (`kotlinRunner.ts`) strips a parameter's type annotation
+via a character class, `[a-zA-Z0-9_<>?.]+`, that never included `*`. Since
+the whole match is anchored (`^...$`), a type this class can't fully
+consume doesn't partially match -- the ENTIRE regex fails to match, so the
+parameter's NAME was silently dropped too, not just its type. A function
+like `fun describe(v: List<*>): String = "size=" + v.size` compiled to
+`function describe()` with no parameter at all, so `v` inside the body
+threw `v is not defined` -- a runtime error with no hint that the real
+cause was a type-annotation character, not a missing declaration. Fixed by
+adding `*` to the character class. One-character fix, but only found by
+actually running the code and reading past the misleading error message
+to the real cause, rather than assuming "not defined" meant an actually
+undeclared variable.
+
+## World 12: reified type parameters -- turning an erased `T` into a real runtime string argument instead of building true call-site inlining
+
+`inline fun <reified T> isType(value: Any): Boolean = value is T` has no
+direct JS equivalent: real Kotlin substitutes `T` with the actual type
+argument at every call site at compile time, which is the entire meaning
+of "reified." This engine has no per-call-site inlining/specialization
+mechanism, and building one (rewriting a function body per call site) was
+considered and rejected as disproportionate to what any lesson actually
+needs. Two separate, stacked failures existed before this was built:
+
+1. **The call site itself didn't parse.** `isType<String>("CodeDo")` (an
+   explicit type argument) isn't valid JS syntax -- with nothing to
+   recognize `<...>` as a type argument list, it silently parsed as a
+   chained comparison (`isType < String > ("CodeDo")`), throwing a
+   confusing `String is not defined` (or whatever type name was used) with
+   no connection to the real cause.
+2. **Even with a valid call, the body's `value is T` had no meaning.**
+   `T` isn't a real class, so the generic `is Type` fallback
+   (`transformTypeChecks`) emitted `(value) instanceof T`, throwing
+   `T is not defined` at runtime -- `T` was never bound to anything at all.
+
+Fixed with `transpileReifiedFunctions` (`kotlinRunner.ts`), a whole-source
+pre-pass run before `lowerKotlinFunctions`: it turns the reified type
+parameter into an ORDINARY runtime parameter carrying the type NAME as a
+plain string (`isType(value: Any, T: String)`), rewrites the body's
+`value is T` into a call to a new runtime helper, `__kt_isReifiedType(value,
+T)` (added alongside `__kt_notNull`/`__kt_equals` and threaded through the
+`new Function(...)` sandbox the same way), and rewrites every call site
+(`isType<String>(x)` -> `isType(x, "String")`) so the actual type name
+flows in as a real argument instead of being erased. `__kt_isReifiedType`
+implements the same typeof-based dispatch every other `is`/`as?` check in
+this file already uses -- Int/Long/Float/Double -> `typeof === 'number'`,
+String -> `'string'`, Boolean -> `'boolean'` -- and throws for anything
+else, since there is no runtime class registry keyed by a string name to
+support an arbitrary declared class, and Char is excluded for the
+established Char/String-indistinguishability reason repeated throughout
+this file.
+
+**Scope, deliberately narrow, matching this file's established
+single-line-header convention elsewhere:** the declaration itself
+(`inline fun <reified T> name(params): ReturnType = expr`, `inline` and
+the return type both optional) must be a single line ending in a
+single-expression body -- a block body (`{ ... }`) is not supported. Only
+one reified type parameter per function. A call site's explicit type
+argument must be a single bare type name, not a nested/qualified generic.
+None of World 12's actual lesson content needs anything wider; extend this
+narrowly, and re-verify with `compileAndRunKotlin`, if a future lesson
+actually requires a block-bodied reified function or more than one reified
+parameter.

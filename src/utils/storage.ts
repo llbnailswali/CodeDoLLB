@@ -8,15 +8,15 @@ const MISTAKES_KEY = 'codedo_user_mistakes';
 const LAST_ACTIVE_DATE_KEY = 'codedo_last_active_date';
 
 export const DEFAULT_USER_STATS: UserStats = {
-  streak: 12,
-  stars: 2800,
-  gems: 420,
+  streak: 0,
+  stars: 0,
+  gems: 0,
   hearts: 5,
-  xp: 2800,
-  completedLessons: 2,
-  todayLessonsCompleted: 1,
+  xp: 0,
+  completedLessons: 0,
+  todayLessonsCompleted: 0,
   todayGoal: 3,
-  completedWorlds: 4,
+  completedWorlds: 0,
 };
 
 function getTodayDateString(): string {

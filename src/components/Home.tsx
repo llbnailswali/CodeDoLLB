@@ -56,6 +56,34 @@ const getLessonTagClass = (isDark: boolean, completed: boolean) => {
   }`;
 };
 
+const getWorldIcon = (worldOrder: number) => {
+  const icons = [
+    'code',
+    'terminal',
+    'data_object',
+    'account_tree',
+    'function',
+    'visibility',
+    'security',
+    'category',
+    'science',
+    'view_list',
+    'hub',
+    'data_object',
+    'inventory_2',
+    'bolt',
+    'workspace_premium',
+    'architecture',
+    'swap_vert',
+    'tune',
+    'memory',
+    'cloud',
+    'rocket_launch',
+    'military_tech',
+  ];
+  return icons[worldOrder - 1] ?? 'code';
+};
+
 export const CHAPTER_1_NODES = [
   'node-1',
   'node-2',
@@ -87,6 +115,12 @@ export const CHAPTER_3_NODES = [
   'node-20',
   'node-21',
   'node-22',
+];
+
+const ALL_JOURNEY_NODES = [
+  ...CHAPTER_1_NODES,
+  ...CHAPTER_2_NODES,
+  ...CHAPTER_3_NODES,
 ];
 
 export const SEC1_DEFAULT_PATH =
@@ -294,6 +328,28 @@ const SnakePathOverlay: React.FC<SnakePathOverlayProps> = ({
           />
         </>
       )}
+      {/* Keep a dim traveling highlight on the full route. */}
+      <path
+        d={path}
+        className="snake-path-shimmer"
+        stroke={isDark ? '#94a3b8' : '#ffffff'}
+        strokeDasharray="18 180"
+        strokeLinecap="round"
+        strokeWidth="3"
+        opacity={isDark ? '0.5' : '0.7'}
+      />
+      {/* Add a brighter traveling highlight over the enabled blue route. */}
+      {activePath && (
+        <path
+          d={activePath}
+          className="snake-path-shimmer"
+          stroke={isDark ? '#c7d2fe' : '#ffffff'}
+          strokeDasharray="18 180"
+          strokeLinecap="round"
+          strokeWidth="3"
+          opacity={isDark ? '0.95' : '1'}
+        />
+      )}
     </svg>
   );
 };
@@ -301,7 +357,7 @@ const SnakePathOverlay: React.FC<SnakePathOverlayProps> = ({
 interface WorldNodeProps {
   worldOrder: number;
   completedWorlds: number;
-  align: 'left' | 'right';
+  align: 'left' | 'right' | 'center';
   paddingTop?: string;
   isDark: boolean;
   nodeId: string;
@@ -321,22 +377,68 @@ const StandardWorldNode: React.FC<WorldNodeProps> = ({
   const isDataAvailable = hasCollectedWorldData(worldOrder);
   const isCompleted = isDataAvailable && worldOrder <= completedWorlds;
   const isCurrent = isDataAvailable && worldOrder === completedWorlds + 1;
-  const isLocked = !isDataAvailable;
-  const isAvailableToStart = isDataAvailable && !isCompleted && !isCurrent;
+  const isLocked = !isDataAvailable || worldOrder > completedWorlds + 1;
+  const isAvailableToStart = isDataAvailable && !isLocked && !isCompleted && !isCurrent;
   const isLeft = align === 'left';
+
+  if (isCurrent) {
+    return (
+      <div className="relative w-full flex justify-center pt-8 pb-4 z-20" style={{ marginTop: 'var(--path-gap, 0px)' }}>
+        <div
+          className={`w-full max-w-[320px] neu-raised rounded-2xl p-4 relative flex flex-col gap-2.5 border transition-all ${
+            isDark
+              ? 'bg-[#151b28] border-indigo-500/40 text-white shadow-[0_0_16px_rgba(99,102,241,0.2)]'
+              : 'bg-[#e8eaf0] border-indigo-300 text-[#2e3040] shadow-[0_0_16px_rgba(99,102,241,0.15)]'
+          }`}
+        >
+          <div data-node-id={nodeId} className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 pointer-events-none" />
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border text-indigo-600 dark:text-indigo-300 bg-indigo-500/10 border-indigo-500/30">
+              CURRENT WORLD
+            </span>
+            <span className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400">
+              World {String(world.order).padStart(2, '0')} / 22
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <div className="flex items-baseline justify-between gap-2">
+              <h3 className="text-base font-['Outfit'] font-bold text-inherit tracking-tight">
+                World {String(world.order).padStart(2, '0')} · {world.title}
+              </h3>
+              <span className="text-[11px] font-semibold font-mono text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                0 / {world.lessons.length} lessons
+              </span>
+            </div>
+            <p className="text-xs leading-snug mt-0.5 text-slate-600 dark:text-slate-300">
+              Continue your journey through {world.title}.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onWorldClick(world.id)}
+            className="h-11 w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-['Outfit'] font-semibold text-sm flex items-center justify-center gap-2 cta-glow active:scale-[0.98] transition-all cursor-pointer"
+          >
+            <span>START WORLD {world.order}</span>
+            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       className={`relative w-full flex items-center z-10 ${paddingTop} ${
-        isLeft ? 'justify-start pl-8' : 'justify-end pr-8'
+        isLeft ? 'justify-start pl-8' : align === 'right' ? 'justify-end pr-8' : 'justify-center'
       }`}
+      style={{ marginTop: 'var(--path-gap, 0px)' }}
     >
       <div
         className={`flex items-center gap-2.5 transition-all ${
-          !isLeft ? 'flex-row-reverse text-right' : ''
+          !isLeft && align !== 'center' ? 'flex-row-reverse text-right' : ''
         } ${isLocked ? 'opacity-55 cursor-not-allowed' : 'opacity-100 cursor-pointer active:scale-95'}`}
         onClick={() => {
-          if (isDataAvailable) onWorldClick(world.id);
+          if (!isLocked) onWorldClick(world.id);
         }}
       >
         <div
@@ -355,40 +457,27 @@ const StandardWorldNode: React.FC<WorldNodeProps> = ({
               : 'bg-[#e8eaf0] border-white/40'
           }`}
         >
-          {isCompleted && (
-            <span
-              className="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-[20px]"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              check_circle
-            </span>
-          )}
-          {isCurrent && (
-            <span
-              className="material-symbols-outlined text-indigo-500 text-[20px] animate-pulse"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              play_arrow
-            </span>
-          )}
-          {isAvailableToStart && (
-            <span className="material-symbols-outlined text-emerald-500 text-[20px]">
-              play_arrow
-            </span>
-          )}
-          {isLocked && (
-            <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[18px]">
-              lock
-            </span>
-          )}
+          <span
+            className={`material-symbols-outlined text-[20px] ${
+              isCurrent
+                ? 'text-indigo-500 animate-pulse'
+                : isCompleted
+                ? 'text-indigo-600 dark:text-indigo-400'
+                : isAvailableToStart
+                ? 'text-emerald-500'
+                : 'text-slate-500 dark:text-slate-400'
+            }`}
+          >
+            {getWorldIcon(worldOrder)}
+          </span>
         </div>
-        <div className={`flex flex-col ${!isLeft ? 'text-right' : ''}`}>
-          <div className={`flex items-center gap-1.5 ${!isLeft ? 'justify-end' : ''}`}>
+        <div className={`flex flex-col ${!isLeft && align !== 'center' ? 'text-right' : ''}`}>
+          <div className={`flex items-center gap-1.5 ${!isLeft && align !== 'center' ? 'justify-end' : ''}`}>
             <span
-              className={`text-[10px] font-mono font-bold ${
+              className={`inline-flex w-fit text-[10px] font-mono font-extrabold tracking-wide px-2 py-0.5 rounded-md border shadow-sm ${
                 isDataAvailable
-                  ? 'text-indigo-600 dark:text-indigo-400'
-                  : 'text-slate-500 dark:text-slate-400'
+                  ? 'text-indigo-700 dark:text-indigo-200 bg-indigo-500/10 border-indigo-400/30'
+                  : 'text-slate-600 dark:text-slate-300 bg-slate-500/10 border-slate-400/25'
               }`}
             >
               World {String(world.order).padStart(2, '0')}
@@ -423,6 +512,7 @@ interface HomeProps {
   onSelectWorld?: (worldId: string) => void;
   onStartLesson?: () => void;
   onSelectNode?: (nodeTitle: string) => void;
+  pathGap: number;
 }
 
 export const Home: React.FC<HomeProps> = ({
@@ -431,18 +521,25 @@ export const Home: React.FC<HomeProps> = ({
   onOpenCurriculum,
   onSelectWorld,
   onStartLesson,
+  pathGap,
 }) => {
   const isDark = theme === 'dark';
 
   const sec1Ref = React.useRef<HTMLDivElement>(null);
   const sec2Ref = React.useRef<HTMLDivElement>(null);
   const sec3Ref = React.useRef<HTMLDivElement>(null);
+  const journeyRef = React.useRef<HTMLDivElement>(null);
 
   // Dynamic progress state from userStats
-  const completedWorldsCount = userStats.completedWorlds ?? 4;
+  const completedWorldsCount = userStats.completedWorlds ?? 0;
   const currentWorldOrder = Math.min(22, completedWorldsCount + 1);
   const currentWorld = getWorld(currentWorldOrder);
   const progressPct = ((completedWorldsCount / 22) * 100).toFixed(1);
+  const activeChapter = currentWorldOrder <= 8 ? 1 : currentWorldOrder <= 15 ? 2 : 3;
+  const world15DataAvailable = hasCollectedWorldData(15);
+  const world15Unlocked = world15DataAvailable && completedWorldsCount >= 14;
+  const world15Completed = world15DataAvailable && completedWorldsCount >= 15;
+  const world15Current = world15DataAvailable && completedWorldsCount === 14;
 
   // Calculate dynamic active endpoints for each chapter's snake path
   // Chapter 1 (Worlds 1-8)
@@ -455,6 +552,31 @@ export const Home: React.FC<HomeProps> = ({
     if (completedWorldsCount === 5) return 'node-6';
     if (completedWorldsCount === 6) return 'node-7';
     return 'node-8';
+  }, [completedWorldsCount]);
+
+  const journeyActiveNode = React.useMemo(() => {
+    if (completedWorldsCount <= 0) return undefined;
+    if (completedWorldsCount === 1) return 'node-2';
+    if (completedWorldsCount === 2) return 'node-3';
+    if (completedWorldsCount === 3) return 'node-4';
+    if (completedWorldsCount === 4) return 'node-5-top';
+    if (completedWorldsCount === 5) return 'node-6';
+    if (completedWorldsCount === 6) return 'node-7';
+    if (completedWorldsCount === 7) return 'node-8';
+    if (completedWorldsCount === 8) return 'node-8';
+    if (completedWorldsCount === 9) return 'node-10';
+    if (completedWorldsCount === 10) return 'node-11';
+    if (completedWorldsCount === 11) return 'node-12';
+    if (completedWorldsCount === 12) return 'node-13';
+    if (completedWorldsCount === 13) return 'node-14';
+    if (completedWorldsCount === 14) return 'node-15';
+    if (completedWorldsCount === 15) return undefined;
+    if (completedWorldsCount === 16) return 'node-17';
+    if (completedWorldsCount === 17) return 'node-18';
+    if (completedWorldsCount === 18) return 'node-19';
+    if (completedWorldsCount === 19) return 'node-20';
+    if (completedWorldsCount === 20) return 'node-21';
+    return 'node-22';
   }, [completedWorldsCount]);
 
   // Chapter 2 (Worlds 9-15)
@@ -555,6 +677,7 @@ export const Home: React.FC<HomeProps> = ({
                   chevron_right
                 </span>
               </button>
+
             </div>
 
             {/* Headline Row: Full Width Single Line Title */}
@@ -578,22 +701,44 @@ export const Home: React.FC<HomeProps> = ({
           </div>
         </div>
 
+        <div
+          ref={journeyRef}
+          className="relative w-full"
+          style={{ '--path-gap': `${pathGap}px` } as React.CSSProperties}
+        >
+          <SnakePathOverlay
+            containerRef={journeyRef}
+            nodeIds={ALL_JOURNEY_NODES}
+            activeUpToNodeId={journeyActiveNode}
+            isDark={isDark}
+            gradientId="journeyActive"
+            defaultViewBox="0 0 360 2200"
+            defaultPath="M 54,25 C 54,72 306,72 306,118 C 306,164 54,164 54,210 C 54,256 306,256 306,302 C 306,354 180,344 180,396 L 180,638 C 180,689 306,679 306,730 C 306,776 54,776 54,822 C 54,868 306,868 306,914"
+          />
+
         {/* ================= SECTION 1: BEGINNER (Worlds 1-8) ================= */}
         <section className="relative w-full">
           <div
             className={`sticky top-[58px] z-30 w-full backdrop-blur-xl transition-colors border-b ${
               isDark
-                ? 'bg-[#0b0f19]/85 border-white/5 shadow-[0_4px_16px_rgba(0,0,0,0.35)]'
-                : 'bg-[#e8eaf0]/85 border-white/40 shadow-[0_4px_16px_rgba(0,0,0,0.03)]'
+                ? activeChapter === 1
+                  ? 'bg-indigo-950/55 border-indigo-400/35 shadow-[0_4px_18px_rgba(99,102,241,0.22)]'
+                  : 'bg-indigo-950/25 border-indigo-400/15 shadow-[0_4px_16px_rgba(99,102,241,0.1)]'
+                : activeChapter === 1
+                ? 'bg-indigo-50/95 border-indigo-200 shadow-[0_4px_18px_rgba(99,102,241,0.16)]'
+                : 'bg-indigo-50/65 border-indigo-100/80 shadow-[0_4px_16px_rgba(99,102,241,0.08)]'
             }`}
           >
             <div className="max-w-md mx-auto px-5 py-2.5 flex items-center gap-3">
               <span
-                className={`text-[10px] font-mono font-bold tracking-wider uppercase text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full neu-pressed border ${
-                  isDark ? 'bg-[#121824] border-white/5' : 'bg-[#e8eaf0] border-black/5'
+                className={`text-[10px] font-mono font-bold tracking-wider uppercase px-3 py-1 rounded-full border transition-all ${
+                  activeChapter === 1
+                    ? 'text-indigo-700 dark:text-indigo-200 bg-indigo-500/15 border-indigo-400/40 shadow-[0_0_12px_rgba(99,102,241,0.2)]'
+                    : 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-300/30 shadow-sm'
                 }`}
               >
                 CHAPTER 1 · BEGINNER · WORLDS 01–08
+                {activeChapter === 1 && <span className="ml-2 text-[8px] tracking-[0.16em]">ACTIVE</span>}
               </span>
               <div className="flex-1 h-[1px] bg-slate-300/60 dark:bg-white/10"></div>
             </div>
@@ -602,18 +747,6 @@ export const Home: React.FC<HomeProps> = ({
           {/* SNAKE PATH SECTION 1: WORLDS 1-8 */}
           <div ref={sec1Ref} className="relative w-full max-w-[360px] mx-auto px-5 pt-3 pb-12 flex flex-col items-center overflow-hidden">
           {/* Continuous SVG Path for Section 1 */}
-          <SnakePathOverlay
-            containerRef={sec1Ref}
-            nodeIds={CHAPTER_1_NODES}
-            straightSegments={CHAPTER_1_STRAIGHT}
-            activeUpToNodeId={chapter1ActiveNode}
-            isDark={isDark}
-            gradientId="sec1Active"
-            defaultViewBox={SEC1_DEFAULT_VIEWBOX}
-            defaultPath={SEC1_DEFAULT_PATH}
-            defaultActivePath={chapter1ActiveNode === 'node-5-top' ? SEC1_DEFAULT_ACTIVE : undefined}
-          />
-
           {/* WORLD 1 (Left) */}
           <StandardWorldNode
             worldOrder={1}
@@ -630,7 +763,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={2}
             completedWorlds={completedWorldsCount}
             align="right"
-            paddingTop="pt-12"
+            paddingTop="pt-16"
             isDark={isDark}
             nodeId="node-2"
             onWorldClick={handleWorldClick}
@@ -641,7 +774,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={3}
             completedWorlds={completedWorldsCount}
             align="left"
-            paddingTop="pt-12"
+            paddingTop="pt-16"
             isDark={isDark}
             nodeId="node-3"
             onWorldClick={handleWorldClick}
@@ -652,13 +785,14 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={4}
             completedWorlds={completedWorldsCount}
             align="right"
-            paddingTop="pt-12"
+            paddingTop="pt-16"
             isDark={isDark}
             nodeId="node-4"
             onWorldClick={handleWorldClick}
           />
 
           {/* WORLD 5: CENTER FOCAL POINT */}
+          {completedWorldsCount === 4 ? (
           <div className="relative w-full flex flex-col items-center pt-10 pb-4 z-20">
             {/* Attached Callout Card */}
             <div
@@ -733,13 +867,24 @@ export const Home: React.FC<HomeProps> = ({
               </button>
             </div>
           </div>
+          ) : (
+            <StandardWorldNode
+              worldOrder={5}
+              completedWorlds={completedWorldsCount}
+              align="center"
+              paddingTop="pt-14"
+              isDark={isDark}
+              nodeId="node-5-top"
+              onWorldClick={handleWorldClick}
+            />
+          )}
 
           {/* WORLD 6 (Right) */}
           <StandardWorldNode
             worldOrder={6}
             completedWorlds={completedWorldsCount}
             align="right"
-            paddingTop="pt-10"
+            paddingTop="pt-14"
             isDark={isDark}
             nodeId="node-6"
             onWorldClick={handleWorldClick}
@@ -750,7 +895,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={7}
             completedWorlds={completedWorldsCount}
             align="left"
-            paddingTop="pt-12"
+            paddingTop="pt-16"
             isDark={isDark}
             nodeId="node-7"
             onWorldClick={handleWorldClick}
@@ -761,7 +906,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={8}
             completedWorlds={completedWorldsCount}
             align="right"
-            paddingTop="pt-12"
+            paddingTop="pt-16"
             isDark={isDark}
             nodeId="node-8"
             onWorldClick={handleWorldClick}
@@ -770,21 +915,28 @@ export const Home: React.FC<HomeProps> = ({
       </section>
 
         {/* ================= SECTION 2: INTERMEDIATE (Worlds 9-15) ================= */}
-        <section className="relative w-full">
+        <section className="relative w-full -mt-6">
           <div
             className={`sticky top-[58px] z-30 w-full backdrop-blur-xl transition-colors border-b ${
               isDark
-                ? 'bg-[#0b0f19]/85 border-white/5 shadow-[0_4px_16px_rgba(0,0,0,0.35)]'
-                : 'bg-[#e8eaf0]/85 border-white/40 shadow-[0_4px_16px_rgba(0,0,0,0.03)]'
+                ? activeChapter === 2
+                  ? 'bg-indigo-950/55 border-indigo-400/35 shadow-[0_4px_18px_rgba(99,102,241,0.22)]'
+                  : 'bg-indigo-950/25 border-indigo-400/15 shadow-[0_4px_16px_rgba(99,102,241,0.1)]'
+                : activeChapter === 2
+                ? 'bg-indigo-50/95 border-indigo-200 shadow-[0_4px_18px_rgba(99,102,241,0.16)]'
+                : 'bg-indigo-50/65 border-indigo-100/80 shadow-[0_4px_16px_rgba(99,102,241,0.08)]'
             }`}
           >
             <div className="max-w-md mx-auto px-5 py-2.5 flex items-center gap-3">
               <span
-                className={`text-[10px] font-mono font-bold tracking-wider uppercase text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full neu-pressed border ${
-                  isDark ? 'bg-[#121824] border-white/5' : 'bg-[#e8eaf0] border-black/5'
+                className={`text-[10px] font-mono font-bold tracking-wider uppercase px-3 py-1 rounded-full border transition-all ${
+                  activeChapter === 2
+                    ? 'text-indigo-700 dark:text-indigo-200 bg-indigo-500/15 border-indigo-400/40 shadow-[0_0_12px_rgba(99,102,241,0.2)]'
+                    : 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-300/30 shadow-sm'
                 }`}
               >
                 CHAPTER 2 · INTERMEDIATE · WORLDS 09–15
+                {activeChapter === 2 && <span className="ml-2 text-[8px] tracking-[0.16em]">ACTIVE</span>}
               </span>
               <div className="flex-1 h-[1px] bg-slate-300/60 dark:bg-white/10"></div>
             </div>
@@ -792,16 +944,6 @@ export const Home: React.FC<HomeProps> = ({
 
           {/* SNAKE PATH SECTION 2: WORLDS 9-15 */}
           <div ref={sec2Ref} className="relative w-full max-w-[360px] mx-auto px-5 pt-3 pb-12 flex flex-col items-center overflow-hidden">
-          <SnakePathOverlay
-            containerRef={sec2Ref}
-            nodeIds={CHAPTER_2_NODES}
-            activeUpToNodeId={chapter2ActiveNode}
-            isDark={isDark}
-            gradientId="sec2Active"
-            defaultViewBox={SEC2_DEFAULT_VIEWBOX}
-            defaultPath={SEC2_DEFAULT_PATH}
-          />
-
           {/* WORLD 9 (Left) */}
           <StandardWorldNode
             worldOrder={9}
@@ -818,7 +960,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={10}
             completedWorlds={completedWorldsCount}
             align="right"
-            paddingTop="pt-11"
+            paddingTop="pt-15"
             isDark={isDark}
             nodeId="node-10"
             onWorldClick={handleWorldClick}
@@ -829,7 +971,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={11}
             completedWorlds={completedWorldsCount}
             align="left"
-            paddingTop="pt-11"
+            paddingTop="pt-15"
             isDark={isDark}
             nodeId="node-11"
             onWorldClick={handleWorldClick}
@@ -840,7 +982,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={12}
             completedWorlds={completedWorldsCount}
             align="right"
-            paddingTop="pt-11"
+            paddingTop="pt-15"
             isDark={isDark}
             nodeId="node-12"
             onWorldClick={handleWorldClick}
@@ -851,7 +993,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={13}
             completedWorlds={completedWorldsCount}
             align="left"
-            paddingTop="pt-11"
+            paddingTop="pt-15"
             isDark={isDark}
             nodeId="node-13"
             onWorldClick={handleWorldClick}
@@ -862,7 +1004,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={14}
             completedWorlds={completedWorldsCount}
             align="right"
-            paddingTop="pt-11"
+            paddingTop="pt-15"
             isDark={isDark}
             nodeId="node-14"
             onWorldClick={handleWorldClick}
@@ -872,18 +1014,20 @@ export const Home: React.FC<HomeProps> = ({
           <div className="relative w-full flex items-center justify-center pt-11 z-10">
             <div
               className={`flex flex-col items-center cursor-pointer active:scale-95 transition-all ${
-                completedWorldsCount >= 14 ? 'opacity-100' : 'opacity-70 hover:opacity-90'
+                world15Unlocked ? 'opacity-100' : 'opacity-55 cursor-not-allowed'
               }`}
-              onClick={() => handleWorldClick('world-15')}
+              onClick={() => {
+                if (world15Unlocked) handleWorldClick('world-15');
+              }}
             >
               <div
                 data-node-id="node-15"
                 className={`w-12 h-12 rounded-2xl neu-raised flex items-center justify-center border relative transition-all ${
-                  completedWorldsCount >= 15
+                  world15Completed
                     ? isDark
                       ? 'bg-[#151b28] border-indigo-500/40'
                       : 'bg-[#e8eaf0] border-indigo-500/40'
-                    : completedWorldsCount === 14
+                    : world15Current
                     ? isDark
                       ? 'bg-[#1c2236] border-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.5)] ring-2 ring-indigo-500/30'
                       : 'bg-white border-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.3)] ring-2 ring-indigo-500/30'
@@ -892,41 +1036,31 @@ export const Home: React.FC<HomeProps> = ({
                     : 'bg-[#e8eaf0] border-white/50'
                 }`}
               >
-                {completedWorldsCount >= 15 ? (
-                  <span
-                    className="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-[22px]"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    check_circle
-                  </span>
-                ) : completedWorldsCount === 14 ? (
-                  <span className="material-symbols-outlined text-indigo-500 text-[22px] animate-pulse">
-                    shield
-                  </span>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-slate-500 dark:text-slate-400 text-[20px]">
-                      shield
-                    </span>
-                    <span className="material-symbols-outlined text-[12px] text-slate-400 absolute bottom-1 right-1">
-                      lock
-                    </span>
-                  </>
-                )}
+                <span
+                  className={`material-symbols-outlined text-[22px] ${
+                    world15Current
+                      ? 'text-indigo-500 animate-pulse'
+                      : world15DataAvailable
+                      ? 'text-indigo-600 dark:text-indigo-400'
+                      : 'text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  {getWorldIcon(15)}
+                </span>
               </div>
               <span
-                className={`text-[10px] font-mono font-medium mt-1 ${
-                  completedWorldsCount >= 14
-                    ? 'text-indigo-600 dark:text-indigo-400 font-bold'
-                    : 'text-slate-500 dark:text-slate-400'
+                className={`inline-flex text-[10px] font-mono font-extrabold tracking-wide px-2 py-0.5 rounded-md border shadow-sm mt-1 ${
+                    world15Unlocked
+                    ? 'text-indigo-700 dark:text-indigo-200 bg-indigo-500/10 border-indigo-400/30'
+                    : 'text-slate-600 dark:text-slate-300 bg-slate-500/10 border-slate-400/25'
                 }`}
               >
                 World 15
               </span>
-              <span className={getWorldTitleClass(isDark, completedWorldsCount >= 14)}>
+              <span className={getWorldTitleClass(isDark, world15Unlocked)}>
                 {getWorld(15).title}
               </span>
-              <span className={getLessonTagClass(isDark, completedWorldsCount >= 14)}>
+              <span className={getLessonTagClass(isDark, world15Unlocked)}>
                 {getWorld(15).lessons.length} lessons
               </span>
             </div>
@@ -935,21 +1069,28 @@ export const Home: React.FC<HomeProps> = ({
       </section>
 
         {/* ================= SECTION 3: EXPERIENCED (Worlds 16-22) ================= */}
-        <section className="relative w-full">
+        <section className="relative w-full -mt-6">
           <div
             className={`sticky top-[58px] z-30 w-full backdrop-blur-xl transition-colors border-b ${
               isDark
-                ? 'bg-[#0b0f19]/85 border-white/5 shadow-[0_4px_16px_rgba(0,0,0,0.35)]'
-                : 'bg-[#e8eaf0]/85 border-white/40 shadow-[0_4px_16px_rgba(0,0,0,0.03)]'
+                ? activeChapter === 3
+                  ? 'bg-indigo-950/55 border-indigo-400/35 shadow-[0_4px_18px_rgba(99,102,241,0.22)]'
+                  : 'bg-indigo-950/25 border-indigo-400/15 shadow-[0_4px_16px_rgba(99,102,241,0.1)]'
+                : activeChapter === 3
+                ? 'bg-indigo-50/95 border-indigo-200 shadow-[0_4px_18px_rgba(99,102,241,0.16)]'
+                : 'bg-indigo-50/65 border-indigo-100/80 shadow-[0_4px_16px_rgba(99,102,241,0.08)]'
             }`}
           >
             <div className="max-w-md mx-auto px-5 py-2.5 flex items-center gap-3">
               <span
-                className={`text-[10px] font-mono font-bold tracking-wider uppercase text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full neu-pressed border ${
-                  isDark ? 'bg-[#121824] border-white/5' : 'bg-[#e8eaf0] border-black/5'
+                className={`text-[10px] font-mono font-bold tracking-wider uppercase px-3 py-1 rounded-full border transition-all ${
+                  activeChapter === 3
+                    ? 'text-indigo-700 dark:text-indigo-200 bg-indigo-500/15 border-indigo-400/40 shadow-[0_0_12px_rgba(99,102,241,0.2)]'
+                    : 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-300/30 shadow-sm'
                 }`}
               >
                 CHAPTER 3 · EXPERIENCED · WORLDS 16–22
+                {activeChapter === 3 && <span className="ml-2 text-[8px] tracking-[0.16em]">ACTIVE</span>}
               </span>
               <div className="flex-1 h-[1px] bg-slate-300/60 dark:bg-white/10"></div>
             </div>
@@ -957,16 +1098,6 @@ export const Home: React.FC<HomeProps> = ({
 
           {/* SNAKE PATH SECTION 3: WORLDS 16-22 */}
           <div ref={sec3Ref} className="relative w-full max-w-[360px] mx-auto px-5 pt-3 pb-12 flex flex-col items-center overflow-hidden">
-          <SnakePathOverlay
-            containerRef={sec3Ref}
-            nodeIds={CHAPTER_3_NODES}
-            activeUpToNodeId={chapter3ActiveNode}
-            isDark={isDark}
-            gradientId="sec3Active"
-            defaultViewBox={SEC3_DEFAULT_VIEWBOX}
-            defaultPath={SEC3_DEFAULT_PATH}
-          />
-
           {/* WORLD 16 (Left) */}
           <StandardWorldNode
             worldOrder={16}
@@ -983,7 +1114,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={17}
             completedWorlds={completedWorldsCount}
             align="right"
-            paddingTop="pt-11"
+            paddingTop="pt-15"
             isDark={isDark}
             nodeId="node-17"
             onWorldClick={handleWorldClick}
@@ -994,7 +1125,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={18}
             completedWorlds={completedWorldsCount}
             align="left"
-            paddingTop="pt-11"
+            paddingTop="pt-15"
             isDark={isDark}
             nodeId="node-18"
             onWorldClick={handleWorldClick}
@@ -1005,7 +1136,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={19}
             completedWorlds={completedWorldsCount}
             align="right"
-            paddingTop="pt-11"
+            paddingTop="pt-15"
             isDark={isDark}
             nodeId="node-19"
             onWorldClick={handleWorldClick}
@@ -1016,7 +1147,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={20}
             completedWorlds={completedWorldsCount}
             align="left"
-            paddingTop="pt-11"
+            paddingTop="pt-15"
             isDark={isDark}
             nodeId="node-20"
             onWorldClick={handleWorldClick}
@@ -1027,7 +1158,7 @@ export const Home: React.FC<HomeProps> = ({
             worldOrder={21}
             completedWorlds={completedWorldsCount}
             align="right"
-            paddingTop="pt-11"
+            paddingTop="pt-15"
             isDark={isDark}
             nodeId="node-21"
             onWorldClick={handleWorldClick}
@@ -1037,7 +1168,7 @@ export const Home: React.FC<HomeProps> = ({
           <div className="relative w-full max-w-[320px] pt-12 pb-4 z-20 flex flex-col items-center">
             <div
               className={`neu-raised rounded-3xl p-4 w-full flex items-center justify-between border cursor-pointer active:scale-95 transition-all relative ${
-                completedWorldsCount >= 21 ? 'opacity-100' : 'opacity-70 hover:opacity-90'
+                completedWorldsCount >= 21 ? 'opacity-100' : 'opacity-55 cursor-not-allowed'
               } ${
                 completedWorldsCount >= 22
                   ? isDark
@@ -1051,7 +1182,9 @@ export const Home: React.FC<HomeProps> = ({
                   ? 'bg-[#151b28] border-white/10 text-white'
                   : 'bg-[#e8eaf0] border-white/60 text-[#2e3040]'
               }`}
-              onClick={() => handleWorldClick('world-22')}
+              onClick={() => {
+                if (completedWorldsCount >= 21) handleWorldClick('world-22');
+              }}
             >
               <div data-node-id="node-22" className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 pointer-events-none" />
               <div className="flex items-center gap-3">
@@ -1066,7 +1199,7 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-indigo-600 dark:text-indigo-400">
+                    <span className="inline-flex w-fit text-[10px] font-mono font-extrabold tracking-wide uppercase px-2 py-0.5 rounded-md border shadow-sm text-indigo-700 dark:text-indigo-200 bg-indigo-500/10 border-indigo-400/30">
                       FINAL WORLD 22
                     </span>
                     <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400">
@@ -1086,25 +1219,23 @@ export const Home: React.FC<HomeProps> = ({
                   isDark ? 'bg-[#151b28]' : 'bg-[#e8eaf0]'
                 }`}
               >
-                {completedWorldsCount >= 22 ? (
-                  <span
-                    className="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-[18px]"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    check_circle
-                  </span>
-                ) : completedWorldsCount === 21 ? (
-                  <span className="material-symbols-outlined text-indigo-500 text-[18px] animate-pulse">
-                    play_arrow
-                  </span>
-                ) : (
-                  <span className="material-symbols-outlined text-slate-400 text-[16px]">lock</span>
-                )}
+                <span
+                  className={`material-symbols-outlined text-[18px] ${
+                    completedWorldsCount === 21
+                      ? 'text-indigo-500 animate-pulse'
+                      : completedWorldsCount >= 22
+                      ? 'text-indigo-600 dark:text-indigo-400'
+                      : 'text-slate-400'
+                  }`}
+                >
+                  {getWorldIcon(22)}
+                </span>
               </div>
             </div>
           </div>
         </div>
       </section>
+      </div>
     </div>
   </main>
   );

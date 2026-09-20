@@ -546,7 +546,7 @@ export const Debug: React.FC<DebugStageProps> = ({
       {/* Bottom CTA / Tap Hint -- fixed (not sticky) so it stays flush with the screen
           bottom from the very first tap, consistent with all other stages. */}
       <div
-        className={`fixed bottom-0 inset-x-0 z-40 pb-safe pt-1.5 pb-4 transition-all ${
+        className={`fixed bottom-0 inset-x-0 z-40 pt-1.5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] transition-all ${
           isDark
             ? 'bg-gradient-to-t from-[#0f131d] via-[#0f131d]/95 to-transparent'
             : 'bg-gradient-to-t from-[#f1f4f9] via-[#f1f4f9]/95 to-transparent'

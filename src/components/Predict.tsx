@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import { Stage3PredictData } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
 import { renderKotlinCodeLines } from '../utils/codeHighlighter';
-import { renderVisibleWhitespace } from '../utils/outputDisplay';
 
 interface PredictStageProps {
   data: Stage3PredictData;
@@ -37,6 +36,9 @@ export const Predict: React.FC<PredictStageProps> = ({
 }) => {
   const totalQuestions = data.questions.length;
   const maxRevealStep = totalQuestions;
+
+  const indicatorRailRef = useRef<HTMLDivElement | null>(null);
+  const indicatorButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   // Helper to determine if question is answered correctly
   const isQuestionCorrect = (qIdx: number): boolean => {
@@ -216,6 +218,28 @@ export const Predict: React.FC<PredictStageProps> = ({
 
   // Keep the scrolling-highlight in sync whenever the content is scrolled
   useEffect(() => {
+    const activeButton = indicatorButtonRefs.current[activePredictCardIdx];
+    const rail = indicatorRailRef.current;
+
+    if (activeButton && rail) {
+      const centerPos = rail.scrollLeft + rail.clientWidth / 2;
+      const buttonCenter = activeButton.offsetLeft + activeButton.offsetWidth / 2;
+      const centerWindow = 36;
+      const nearCenter = Math.abs(buttonCenter - centerPos) <= centerWindow;
+
+      if (nearCenter) return;
+
+      const offset = buttonCenter - rail.clientWidth / 2;
+      const maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth);
+      const timer = window.setTimeout(() => {
+        rail.scrollTo({ left: Math.max(0, Math.min(offset, maxScroll)), behavior: 'auto' });
+      }, 30);
+
+      return () => window.clearTimeout(timer);
+    }
+  }, [activePredictCardIdx]);
+
+  useEffect(() => {
     const handleUserGesture = () => {
       // User manual interaction takes precedence over programmatic scroll lock
       isProgrammaticScrollRef.current = false;
@@ -344,64 +368,71 @@ export const Predict: React.FC<PredictStageProps> = ({
       {(!tapToRevealEnabled || revealStep >= 1) && (
         <div
           id="predict-indicator-bar"
-          className="sticky top-14 z-30 mb-2.5 py-0.5 flex justify-center w-full animate-fadeIn"
+          className="sticky top-14 z-30 mb-2.5 py-0.5 w-full animate-fadeIn"
         >
-          {/* Rectangle shape indicator navigation container */}
-          <div
-            className={`inline-flex items-center gap-1.5 p-1.5 rounded-xl border backdrop-blur-md shadow-md transition-colors duration-200 ${
-              isDark
-                ? 'bg-[#171b26]/95 border-[#262c3d] shadow-black/40'
-                : 'bg-white/95 border-slate-200/90 shadow-slate-900/10'
-            }`}
-          >
-            {data.questions.map((q, idx) => {
-              const buttonLabel = idx < 9 ? `0${idx + 1}` : `${idx + 1}`;
-              const isHighlighted = activePredictCardIdx === idx;
-              const isAnswered = isQuestionAnswered(idx);
-              const isCorrect = isQuestionCorrect(idx);
-              const isRevealed = !tapToRevealEnabled || revealStep > idx;
-              const isLocked = !isRevealed && (!canContinue || idx > revealStep);
+          <div ref={indicatorRailRef} className="w-full overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex justify-center min-w-[max-content]">
+              {/* Rectangle shape indicator navigation container */}
+              <div
+                className={`inline-flex items-center gap-1.5 p-1.5 rounded-xl border backdrop-blur-md shadow-md transition-colors duration-200 ${
+                  isDark
+                    ? 'bg-[#171b26]/95 border-[#262c3d] shadow-black/40'
+                    : 'bg-white/95 border-slate-200/90 shadow-slate-900/10'
+                }`}
+              >
+                {data.questions.map((q, idx) => {
+                  const buttonLabel = idx < 9 ? `0${idx + 1}` : `${idx + 1}`;
+                  const isHighlighted = activePredictCardIdx === idx;
+                  const isAnswered = isQuestionAnswered(idx);
+                  const isCorrect = isQuestionCorrect(idx);
+                  const isRevealed = !tapToRevealEnabled || revealStep > idx;
+                  const isLocked = !isRevealed && (!canContinue || idx > revealStep);
 
-              return (
-                <button
-                  key={q.id}
-                  type="button"
-                  disabled={isLocked}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!isLocked) {
-                      handleIndicatorClick(idx);
-                    } else {
-                      scrollToUnsolved();
-                    }
-                  }}
-                  className={`min-w-[42px] h-8 px-2.5 flex items-center justify-center gap-1 text-xs font-bold font-mono tracking-wider rounded-lg transition-all duration-150 select-none ${
-                    isLocked
-                      ? 'opacity-40 cursor-not-allowed bg-transparent text-slate-500 border border-transparent'
-                      : isHighlighted
-                      ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-500/50 scale-[1.03] cursor-pointer'
-                      : isDark
-                      ? 'bg-[#121622] text-slate-400 border border-[#262c3d] hover:text-slate-200 hover:border-slate-500 hover:bg-[#181d2c] cursor-pointer'
-                      : 'bg-slate-100 text-slate-500 border border-slate-200 hover:text-slate-800 hover:border-slate-300 hover:bg-slate-200/70 cursor-pointer'
-                  }`}
-                >
-                  <span>{buttonLabel}</span>
-                  {isCorrect ? (
-                    <span className="material-symbols-outlined text-[13px] leading-none text-emerald-400">
-                      check
-                    </span>
-                  ) : isAnswered ? (
-                    <span className="material-symbols-outlined text-[13px] leading-none text-rose-400">
-                      close
-                    </span>
-                  ) : isLocked ? (
-                    <span className="material-symbols-outlined text-[11px] leading-none text-slate-500">
-                      lock
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
+                  return (
+                    <button
+                      ref={(el) => {
+                        indicatorButtonRefs.current[idx] = el;
+                      }}
+                      key={q.id}
+                      type="button"
+                      disabled={isLocked}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isLocked) {
+                          handleIndicatorClick(idx);
+                        } else {
+                          scrollToUnsolved();
+                        }
+                      }}
+                      className={`min-w-[42px] h-8 px-2.5 flex items-center justify-center gap-1 text-xs font-bold font-mono tracking-wider rounded-lg transition-all duration-150 select-none ${
+                        isLocked
+                          ? 'opacity-40 cursor-not-allowed bg-transparent text-slate-500 border border-transparent'
+                          : isHighlighted
+                          ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-500/50 scale-[1.03] cursor-pointer'
+                          : isDark
+                          ? 'bg-[#121622] text-slate-400 border border-[#262c3d] hover:text-slate-200 hover:border-slate-500 hover:bg-[#181d2c] cursor-pointer'
+                          : 'bg-slate-100 text-slate-500 border border-slate-200 hover:text-slate-800 hover:border-slate-300 hover:bg-slate-200/70 cursor-pointer'
+                      }`}
+                    >
+                      <span>{buttonLabel}</span>
+                      {isCorrect ? (
+                        <span className="material-symbols-outlined text-[13px] leading-none text-emerald-400">
+                          check
+                        </span>
+                      ) : isAnswered ? (
+                        <span className="material-symbols-outlined text-[13px] leading-none text-rose-400">
+                          close
+                        </span>
+                      ) : isLocked ? (
+                        <span className="material-symbols-outlined text-[11px] leading-none text-slate-500">
+                          lock
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -449,7 +480,7 @@ export const Predict: React.FC<PredictStageProps> = ({
                       {qIdx < 9 ? `0${qIdx + 1}` : `${qIdx + 1}`}
                     </span>
                     <h3
-                      className={`font-['Outfit'] font-bold text-sm sm:text-base leading-5 ${
+                      className={`min-w-0 break-words font-['Outfit'] font-bold text-sm sm:text-base leading-5 ${
                         isDark ? 'text-white' : 'text-slate-900'
                       }`}
                     >
@@ -492,7 +523,7 @@ export const Predict: React.FC<PredictStageProps> = ({
                 {/* Question Title */}
                 <div>
                   <h2
-                    className={`text-base font-semibold tracking-tight ${
+                    className={`break-words [overflow-wrap:anywhere] text-base font-semibold tracking-tight ${
                       isDark ? 'text-white' : 'text-slate-900'
                     }`}
                   >
@@ -512,7 +543,7 @@ export const Predict: React.FC<PredictStageProps> = ({
                           e.stopPropagation();
                           handleSelectOption(qIdx, opt.id);
                         }}
-                        className={`w-full p-3.5 rounded-xl flex items-center justify-between text-left transition-all border cursor-pointer ${
+                        className={`w-full min-w-0 p-3.5 rounded-xl flex items-start justify-between gap-3 text-left transition-all border cursor-pointer ${
                           isSelected
                             ? isDark
                               ? opt.isCorrect
@@ -526,7 +557,7 @@ export const Predict: React.FC<PredictStageProps> = ({
                             : 'bg-white border-slate-200/80 shadow-[3px_3px_8px_rgba(0,0,0,0.04),-3px_-3px_8px_rgba(255,255,255,0.6)] text-slate-800'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
                           <span
                             className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
                               isSelected
@@ -540,8 +571,8 @@ export const Predict: React.FC<PredictStageProps> = ({
                           >
                             {opt.id}
                           </span>
-                          <span className="text-sm font-medium whitespace-nowrap overflow-x-auto">
-                            {renderVisibleWhitespace(opt.label)}
+                          <span className="min-w-0 flex-1 whitespace-normal break-words text-sm font-medium leading-5">
+                            {opt.label}
                           </span>
                         </div>
                         {isSelected && (
@@ -616,7 +647,7 @@ export const Predict: React.FC<PredictStageProps> = ({
           bottom from the very first tap, instead of drifting down as content grows. */}
       <div
         id="predict-bottom-cta"
-        className={`fixed bottom-0 inset-x-0 z-40 pb-safe pt-1.5 pb-4 transition-all ${
+        className={`fixed bottom-0 inset-x-0 z-40 pt-1.5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] transition-all ${
           isDark
             ? 'bg-gradient-to-t from-[#0f131d] via-[#0f131d]/95 to-transparent'
             : 'bg-gradient-to-t from-[#f1f4f9] via-[#f1f4f9]/95 to-transparent'

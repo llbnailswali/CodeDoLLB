@@ -122,7 +122,22 @@ export function lowerKotlinFunctions(source: string): string {
         const colon = top(x, y, ':'); return readType(colon < 0 ? x : colon + 1, y);
       }), result: readType(arrow + 1, b) };
     }
-    return aliases.get(text(a, b)) ?? { name: text(a, b).replace(/\s/g, '') };
+    if (aliases.has(text(a, b))) return aliases.get(text(a, b))!;
+    // A USE-SITE variance annotation (`Array<in String>`, `Array<out
+    // String>` -- as opposed to the DECLARATION-site `class Foo<out T>`
+    // handled by `variantTypeNames` below) has no runtime meaning either,
+    // but sits inside the raw text with real whitespace around it (`in
+    // String`); stripped here, before that whitespace is collapsed below,
+    // or it would glue into the type name as `inString`/`outString`.
+    const hasUseSiteVariance = /<\s*(?:in|out)\s+/.test(text(a, b));
+    const raw = text(a, b).replace(/<\s*(?:in|out)\s+/g, '<').replace(/\s/g, '');
+    const angleIdx = raw.indexOf('<');
+    // A use-site variance annotation makes the argument mismatch-tolerant
+    // regardless of whether the base type (here possibly a built-in like
+    // `Array`, never itself registered in `variantTypeNames`) is a
+    // declaration-site variant type.
+    if (angleIdx > 0 && (hasUseSiteVariance || variantTypeNames.has(raw.slice(0, angleIdx)))) return { name: raw.slice(0, angleIdx) };
+    return { name: raw };
   }
   function parameters(a: number, b: number): Parameter[] {
     return split(a, b, ',', true).map(([start, end]) => {
@@ -144,14 +159,49 @@ export function lowerKotlinFunctions(source: string): string {
   type Header = { name: string; open: number; close: number; body: number; signature: Signature; anonymous: boolean };
   function header(i: number): Header | undefined {
     let p = i + 1;
-    if (at(p) === '<') { while (p < t.length && at(p) !== '>') p++; p++; }
+    if (at(p) === '<') {
+      // Capture this function's own generic type parameter names (`fun
+      // <A, B> transform(...)` -> "A", "B") into the shared
+      // `genericTypeParamNames` set, the same way `compatible()` already
+      // treated the literal names "T"/"R" as always-compatible wildcards.
+      // That hardcoding only worked by coincidence for lessons whose
+      // generic functions happened to use "T"/"R" -- a function declared
+      // with different names (`fun <A, B> transform(...)`) had its
+      // parameter type ("A") compared against a real argument type
+      // ("Int") and always failed as a false "Type mismatch", since this
+      // engine has no real generic substitution at a call site.
+      let depth = 1; let j = p + 1; let segStart = j;
+      const addName = (start: number, end: number) => {
+        if (start >= end) return;
+        const idx = (at(start) === 'in' || at(start) === 'out') ? start + 1 : start;
+        if (idx < end) genericTypeParamNames.add(at(idx));
+      };
+      while (j < t.length && depth > 0) {
+        if (at(j) === '<') depth++;
+        else if (at(j) === '>') { depth--; if (depth === 0) addName(segStart, j); }
+        else if (at(j) === ',' && depth === 1) { addName(segStart, j); segStart = j + 1; }
+        j++;
+      }
+      p = j;
+    }
     let open = p;
     while (open < t.length && at(open) !== '(' && !['{', '=', ';'].includes(at(open))) open++;
     if (at(open) !== '(' || !pairs.has(open)) return undefined;
     const anonymous = open === p || at(open - 1) === '.';
     const name = anonymous ? '' : at(open - 1);
     const receiverEnd = anonymous ? open - 1 : open - 2;
-    const receiver = at(receiverEnd) === '.' ? readType(p, receiverEnd) : undefined;
+    // A nullable receiver type (`fun String?.orDash() = ...`) tokenizes
+    // its trailing `?` fused with the following dot into one `?.` token
+    // (see `lex` above), not as separate `?` and `.` tokens -- so the
+    // plain `at(receiverEnd) === '.'` check below never recognizes it,
+    // and the declaration was silently registered as an ordinary,
+    // non-extension function with no receiver at all. Recognize the fused
+    // `?.` form too, and mark the resulting receiver type nullable
+    // (readType only sees the plain `String` token in this branch, since
+    // the `?` isn't a separate token to strip).
+    const receiver = at(receiverEnd) === '.' ? readType(p, receiverEnd)
+      : at(receiverEnd) === '?.' ? { ...readType(p, receiverEnd), nullable: true }
+      : undefined;
     const close = pairs.get(open)!;
     let body = close + 1;
     let result: Type | undefined;
@@ -167,7 +217,26 @@ export function lowerKotlinFunctions(source: string): string {
   }
   const functions = new Map<string, Signature>();
   const classes = new Set<string>();
+  const variantTypeNames = new Set<string>();
+  const classTypeParams = new Map<string, string[]>();
+  const genericTypeParamNames = new Set<string>(['T', 'R']);
   const headers = new Map<number, Header>();
+  // Real Kotlin resolves an extension call by the receiver's declared
+  // (static) type, so `fun A.f()` and `fun B.f()` can coexist and a
+  // `val x: A = B()` call still picks A's version. This simulator has no
+  // subtype-aware resolution, only exact-name matching -- but that is
+  // enough for the deliberate "two receiver types, same extension name"
+  // teaching scenario. Only mangle a name into per-receiver-type JS
+  // functions when it is actually overloaded this way; a name declared
+  // with a single receiver type keeps its plain, unmangled
+  // `__kt_extension_<name>` identity so every other extension-using lesson
+  // (a single receiver type per name) is completely unaffected.
+  const extensionsByReceiver = new Map<string, Map<string, Signature>>();
+  const extensionJsName = (name: string, receiverTypeName?: string): string => {
+    const overloads = extensionsByReceiver.get(name);
+    if (overloads && overloads.size > 1 && receiverTypeName && overloads.has(receiverTypeName)) return `__kt_extension_${name}__${receiverTypeName}`;
+    return `__kt_extension_${name}`;
+  };
   const declarationBodies = new Set<number>();
   const constructors = new Map<string, Type[]>();
   for (let i = 0; i < t.length; i++) {
@@ -177,7 +246,27 @@ export function lowerKotlinFunctions(source: string): string {
     }
     if (at(i) === 'class') {
       classes.add(at(i + 1));
-      if (at(i + 2) === '(') constructors.set(at(i + 1), split(i + 3, pairs.get(i + 2)!).map(([a, b]) => {
+      // A generic class's own type parameter list (`class Box<T>(...)`) sits
+      // between the class name and its primary constructor's parens -- skip
+      // over it (recording the bare parameter names, variance keyword
+      // stripped) before looking for the constructor, so a generic class's
+      // constructor is registered at all. Without this, `at(i + 2) === '('`
+      // never matched for ANY generic class (it's always `<` first), so
+      // `constructors` silently stayed empty for every generic class.
+      let ctorAt = i + 2;
+      if (at(ctorAt) === '<') {
+        let depth = 1; let j = ctorAt + 1; let paramStart = j;
+        const rawNames: string[] = [];
+        while (j < t.length && depth > 0) {
+          if (at(j) === '<') depth++;
+          else if (at(j) === '>') { depth--; if (depth === 0) { rawNames.push(text(paramStart, j).trim()); } }
+          else if (at(j) === ',' && depth === 1) { rawNames.push(text(paramStart, j).trim()); paramStart = j + 1; }
+          j++;
+        }
+        classTypeParams.set(at(i + 1), rawNames.map((n) => n.replace(/^(in|out)\s+/, '').split(/[\s:]/)[0]));
+        ctorAt = j;
+      }
+      if (at(ctorAt) === '(') constructors.set(at(i + 1), split(ctorAt + 1, pairs.get(ctorAt)!).map(([a, b]) => {
         const colon = top(a, b, ':'); const eq = top(a, b, '='); return readType(colon + 1, eq < 0 ? b : eq);
       }));
     }
@@ -191,6 +280,34 @@ export function lowerKotlinFunctions(source: string): string {
     // `announce(person)` (where `fun announce(g: Greetable)` and `Person :
     // Greetable`) from being wrongly rejected as a type mismatch.
     if (at(i) === 'interface') classes.add(at(i + 1));
+    // A type parameter declared `in`/`out` (declaration-site variance) means
+    // a differing type ARGUMENT between the declared type and an assigned
+    // value's own implemented type is not necessarily a real mismatch --
+    // that is the entire point of variance (`Logger<Any>` assignable to a
+    // `Logger<String>`-typed variable, since Logger<in T> is contravariant).
+    // This simulator has no real subtype-direction checking for generic
+    // arguments (JS erases them; nothing here tracks what argument a given
+    // instance's class actually supplies for a generic interface/class it
+    // implements), so full variance-direction validation is out of scope.
+    // Instead: once any parameter of a class/interface is marked variant,
+    // `readType` (below) drops the `<...>` argument text from that type's
+    // `.name` entirely, falling back to the existing loose "two known
+    // declared type names are compatible" rule already used for ordinary
+    // interface implementation. An invariant generic (no `in`/`out`) keeps
+    // its argument text as part of `.name`, preserving the current (if
+    // approximate) behavior of rejecting an explicit argument mismatch.
+    if ((at(i) === 'class' || at(i) === 'interface') && at(i + 2) === '<') {
+      let depth = 1;
+      let j = i + 3;
+      let hasVariance = false;
+      while (j < t.length && depth > 0) {
+        if (at(j) === '<') depth++;
+        else if (at(j) === '>') depth--;
+        else if (at(j) === 'in' || at(j) === 'out') hasVariance = true;
+        j++;
+      }
+      if (hasVariance) variantTypeNames.add(at(i + 1));
+    }
     if (['class', 'object', 'interface'].includes(at(i))) {
       for (let j = i + 2; j < t.length; j++) {
         if (at(j) === '{') { declarationBodies.add(j); break; }
@@ -200,7 +317,14 @@ export function lowerKotlinFunctions(source: string): string {
     }
     if (at(i) === 'fun') {
       const h = header(i);
-      if (h) { headers.set(i, h); if (h.name) functions.set(h.name, h.signature); }
+      if (h) {
+        headers.set(i, h);
+        if (h.name) functions.set(h.name, h.signature);
+        if (h.name && h.signature.receiver) {
+          if (!extensionsByReceiver.has(h.name)) extensionsByReceiver.set(h.name, new Map());
+          extensionsByReceiver.get(h.name)!.set(h.signature.receiver.name, h.signature);
+        }
+      }
     }
   }
   const builtins = new Map<string, Signature>([
@@ -211,12 +335,28 @@ export function lowerKotlinFunctions(source: string): string {
   const child = (ctx: Context): Context => ({ ...ctx, vars: new Map(ctx.vars), frames: [...ctx.frames] });
   const frame = (kind: Frame['kind'], result?: Type, label?: string, inline = false): Frame => ({ token: `__kt_target_${++serial}`, label, kind, inline, used: false, result });
   function compatible(expected: Type | undefined, actual: Type | undefined): boolean {
-    if (!expected || !actual || expected.name === '?' || actual.name === '?' || expected.name === 'Any' || expected.name === 'T' || expected.name === 'R') return true;
+    if (!expected || !actual || expected.name === '?' || actual.name === '?' || expected.name === 'Any' || genericTypeParamNames.has(expected.name)) return true;
     if (actual.name === 'Nothing' && actual.nullable) return !!expected.nullable;
     if (actual.nullable && !expected.nullable) return false;
     if (expected.name !== actual.name) {
       // General class/type checking remains with the existing runner.
       if (classes.has(expected.name) && classes.has(actual.name)) return true;
+      // A use-site variance annotation (`Array<in String>`) makes `readType`
+      // erase ITS OWN side down to the bare base name ("Array"), but the
+      // other side of the comparison (e.g. a plain `val a: Array<Any>`
+      // declaration with no variance keyword of its own) keeps its full
+      // bracketed name -- so a genuinely valid call would otherwise be
+      // rejected on a string mismatch that has nothing to do with a real
+      // type error. This engine has no real generic-argument tracking for
+      // built-in collection types anyway (unlike the user-defined-class
+      // case above, which deliberately keeps comparing full bracketed
+      // names so an invariant mismatch like `Box<Int> = Box("seven")`
+      // still gets flagged) -- so it's safe to compare only the base name
+      // for these specific built-ins.
+      const GENERIC_BUILTINS = new Set(['Array', 'List', 'MutableList', 'Set', 'MutableSet', 'Map', 'MutableMap', 'Pair']);
+      const baseName = (n: string) => { const i = n.indexOf('<'); return i === -1 ? n : n.slice(0, i); };
+      const be = baseName(expected.name), ba = baseName(actual.name);
+      if (be === ba && GENERIC_BUILTINS.has(be)) return true;
       return false;
     }
     if (expected.name === 'Function') {
@@ -292,7 +432,35 @@ export function lowerKotlinFunctions(source: string): string {
     if (/^-?\d/.test(at(a)) || (at(a) === '-' && /^\d/.test(at(a + 1)))) return { name: /[fF]$/.test(text(a, b)) ? 'Float' : /L$/.test(text(a, b)) ? 'Long' : /\.\d/.test(text(a, b)) ? 'Double' : 'Int' };
     if (at(a + 1) === '(' && pairs.get(a + 1) === b - 1) {
       if (['println', 'print'].includes(at(a))) return unit;
-      if (classes.has(at(a))) return { name: at(a) };
+      if (classes.has(at(a))) {
+        // A generic class's constructor call (`Box("seven")`) carries no
+        // syntax of its own for the type argument -- Kotlin infers it from
+        // the constructor's actual arguments. This engine has no general
+        // generic-argument inference either, but for the common case of a
+        // SINGLE type parameter whose constructor parameter is declared
+        // with that exact bare name (`class Box<T>(val v: T)`), the
+        // argument passed at that parameter's position tells us the real
+        // instantiated type -- inferring it here (rather than leaving the
+        // constructed value's type generic-argument-less) is what lets
+        // `compatible()` correctly accept a matching declared type
+        // (`val b: Box<String> = Box("x")`) and correctly reject a
+        // genuine mismatch (`val b: Box<Int> = Box("seven")`) for the
+        // RIGHT reason, instead of an accidental string-shape coincidence.
+        const typeParams = classTypeParams.get(at(a));
+        if (typeParams && typeParams.length === 1) {
+          const paramTypes = constructors.get(at(a));
+          const argIndex = paramTypes?.findIndex((pt) => pt.name === typeParams[0]) ?? -1;
+          if (argIndex >= 0) {
+            const args = split(a + 2, b - 1);
+            if (args[argIndex]) {
+              const [argA, argB] = args[argIndex];
+              const argType = infer(argA, argB, ctx);
+              if (argType.name !== '?') return { name: `${at(a)}<${argType.name}>` };
+            }
+          }
+        }
+        return { name: at(a) };
+      }
       return ctx.vars.get(at(a))?.result ?? functions.get(at(a))?.result ?? unknown;
     }
     return a + 1 === b ? ctx.vars.get(at(a)) ?? unknown : unknown;
@@ -414,7 +582,16 @@ export function lowerKotlinFunctions(source: string): string {
       const variable = ctx.vars.get(at(i));
       const guardedInCondition = (text(a, i).includes(`${at(i)} != null &&`) || text(a, i).includes(`${at(i)} == null ||`));
       if (variable?.nullable && variable.name !== 'Function' && variable.runtimeName === 'Nothing' && !guardedInCondition) {
-        if (at(i + 1) === '.' && !['toString'].includes(at(i + 2))) fail('Only safe (?.) or non-null asserted (!!.) calls are allowed on this nullable receiver', i);
+        // A call to an extension whose OWN declared receiver type is
+        // itself nullable (`fun String?.lengthOrZero() = ...`) is real
+        // Kotlin's documented way to handle a nullable receiver WITHOUT a
+        // `?.` at the call site -- the extension is written to accept
+        // null and is expected to be called on a nullable value directly
+        // (`s.lengthOrZero()`, not `s?.lengthOrZero()`). Excluded from the
+        // "needs ?. or !!." rule below, same as the existing `toString`
+        // exception.
+        const calledExtensionAcceptsNull = functions.get(at(i + 2))?.receiver?.nullable;
+        if (at(i + 1) === '.' && !['toString'].includes(at(i + 2)) && !calledExtensionAcceptsNull) fail('Only safe (?.) or non-null asserted (!!.) calls are allowed on this nullable receiver', i);
         if (['Int', 'Long', 'Float', 'Double'].includes(variable.name) && ((i + 1 < b && ['+', '-', '*', '/', '%'].includes(at(i + 1))) || (i > a && ['+', '-', '*', '/', '%'].includes(at(i - 1))))) fail('Nullable numeric value requires a null check or fallback before arithmetic', i);
       }
       if (at(i) === 'filterIsInstance' && at(i + 1) === '<') {
@@ -445,14 +622,33 @@ export function lowerKotlinFunctions(source: string): string {
           inner.receiverType = sig.receiver ?? fnExpected?.receiver;
         }
         const end = at(h.body) === '{' ? pairs.get(h.body)! + 1 : expressionEnd(h.body + 1, b);
-        const body = at(h.body) === '{' ? lower(h.body + 1, end - 1, inner) : valueBody(h.body + 1, end, inner, result);
+        let body = at(h.body) === '{' ? lower(h.body + 1, end - 1, inner) : valueBody(h.body + 1, end, inner, result);
+        // `lower()` treats a whole double-quoted string as one opaque token,
+        // so `this` written inside a `$this`/`${this}` string-template
+        // interpolation is never seen as the token this function already
+        // renames everywhere else (`ctx.receiver` substitution above only
+        // fires on a bare `this` token outside of any string). Left alone,
+        // the raw word "this" survives into the generated JS body, where it
+        // no longer refers to the receiver (renamed to `receiverParam`) --
+        // it silently becomes the sandboxed call's own `this` (the global
+        // object) instead. Covers a bare `$this`/`${this}` and a single
+        // receiver property access (`${this.x}`, as a canonicalized
+        // extension property's getter body produces -- see
+        // `transpileExtensionProperties` in kotlinRunner.ts); a deeper
+        // chained/computed expression inside the template (`${this.x.y}`)
+        // is out of scope for this narrow fix.
+        if (receiverParam) body = body
+          .replace(/\$\{\s*this\.([A-Za-z_][A-Za-z0-9_]*)\s*\}/g, `\${${receiverParam}.$1}`)
+          .replace(/\$\{\s*this\s*\}/g, `\${${receiverParam}}`)
+          .replace(/\$this\b/g, `$${receiverParam}`);
         if (!sig.result && at(h.body) === '=') sig.result = infer(h.body + 1, end, inner);
         const paramCode = (receiverParam ? [receiverParam] : []).concat(params.map(p => `${p.mode === 'vararg' ? 'vararg ' : ''}${p.name}${h.anonymous ? '' : ': ' + (p.type.name === 'Function' ? 'Function' : p.type.name === '?' ? 'Any' : p.type.name) + (p.type.nullable ? '?' : '')}${p.defaultCode ? ' = ' + p.defaultCode : ''}`)).join(', ');
         if (h.anonymous) {
           const actual: Type = { name: 'Function', params: params.map(p => p.type), receiver: sig.receiver ?? fnExpected?.receiver, result: sig.result ?? result ?? unknown };
           check(fnExpected, actual, i);
         }
-        emit(i, end, `${h.anonymous ? 'function' : 'fun ' + (sig.receiver ? '__kt_extension_' : '') + h.name}(${paramCode})${h.anonymous ? '' : ': ' + (sig.result?.name === 'Function' ? 'Function' : (sig.result?.name === '?' ? 'Any' : sig.result?.name) ?? 'Any')} {\n${wrap(body, f)}\n}`);
+        const declaredName = h.anonymous ? '' : sig.receiver ? extensionJsName(h.name, sig.receiver.name) : h.name;
+        emit(i, end, `${h.anonymous ? 'function' : 'fun ' + declaredName}(${paramCode})${h.anonymous ? '' : ': ' + (sig.result?.name === 'Function' ? 'Function' : (sig.result?.name === '?' ? 'Any' : sig.result?.name) ?? 'Any')} {\n${wrap(body, f)}\n}`);
         i = end - 1; continue;
       }
       if (['val', 'var'].includes(at(i)) && at(i + 1) === '(') {
@@ -557,6 +753,24 @@ ${lower(body + 1, end, child(ctx))}
       }
       if (at(i) === '(' && pairs.get(i)! < b) {
         const close = pairs.get(i)!;
+        // A call immediately followed by `.extFn(...)` (e.g. `Foo().ext()`,
+        // a constructor call receiving an extension call right after it) is
+        // about to be re-consumed WHOLESALE by that trailing call's own
+        // `receiverCall` handling below, which walks `receiverStart`
+        // backward through this call's closing `)` to lower the entire
+        // receiver expression as one unit. If this call is also processed
+        // here as an ordinary standalone call first, its `emit` commits
+        // this range (and advances `cursor` past it) before the trailing
+        // call's emit ever runs -- so that later emit's `source.slice`
+        // finds nothing left to remove and the original, now-stale call
+        // text and its rewritten `__kt_extension_...` replacement both end
+        // up concatenated in the output (`new A()__kt_extension_ext(new
+        // A())`), a syntax error. Skip this call's own handling entirely
+        // and let the trailing receiver call fully own the range instead.
+        if (at(close + 1) === '.' && isName(at(close + 2)) && at(close + 3) === '(' &&
+          (ctx.vars.get(at(close + 2))?.receiver || functions.get(at(close + 2))?.receiver)) {
+          continue;
+        }
         const info = callInfo(i, ctx);
         const receiverCall = at(i - 2) === '.' && at(i - 1) !== 'invoke' && (ctx.vars.get(info.name)?.receiver || functions.get(info.name)?.receiver);
         let receiverStart = i - 3;
@@ -565,6 +779,12 @@ ${lower(body + 1, end, child(ctx))}
           if (isName(at(receiverStart - 1))) receiverStart--;
         }
         const receiverCode = receiverCall ? lower(receiverStart, i - 2, ctx) : '';
+        // The receiver's declared (static) type -- not its runtime
+        // subtype -- is what real Kotlin uses to resolve which extension
+        // applies; `infer` already reports a variable's declared type
+        // (narrowed only by an explicit smart-cast guard), which is
+        // exactly this simulator's best approximation of that rule.
+        const receiverTypeName = receiverCall ? infer(receiverStart, i - 2, ctx).name : undefined;
         if (receiverCall && info.signature && ctx.vars.get(info.name)?.receiver) info.signature = { ...info.signature, params: info.signature.params.slice(1) };
         const callable = isName(at(i - 1)) && !['class', 'interface', 'constructor'].includes(at(i - 2)) && !['if', 'while', 'for', 'when', 'catch', 'switch', 'fun'].includes(at(i - 1));
         const trailingStart = at(close + 1) === '{' ? close + 1 : at(close + 2) === '@' && at(close + 3) === '{' ? close + 3 : -1;
@@ -626,16 +846,46 @@ ${lower(body + 1, end, child(ctx))}
           rendered.push(lambda(trailingStart, end, ctx, last?.type, trailingStart === close + 1 ? info.name : at(close + 1), info.inline && !last?.mode));
           emit(i, end + 1, `(${rendered.join(', ')})`); i = end;
         } else {
-          emit(receiverCall ? receiverStart : i, close + 1, receiverCall ? `${functions.get(info.name)?.receiver && !ctx.vars.has(info.name) ? '__kt_extension_' : ''}${info.name}(${receiverCode}${rendered.length ? ', ' : ''}${rendered.join(', ')})` : `(${rendered.join(', ')})`);
+          const isExtensionCall = receiverCall && functions.get(info.name)?.receiver && !ctx.vars.has(info.name);
+          // A real member (a method OR, for a canonicalized extension
+          // property -- see `transpileExtensionProperties` in
+          // kotlinRunner.ts -- a plain field) with the same name always
+          // wins over an extension (see PITFALLS.md); this simulator
+          // lowers class bodies in a separate later pass with no
+          // visibility here into which members a class actually declares,
+          // so the choice is made at runtime instead of statically: a real
+          // method is called with the call's own arguments, a real plain
+          // field is read directly (ignoring any arguments -- an extension
+          // PROPERTY call site is synthesized with `()` it never really
+          // had), and only when neither exists does it fall through to the
+          // extension. `__kt_recv` evaluates the receiver expression
+          // exactly once, so a receiver with side effects (a fresh
+          // constructor call, a function call) is not run twice.
+          const receiverExpr = isExtensionCall
+            ? `((__kt_recv) => __kt_recv == null ? ${extensionJsName(info.name, receiverTypeName)}(__kt_recv${rendered.length ? ', ' : ''}${rendered.join(', ')}) : typeof __kt_recv.${info.name} === 'function' ? __kt_recv.${info.name}(${rendered.join(', ')}) : Object.prototype.hasOwnProperty.call(__kt_recv, '${info.name}') ? __kt_recv.${info.name} : ${extensionJsName(info.name, receiverTypeName)}(__kt_recv${rendered.length ? ', ' : ''}${rendered.join(', ')}))(${receiverCode})`
+            : `${info.name}(${receiverCode}${rendered.length ? ', ' : ''}${rendered.join(', ')})`;
+          emit(receiverCall ? receiverStart : i, close + 1, receiverCall ? receiverExpr : `(${rendered.join(', ')})`);
           i = close;
         }
         continue;
       }
       if (at(i) === '{') {
         const end = pairs.get(i)!;
+        // `when(subject) { branch -> result; ... }` / bare `when { ... }`:
+        // a branch's `cond -> result` reads identically to an explicit
+        // lambda parameter list (`{ Idle -> ... }`), so without this check
+        // the literal-lambda heuristic below misparses the first branch's
+        // condition as a lambda parameter and mangles the rest of the
+        // block. `when` is a whole-source, balanced-brace pre-pass handled
+        // separately by `transpileWhenBlocks` in kotlinRunner.ts, which
+        // runs after this function -- leave the block's source untouched
+        // here (no emit) so that pass sees pristine Kotlin.
+        const whenOpenParen = at(i - 1) === ')' ? pairs.get(i - 1) : undefined;
+        const isWhenBlock = at(i - 1) === 'when' || (whenOpenParen !== undefined && at(whenOpenParen - 1) === 'when');
+        if (isWhenBlock) { i = end; continue; }
         const arrow = top(i + 1, end, '->');
         const literal = i === a || ['=', '(', ',', 'return', '->'].includes(at(i - 1)) || (arrow >= 0 && /^[A-Za-z_][A-Za-z_0-9\s,:?<>]*$/.test(text(i + 1, arrow)));
-        const trailing = !declarationBodies.has(i) && isName(at(i - 1)) && !['else', 'try', 'finally', 'do', 'init', 'when'].includes(at(i - 1)) && at(i - 2) !== 'class' && at(i - 2) !== 'object' && at(i - 2) !== 'interface';
+        const trailing = !declarationBodies.has(i) && isName(at(i - 1)) && !['else', 'try', 'finally', 'do', 'init', 'when'].includes(at(i - 1)) && at(i - 2) !== 'class' && at(i - 2) !== 'object' && at(i - 2) !== 'interface' && at(i - 2) !== 'companion';
         if (trailing) {
           const info = callInfo(i, ctx), param = info.signature?.params.at(-1);
           emit(i, end + 1, `(${lambda(i, end, ctx, param?.type, info.name, info.inline && !param?.mode)})`);

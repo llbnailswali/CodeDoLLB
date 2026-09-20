@@ -51,6 +51,8 @@ The capacity source is `CodeDo_Editor_capacity_per_lesson_status.xlsx`. Verify e
 
 Verify solutions, starters, broken versions and repairs. Check prediction answer keys against the question actually asked; type questions are not output questions. Automated checks must use the lesson's actual arrays and catalog entries, not assumed counts. Review rendered readability when content/UI changes, including code, output, hints and mobile layout. Automated execution does not replace editorial review.
 
+Every `codeSnippet`/`code` array (Learn, Explore, Predict) must render as properly formatted Kotlin: each declaration, statement and closing brace on its own line, consistent indentation, a blank line separating a class/function block from the code that uses it, and normal spacing around `=`, `:`, and operators (`val x: Int = 1 + 2`, not `val x:Int=1+2`). Do not cram multiple declarations or statements onto one semicolon-joined line for compactness. This is a readability requirement independent of execution -- a cramped one-liner and its properly formatted equivalent behave identically once compiled -- but it is also a proven source of engine bugs: this teaching runner's class-body parser (`splitClassMembers` in `kotlinRunner.ts`) divides members by line, so two members joined with `;` on one physical line (e.g. `class Counter{var n=0;private set;fun inc(){n++}}`) can silently fail to parse or fail to execute correctly, even when the exact same code split across real lines works. Reformat any such content on sight rather than treating it as pre-existing and out of scope.
+
 ## 5. Audit process and completion gate
 
 Audit in curriculum order, beginning at World 1. Use catalog-linked lessons, deduplicating aliases and excluding orphaned legacy content.

@@ -100,10 +100,22 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
 
   // Detailed Tutorial state (available for World 1 Lessons 1, 2, 3)
   const [showDetailedTutorial, setShowDetailedTutorial] = useState<boolean>(false);
+  const [showTutorialHint, setShowTutorialHint] = useState<boolean>(true);
+  const tutorialButtonRef = useRef<HTMLButtonElement>(null);
+  const tutorialHintRef = useRef<HTMLDivElement>(null);
+
   const detailedTutorial =
     getDetailedTutorial(lessonData.id) ||
     getDetailedTutorial(currentLessonKey) ||
     getDetailedTutorial(lessonData.topicTitle);
+
+  useEffect(() => {
+    setShowTutorialHint(Boolean(detailedTutorial));
+    // TODO: restore persistence after the hint copy and placement are final.
+    // if (localStorage.getItem('codedo_detailed_tutorial_hint_dismissed') === 'true') {
+    //   setShowTutorialHint(false);
+    // }
+  }, [detailedTutorial]);
 
   useEffect(() => {
     setUserCode(lessonData.writeRun?.initialCode ?? '');
@@ -353,17 +365,29 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setShowSkipMenu((prev) => !prev)}
+                  ref={tutorialButtonRef}
+                  onClick={() => {
+                    soundFX.playClick();
+                    openDetailedTutorial();
+                  }}
                   className={`text-[11px] font-semibold font-mono px-2 py-1 rounded-lg border flex items-center gap-1 transition-all active:scale-95 cursor-pointer ${
                     isDark
                       ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
                       : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
                   }`}
-                  title="Temporary Skip: Jump directly to any stage without tap-to-reveal"
+                  title="Open tutorial"
                 >
-                  <span className="material-symbols-outlined text-[14px]">fast_forward</span>
-                  <span>Skip</span>
+                  <span className="material-symbols-outlined text-[18px]">auto_stories</span>
+                  <span className="tutorial-hint-dot" aria-hidden="true" />
                 </button>
+                {showTutorialHint && detailedTutorial && (
+                  <div ref={tutorialHintRef} role="status" className={`tutorial-hint ${isDark ? 'tutorial-hint-dark' : 'tutorial-hint-light'} absolute left-[116px] top-[calc(100%+10px)] z-50 w-60 -translate-x-1/2 rounded-xl p-3 shadow-xl ${isDark ? 'bg-[#171b26] border-indigo-400/40 text-slate-200' : 'bg-white border-indigo-200 text-slate-700'}`}>
+                    <span className={`tutorial-hint-arrow ${isDark ? 'tutorial-arrow-dark' : 'tutorial-arrow-light'}`} aria-hidden="true" />
+                    <button type="button" aria-label="Close tutorial hint" onClick={() => setShowTutorialHint(false)} className="absolute right-1.5 top-1.5 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-500"><span className="material-symbols-outlined text-[15px]">close</span></button>
+                    <p className="pr-5 text-[11px] leading-4">Tap the book icon for an in-depth guide.</p>
+                    <button type="button" onClick={() => setShowTutorialHint(false)} className="mt-2 rounded-lg border border-indigo-400/40 bg-indigo-500/10 px-2.5 py-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/20">Understood</button>
+                  </div>
+                )}
 
                 {/* Dropdown to jump directly to any desired stage */}
                 {showSkipMenu && (
@@ -448,8 +472,9 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
       {/* Main Content Area */}
       <div className="w-full max-w-2xl mx-auto px-1.5 sm:px-3 pt-2 flex flex-col">
         {/* ================= PROGRESS STRIP (SHOWS LESSON NAME + STEP PROGRESS) ================= */}
+        <div className="relative mb-3">
         <section
-          className={`mb-3 flex items-center justify-between px-3 py-2 rounded-xl border transition-all ${
+          className={`flex items-center justify-between px-3 py-2 rounded-xl border transition-all ${
             isDark
               ? 'bg-[#171b26] border-[#262c3d] shadow-sm'
               : 'bg-white/90 backdrop-blur-sm border-slate-200/80 shadow-sm'
@@ -464,23 +489,48 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
             >
               {lessonData.topicTitle}
             </span>
-            {detailedTutorial && (
-              <button
-                type="button"
-                onClick={() => {
-                  soundFX.playClick();
-                  openDetailedTutorial();
-                }}
-                className={`ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-['Outfit'] font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95 shrink-0 ${
-                  isDark
-                    ? 'bg-indigo-950/80 text-indigo-300 hover:bg-indigo-900 border border-indigo-700/50'
-                    : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
-                }`}
-                title="Open Detailed Tutorial"
-              >
-                <span className="material-symbols-outlined text-[12px]">auto_stories</span>
-                <span className="hidden sm:inline">Tutorial</span>
-              </button>
+            {false && detailedTutorial && (
+              <div className="relative ml-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFX.playClick();
+                    openDetailedTutorial();
+                  }}
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-['Outfit'] font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95 ${
+                    isDark
+                      ? 'bg-indigo-950/80 text-indigo-300 hover:bg-indigo-900 border border-indigo-700/50'
+                      : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
+                  }`}
+                  title="Open Detailed Tutorial"
+                >
+                  <span className="material-symbols-outlined text-[12px]">auto_stories</span>
+                  <span className="hidden sm:inline">Tutorial</span>
+                  <span className="tutorial-hint-dot" aria-hidden="true" />
+                </button>
+                {showTutorialHint && (
+                  <div
+                    role="status"
+                    ref={tutorialHintRef}
+                    className={`tutorial-hint ${isDark ? 'tutorial-hint-dark' : 'tutorial-hint-light'} absolute left-[116px] top-[calc(100%+10px)] z-50 w-60 -translate-x-1/2 rounded-xl p-3 shadow-xl ${
+                      isDark
+                        ? 'bg-[#171b26] border-indigo-400/40 text-slate-200'
+                        : 'bg-white border-indigo-200 text-slate-700'
+                    }`}
+                  >
+                    <span className={`tutorial-hint-arrow ${isDark ? 'tutorial-arrow-dark' : 'tutorial-arrow-light'}`} aria-hidden="true" />
+                    <button type="button" aria-label="Close tutorial hint" onClick={() => setShowTutorialHint(false)} className="absolute right-1.5 top-1.5 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-500">
+                      <span className="material-symbols-outlined text-[15px]">close</span>
+                    </button>
+                    <p className="pr-5 text-[11px] leading-4">Tap Tutorial for an in-depth guide.</p>
+                    <button type="button" onClick={() => {
+                      // TODO: restore persistence after the hint copy and placement are final.
+                      // localStorage.setItem('codedo_detailed_tutorial_hint_dismissed', 'true');
+                      setShowTutorialHint(false);
+                    }} className="mt-2 rounded-lg border border-indigo-400/40 bg-indigo-500/10 px-2.5 py-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/20">Understood</button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -507,6 +557,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
             })}
           </div>
         </section>
+        </div>
 
         {/* ================= LEARN ================= */}
         {currentStageKey === 'learn' && (
@@ -518,10 +569,6 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
             onContinue={handleNextStage}
             nextStageLabel={nextStageLabel}
             tapToRevealEnabled={tapToRevealEnabled}
-            lessonId={lessonData.id}
-            topicTitle={lessonData.topicTitle}
-            onOpenTutorial={openDetailedTutorial}
-            hasTutorial={!!detailedTutorial}
           />
         )}
 
