@@ -392,7 +392,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
                 {/* Dropdown to jump directly to any desired stage */}
                 {showSkipMenu && (
                   <div
-                    className={`absolute right-0 top-full mt-1.5 w-44 rounded-xl border p-1.5 shadow-xl z-50 transition-all ${
+                    className={`fixed right-6 bottom-16 w-44 rounded-xl border p-1.5 shadow-xl z-50 transition-all ${
                       isDark ? 'bg-[#151b28] border-white/10 text-slate-200' : 'bg-white border-slate-200 text-slate-800'
                     }`}
                   >
@@ -558,6 +558,23 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
           </div>
         </section>
         </div>
+
+        {/* ================= LEARN ================= */}
+        {(
+          <button
+            type="button"
+            onClick={() => setShowSkipMenu((prev) => !prev)}
+            className={`fixed right-6 bottom-6 z-[100] rounded-xl border px-3 py-2 text-[11px] font-semibold font-mono flex items-center gap-1.5 shadow-lg transition-all active:scale-95 ${
+              isDark
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+                : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
+            }`}
+            title="Jump directly to any stage"
+          >
+            <span className="material-symbols-outlined text-[15px]">fast_forward</span>
+            <span>Skip</span>
+          </button>
+        )}
 
         {/* ================= LEARN ================= */}
         {currentStageKey === 'learn' && (
