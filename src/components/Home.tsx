@@ -178,7 +178,7 @@ function buildSmoothCurve(points: Point[], straightSegmentIndices: number[] = []
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[i];
     const p1 = points[i + 1];
-    if (straightSegmentIndices.includes(i)) {
+    if (straightSegmentIndices.includes(i) && Math.abs(p1.x - p0.x) < 8) {
       d += ` L ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
     } else {
       const dy = p1.y - p0.y;
@@ -217,10 +217,14 @@ const SnakePathOverlay: React.FC<SnakePathOverlayProps> = ({
     path: string;
     activePath?: string;
     viewBox: string;
+    startY: number;
+    fadeEndY: number;
   }>({
     path: defaultPath,
     activePath: defaultActivePath,
     viewBox: defaultViewBox,
+    startY: 0,
+    fadeEndY: 0,
   });
 
   const latestPathRef = React.useRef(pathData);
@@ -255,23 +259,38 @@ const SnakePathOverlay: React.FC<SnakePathOverlayProps> = ({
         }
 
         if (points.length >= 2) {
+          // If the first segment is a lead-in from the Beginner strip, align horizontally with World 1
+          if (straightSegments.includes(0)) {
+            points[0].x = points[1].x;
+          }
+
           const fullPath = buildSmoothCurve(points, straightSegments);
           let activePathStr: string | undefined = undefined;
           if (activeIndex > 0) {
             activePathStr = buildSmoothCurve(points.slice(0, activeIndex + 1), straightSegments);
           }
           const newViewBox = `0 0 ${containerRect.width.toFixed(0)} ${containerRect.height.toFixed(0)}`;
+          const startY = points[0].y;
+          const deltaY = Math.max(30, points[1].y - startY);
+          // Gradual initial fade from startY down towards World 1 (reaching full opacity comfortably before World 1)
+          const fadeEndY = straightSegments.includes(0)
+            ? startY + Math.min(deltaY * 0.75, 55)
+            : startY;
 
           const current = latestPathRef.current;
           if (
             current.path !== fullPath ||
             current.activePath !== activePathStr ||
-            current.viewBox !== newViewBox
+            current.viewBox !== newViewBox ||
+            current.startY !== startY ||
+            current.fadeEndY !== fadeEndY
           ) {
             setPathData({
               path: fullPath,
               activePath: activePathStr,
               viewBox: newViewBox,
+              startY,
+              fadeEndY,
             });
           }
         }
@@ -318,68 +337,143 @@ const SnakePathOverlay: React.FC<SnakePathOverlayProps> = ({
       viewBox={viewBox}
     >
       <defs>
+        {/* Active path gradient */}
         <linearGradient id={gradientId} x1="0%" x2="0%" y1="0%" y2="100%">
           <stop offset="0%" stopColor="#6366f1" />
           <stop offset="100%" stopColor="#8b5cf6" />
         </linearGradient>
+
+        {/* Base track gradient starting in Beginner indigo and transitioning to base track slate */}
+        <linearGradient
+          id={`${gradientId}-baseTrackGrad`}
+          x1="0"
+          y1={pathData.startY}
+          x2="0"
+          y2={pathData.startY + 160}
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor="#6366f1" />
+          <stop offset="35%" stopColor={isDark ? '#4f46e5' : '#818cf8'} />
+          <stop offset="100%" stopColor={isDark ? '#384764' : '#9ca3af'} />
+        </linearGradient>
+
+        {/* Highlight track gradient */}
+        <linearGradient
+          id={`${gradientId}-highlightTrackGrad`}
+          x1="0"
+          y1={pathData.startY}
+          x2="0"
+          y2={pathData.startY + 160}
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor={isDark ? '#818cf8' : '#c7d2fe'} />
+          <stop offset="100%" stopColor={isDark ? '#475569' : '#ffffff'} />
+        </linearGradient>
+
+        {/* Gradual opacity mask at the path origin so the path emerges softly from the Beginner strip */}
+        {pathData.fadeEndY > pathData.startY && (
+          <>
+            <linearGradient
+              id={`${gradientId}-fadeMaskGrad`}
+              x1="0"
+              y1={pathData.startY}
+              x2="0"
+              y2={pathData.fadeEndY}
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
+              <stop offset="25%" stopColor="#ffffff" stopOpacity="0.25" />
+              <stop offset="60%" stopColor="#ffffff" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="#ffffff" stopOpacity="1" />
+            </linearGradient>
+
+            <mask
+              id={`${gradientId}-startMask`}
+              maskUnits="userSpaceOnUse"
+              x="-1000"
+              y="0"
+              width="4000"
+              height="10000"
+            >
+              <rect x="-1000" y="0" width="4000" height={Math.max(0, pathData.startY)} fill="#000000" />
+              <rect
+                x="-1000"
+                y={pathData.startY}
+                width="4000"
+                height={Math.max(1, pathData.fadeEndY - pathData.startY)}
+                fill={`url(#${gradientId}-fadeMaskGrad)`}
+              />
+              <rect
+                x="-1000"
+                y={pathData.fadeEndY}
+                width="4000"
+                height="20000"
+                fill="#ffffff"
+              />
+            </mask>
+          </>
+        )}
       </defs>
-      {/* Neumorphic highlight track */}
-      <path
-        d={path}
-        opacity={isDark ? '0.35' : '0.85'}
-        stroke={isDark ? '#475569' : '#ffffff'}
-        strokeLinecap="round"
-        strokeWidth="12"
-      />
-      {/* Recessed base track (greyed out track) */}
-      <path
-        d={path}
-        stroke={isDark ? '#384764' : '#9ca3af'}
-        strokeLinecap="round"
-        strokeWidth="6"
-        opacity={isDark ? '0.65' : '0.70'}
-      />
-      {/* Active gradient ribbon up to current/completed worlds */}
-      {activePath && (
-        <>
-          <path
-            d={activePath}
-            stroke={isDark ? '#6366f1' : '#818cf8'}
-            strokeLinecap="round"
-            strokeWidth="8"
-            opacity={isDark ? '0.22' : '0.30'}
-          />
-          <path
-            d={activePath}
-            stroke={`url(#${gradientId})`}
-            strokeDasharray="4 4"
-            strokeLinecap="round"
-            strokeWidth="4"
-          />
-        </>
-      )}
-      {/* Keep a dim traveling highlight on the full route. */}
-      <path
-        d={path}
-        className="snake-path-shimmer"
-        stroke={isDark ? '#94a3b8' : '#ffffff'}
-        strokeDasharray="18 180"
-        strokeLinecap="round"
-        strokeWidth="3"
-        opacity={isDark ? '0.5' : '0.7'}
-      />
-      {/* Add a brighter traveling highlight over the enabled blue route. */}
-      {activePath && (
+
+      <g mask={pathData.fadeEndY > pathData.startY ? `url(#${gradientId}-startMask)` : undefined}>
+        {/* Neumorphic highlight track */}
         <path
-          d={activePath}
+          d={path}
+          opacity={isDark ? '0.35' : '0.85'}
+          stroke={`url(#${gradientId}-highlightTrackGrad)`}
+          strokeLinecap="round"
+          strokeWidth="12"
+        />
+        {/* Recessed base track (greyed out track) */}
+        <path
+          d={path}
+          stroke={`url(#${gradientId}-baseTrackGrad)`}
+          strokeLinecap="round"
+          strokeWidth="6"
+          opacity={isDark ? '0.75' : '0.75'}
+        />
+        {/* Active gradient ribbon up to current/completed worlds */}
+        {activePath && (
+          <>
+            <path
+              d={activePath}
+              stroke={isDark ? '#6366f1' : '#818cf8'}
+              strokeLinecap="round"
+              strokeWidth="8"
+              opacity={isDark ? '0.25' : '0.30'}
+            />
+            <path
+              d={activePath}
+              stroke={`url(#${gradientId})`}
+              strokeDasharray="4 4"
+              strokeLinecap="round"
+              strokeWidth="4"
+            />
+          </>
+        )}
+        {/* Keep a dim traveling highlight on the full route. */}
+        <path
+          d={path}
           className="snake-path-shimmer"
-          stroke={isDark ? '#c7d2fe' : '#ffffff'}
+          stroke={isDark ? '#94a3b8' : '#ffffff'}
           strokeDasharray="18 180"
           strokeLinecap="round"
           strokeWidth="3"
-          opacity={isDark ? '0.95' : '1'}
+          opacity={isDark ? '0.5' : '0.7'}
         />
-      )}
+        {/* Add a brighter traveling highlight over the enabled blue route. */}
+        {activePath && (
+          <path
+            d={activePath}
+            className="snake-path-shimmer"
+            stroke={isDark ? '#c7d2fe' : '#ffffff'}
+            strokeDasharray="18 180"
+            strokeLinecap="round"
+            strokeWidth="3"
+            opacity={isDark ? '0.95' : '1'}
+          />
+        )}
+      </g>
     </svg>
   );
 };
@@ -414,7 +508,7 @@ const StandardWorldNode: React.FC<WorldNodeProps> = ({
 
   if (isCurrent) {
     return (
-      <div className="relative w-full flex justify-center pt-8 pb-4 z-20" style={{ marginTop: 'var(--path-gap, 0px)' }}>
+      <div className={`relative w-full flex justify-center ${paddingTop} pb-4 z-20`} style={{ marginTop: 'var(--path-gap, 0px)' }}>
         <div
           className={`w-full max-w-[320px] neu-raised rounded-2xl p-4 relative flex flex-col gap-2.5 border transition-all ${
             isDark
@@ -838,21 +932,14 @@ export const Home: React.FC<HomeProps> = ({
           </div>
 
           {/* SNAKE PATH SECTION 1: WORLDS 1-8 */}
-          <div ref={sec1Ref} className="relative w-full max-w-[360px] mx-auto px-5 pt-4 pb-8 flex flex-col items-center overflow-hidden">
-            {/* Snake path start anchor directly connected to Beginner stripe */}
-            <div className="relative w-full flex items-center justify-start pl-8 pointer-events-none -mt-4">
+          <div ref={sec1Ref} className="relative w-full max-w-[360px] mx-auto px-5 pt-0 pb-8 flex flex-col items-center overflow-hidden">
+            {/* Snake path start anchor flush with the bottom border of the Beginner strip */}
+            <div className="relative w-full flex items-center justify-start pl-8 pointer-events-none -mt-px">
               <div
                 data-node-id="node-beginner-start"
-                className="w-11 h-2 flex items-center justify-center pointer-events-none"
-              >
-                <span
-                  className={`w-3.5 h-3.5 rounded-full border-2 transition-all shadow-xs ${
-                    isDark
-                      ? 'bg-[#151b28] border-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]'
-                      : 'bg-white border-indigo-500 shadow-xs'
-                  }`}
-                />
-              </div>
+                className="w-11 h-0 pointer-events-none"
+                aria-hidden="true"
+              />
             </div>
 
             {/* Continuous SVG Path for Section 1 */}
@@ -861,7 +948,7 @@ export const Home: React.FC<HomeProps> = ({
               worldOrder={1}
               completedWorlds={completedWorldsCount}
               align="left"
-              paddingTop="pt-10"
+              paddingTop="pt-16"
               isDark={isDark}
               nodeId="node-1"
               onWorldClick={handleWorldClick}

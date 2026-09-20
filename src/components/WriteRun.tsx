@@ -39,9 +39,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
   const [showSolutionModal, setShowSolutionModal] = useState<boolean>(false);
   const [showOverflowMenu, setShowOverflowMenu] = useState<boolean>(false);
 
-  // Auto-open Task dialog as soon as Editor screen opens
-  const [showTaskModal, setShowTaskModal] = useState<boolean>(true);
-  const [modalAnimState, setModalAnimState] = useState<'open' | 'closing' | 'opening' | 'closed'>('open');
+  // Auto-open Task dialog with 1 second delay
+  const [showTaskModal, setShowTaskModal] = useState<boolean>(false);
+  const [modalAnimState, setModalAnimState] = useState<'open' | 'closing' | 'opening' | 'closed'>('closed');
   const [heroStyle, setHeroStyle] = useState<React.CSSProperties>({});
   const [isTaskButtonCatching, setIsTaskButtonCatching] = useState<boolean>(false);
 
@@ -53,6 +53,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const animTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pulseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoOpenTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Compute Hero transition coordinates between center dialog and Top Task button
   const computeHeroStyle = (forOpening = false): React.CSSProperties => {
@@ -100,15 +101,30 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
     } as React.CSSProperties;
   };
 
-  // Auto-open Task dialog as soon as Editor screen opens
+  // Auto-open Task dialog with a 250ms delay
   useEffect(() => {
-    setShowTaskModal(true);
-    setModalAnimState('open');
+    if (autoOpenTimerRef.current) clearTimeout(autoOpenTimerRef.current);
+    autoOpenTimerRef.current = setTimeout(() => {
+      const style = computeHeroStyle(true);
+      setHeroStyle(style);
+      setShowTaskModal(true);
+      setModalAnimState('opening');
+
+      if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
+      animTimeoutRef.current = setTimeout(() => {
+        setModalAnimState('open');
+      }, 360);
+    }, 250);
+
+    return () => {
+      if (autoOpenTimerRef.current) clearTimeout(autoOpenTimerRef.current);
+    };
   }, [data]);
 
   // Clean up animation timeouts on unmount
   useEffect(() => {
     return () => {
+      if (autoOpenTimerRef.current) clearTimeout(autoOpenTimerRef.current);
       if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
       if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
     };
@@ -116,6 +132,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
 
   // Hero scale-down into the Top Task button so user sees where it went
   const handleCloseTaskModal = () => {
+    if (autoOpenTimerRef.current) clearTimeout(autoOpenTimerRef.current);
     if (modalAnimState === 'closing') return;
     soundFX.playClick();
 
@@ -139,6 +156,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
 
   // Hero scale-up expanding out from the Top Task button
   const handleOpenTaskModal = () => {
+    if (autoOpenTimerRef.current) clearTimeout(autoOpenTimerRef.current);
     soundFX.playClick();
     if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
 

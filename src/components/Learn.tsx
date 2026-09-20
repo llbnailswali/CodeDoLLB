@@ -346,18 +346,40 @@ export const Learn: React.FC<LearnStageProps> = ({
             )}
           </div>
         ) : (
-          /* Final step: Button to advance to Step 2 (Explore) */
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onContinue();
-            }}
-            className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-['Outfit'] font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer animate-fadeIn"
-          >
-            <span>Continue to {nextStageLabel}</span>
-            <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
-          </button>
+          /* Final step: Button to advance to Step 2 (Explore), with Skip option */
+          <div className="flex items-center gap-2.5 w-full">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onContinue();
+              }}
+              className="flex-1 h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-['Outfit'] font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer animate-fadeIn"
+            >
+              <span>Continue to {nextStageLabel}</span>
+              <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+            </button>
+
+            {onSkip && (
+              <button
+                type="button"
+                id="learn-bottom-skip-btn-final"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSkip();
+                }}
+                className={`h-14 px-4 rounded-2xl border flex items-center justify-center gap-1.5 font-['Outfit'] text-xs font-semibold shadow-md transition-all duration-200 active:scale-95 cursor-pointer select-none shrink-0 ${
+                  isDark
+                    ? 'bg-[#171b26] border-amber-500/40 text-amber-300 hover:bg-amber-500/25 hover:border-amber-400'
+                    : 'bg-white border-amber-300 text-amber-800 hover:bg-amber-50 hover:border-amber-400 shadow-slate-200'
+                }`}
+                title="Skip to next screens (2, 3, 4, 5)"
+              >
+                <span className="material-symbols-outlined text-[18px] text-amber-500">fast_forward</span>
+                <span className="hidden xs:inline font-bold">Skip</span>
+              </button>
+            )}
+          </div>
         )}
       </div>
       </div>

@@ -10,8 +10,9 @@ import { Learn } from './Learn';
 import { Explore } from './Explore';
 import { Predict } from './Predict';
 import { WriteRun } from './WriteRun';
-import { Debug } from './Debug';
+import { DebugIde } from './DebugIde';
 import { Mastered } from './Mastered';
+import { SkipStageModal } from './SkipStageModal';
 
 export type StageKey = 'learn' | 'explore' | 'predict' | 'writeRun' | 'debug' | 'mastered';
 
@@ -345,6 +346,25 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
     );
   }
 
+  if (currentStageKey === 'debug' && lessonData.debug) {
+    return (
+      <div
+        className={`fixed inset-0 z-40 w-full h-full h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col items-center justify-center p-0 select-none ${
+          isDark ? 'bg-[#06080e]' : 'bg-[#0f141f]'
+        }`}
+      >
+        <DebugIde
+          data={lessonData.debug}
+          topicTitle={lessonData.topicTitle}
+          isDark={isDark}
+          onContinue={handleNextStage}
+          onBack={handlePreviousStage}
+          nextStageLabel={nextStageLabel}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`min-h-screen w-full flex flex-col items-center select-none pb-2 transition-colors duration-300 ${
@@ -401,13 +421,13 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
                   onMouseLeave={() => setIsHoveringTutorialBtn(false)}
                   className={`relative w-9 h-9 rounded-xl border flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-sm ${
                     isDark
-                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/25 hover:border-amber-400/60'
-                      : 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100 hover:border-amber-400'
+                      ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/25 hover:border-indigo-400/50'
+                      : 'bg-indigo-50 border-indigo-200 text-indigo-600 hover:bg-indigo-100 hover:border-indigo-300'
                   }`}
                   aria-label="Open detailed tutorial"
                   title="Detailed Tutorial"
                 >
-                  <span className="material-symbols-outlined text-[20px] text-amber-600 dark:text-amber-400">
+                  <span className="material-symbols-outlined text-[20px] text-indigo-600 dark:text-indigo-400">
                     auto_stories
                   </span>
                   <span className="tutorial-hint-dot" aria-hidden="true" />
@@ -435,13 +455,13 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
                       <div className="flex items-center gap-2 min-w-0">
                         <span className={`flex items-center justify-center w-6 h-6 rounded-lg shrink-0 ${
                           isDark
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            : 'bg-amber-50 text-amber-800 border border-amber-200/80'
+                            ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                            : 'bg-indigo-50 text-indigo-700 border border-indigo-200/80'
                         }`}>
                           <span className="material-symbols-outlined text-[15px]">auto_stories</span>
                         </span>
                         <span className={`font-['Outfit'] font-bold text-[11px] tracking-wider uppercase truncate ${
-                          isDark ? 'text-amber-400' : 'text-slate-800'
+                          isDark ? 'text-indigo-400' : 'text-slate-800'
                         }`}>
                           Detailed Tutorial
                         </span>
@@ -472,10 +492,10 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
                       Tap this{' '}
                       <span className={`inline-flex items-center gap-1 font-semibold px-1.5 py-0.5 rounded-md text-[11px] align-baseline ${
                         isDark
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                          : 'bg-amber-50 text-amber-900 border border-amber-200'
+                          ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                          : 'bg-indigo-50 text-indigo-900 border border-indigo-200'
                       }`}>
-                        <span className="material-symbols-outlined text-[13px] text-amber-600 dark:text-amber-400">auto_stories</span>
+                        <span className="material-symbols-outlined text-[13px] text-indigo-600 dark:text-indigo-400">auto_stories</span>
                         book icon
                       </span>{' '}
                       anytime for an in-depth guide with code breakdowns, mental models, and quick cheatsheets.
@@ -529,47 +549,8 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
                         isDark ? 'bg-[#151b28] border-l border-t border-white/10' : 'bg-slate-900'
                       }`}
                     />
-                    <span className="material-symbols-outlined text-[14px] text-amber-400">auto_stories</span>
+                    <span className="material-symbols-outlined text-[14px] text-indigo-400">auto_stories</span>
                     <span>Detailed Tutorial Guide</span>
-                  </div>
-                )}
-
-                {/* Dropdown to jump directly to any desired stage */}
-                {showSkipMenu && (
-                  <div
-                    className={`fixed right-6 bottom-16 w-44 rounded-xl border p-1.5 shadow-xl z-50 transition-all ${
-                      isDark ? 'bg-[#151b28] border-white/10 text-slate-200' : 'bg-white border-slate-200 text-slate-800'
-                    }`}
-                  >
-                    <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      Jump to Screen:
-                    </div>
-                    {activeStages.map((key, idx) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => {
-                          setShowSkipMenu(false);
-                          if (key === 'learn') {
-                            // Max out reveal step so it's fully revealed
-                            setLearnRevealStep(10);
-                          }
-                          handleJumpToStage(key);
-                        }}
-                        className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
-                          currentStageKey === key
-                            ? 'bg-indigo-600 text-white'
-                            : isDark
-                            ? 'hover:bg-white/5 text-slate-300'
-                            : 'hover:bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        <span>{`Stage ${idx + 1}: ${STAGE_LABELS[key]}`}</span>
-                        {currentStageKey === key && (
-                          <span className="material-symbols-outlined text-[14px]">check</span>
-                        )}
-                      </button>
-                    ))}
                   </div>
                 )}
               </div>
@@ -662,23 +643,6 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
         </div>
 
         {/* ================= LEARN ================= */}
-        {(
-          <button
-            type="button"
-            onClick={() => setShowSkipMenu((prev) => !prev)}
-            className={`fixed right-6 bottom-6 z-[100] rounded-xl border px-3 py-2 text-[11px] font-semibold font-mono flex items-center gap-1.5 shadow-lg transition-all active:scale-95 ${
-              isDark
-                ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
-                : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
-            }`}
-            title="Jump directly to any stage"
-          >
-            <span className="material-symbols-outlined text-[15px]">fast_forward</span>
-            <span>Skip</span>
-          </button>
-        )}
-
-        {/* ================= LEARN ================= */}
         {currentStageKey === 'learn' && (
           <Learn
             data={lessonData.learn}
@@ -686,6 +650,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
             revealStep={learnRevealStep}
             setRevealStep={setLearnRevealStep}
             onContinue={handleNextStage}
+            onSkip={() => setShowSkipMenu(true)}
             nextStageLabel={nextStageLabel}
             tapToRevealEnabled={tapToRevealEnabled}
           />
@@ -723,18 +688,6 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
           />
         )}
 
-        {/* ================= DEBUG (only when this lesson uses it) ================= */}
-        {currentStageKey === 'debug' && lessonData.debug && (
-          <Debug
-            data={lessonData.debug}
-            topicTitle={lessonData.topicTitle}
-            isDark={isDark}
-            revealStep={debugRevealStep}
-            setRevealStep={setDebugRevealStep}
-            onContinue={handleNextStage}
-          />
-        )}
-
         {/* ================= MASTERED ================= */}
         {currentStageKey === 'mastered' && (
           <Mastered
@@ -744,6 +697,19 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
             onContinue={handleNextStage}
           />
         )}
+
+        {/* Skip to Next Screen Modal (Jump to screens 2, 3, 4, 5...) */}
+        <SkipStageModal
+          isOpen={showSkipMenu}
+          onClose={() => setShowSkipMenu(false)}
+          activeStages={activeStages}
+          currentStageIndex={currentStageIndex}
+          onSelectStage={(targetStage) => {
+            setLearnRevealStep(10);
+            handleJumpToStage(targetStage);
+          }}
+          isDark={isDark}
+        />
       </div>
     </div>
   );

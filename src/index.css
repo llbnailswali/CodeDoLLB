@@ -170,7 +170,7 @@
   50% {
     transform: scale(1.2);
     opacity: 1;
-    box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.35);
+    box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.4);
   }
 }
 
@@ -243,8 +243,8 @@
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: #f59e0b;
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+  background: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
   animation: tutorial-hint-dot-pulse 1.4s ease-in-out infinite;
 }
 
