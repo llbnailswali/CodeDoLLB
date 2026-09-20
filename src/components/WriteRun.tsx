@@ -39,6 +39,11 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
   const [showSolutionModal, setShowSolutionModal] = useState<boolean>(false);
   const [showOverflowMenu, setShowOverflowMenu] = useState<boolean>(false);
 
+  // Preparing state with progress animation before auto-opening Task dialog
+  const [isPreparing, setIsPreparing] = useState<boolean>(true);
+  const [prepProgress, setPrepProgress] = useState<number>(15);
+  const prepTimersRef = useRef<NodeJS.Timeout[]>([]);
+
   // Auto-open Task dialog with 1 second delay
   const [showTaskModal, setShowTaskModal] = useState<boolean>(false);
   const [modalAnimState, setModalAnimState] = useState<'open' | 'closing' | 'opening' | 'closed'>('closed');
@@ -101,10 +106,22 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
     } as React.CSSProperties;
   };
 
-  // Auto-open Task dialog with a 250ms delay
+  // Auto-open Task dialog with a preparation progress animation ("Preparing Write & Run Exercise")
   useEffect(() => {
+    prepTimersRef.current.forEach(clearTimeout);
+    prepTimersRef.current = [];
     if (autoOpenTimerRef.current) clearTimeout(autoOpenTimerRef.current);
+
+    setIsPreparing(true);
+    setPrepProgress(12);
+
+    const t1 = setTimeout(() => setPrepProgress(38), 450);
+    const t2 = setTimeout(() => setPrepProgress(65), 1050);
+    const t3 = setTimeout(() => setPrepProgress(88), 1750);
+    const t4 = setTimeout(() => setPrepProgress(100), 2250);
+
     autoOpenTimerRef.current = setTimeout(() => {
+      setIsPreparing(false);
       const style = computeHeroStyle(true);
       setHeroStyle(style);
       setShowTaskModal(true);
@@ -114,9 +131,13 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
       animTimeoutRef.current = setTimeout(() => {
         setModalAnimState('open');
       }, 360);
-    }, 250);
+    }, 2550);
+
+    prepTimersRef.current.push(t1, t2, t3, t4, autoOpenTimerRef.current);
 
     return () => {
+      prepTimersRef.current.forEach(clearTimeout);
+      prepTimersRef.current = [];
       if (autoOpenTimerRef.current) clearTimeout(autoOpenTimerRef.current);
     };
   }, [data]);
@@ -124,6 +145,8 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
   // Clean up animation timeouts on unmount
   useEffect(() => {
     return () => {
+      prepTimersRef.current.forEach(clearTimeout);
+      prepTimersRef.current = [];
       if (autoOpenTimerRef.current) clearTimeout(autoOpenTimerRef.current);
       if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
       if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
@@ -156,6 +179,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
 
   // Hero scale-up expanding out from the Top Task button
   const handleOpenTaskModal = () => {
+    prepTimersRef.current.forEach(clearTimeout);
+    prepTimersRef.current = [];
+    setIsPreparing(false);
     if (autoOpenTimerRef.current) clearTimeout(autoOpenTimerRef.current);
     soundFX.playClick();
     if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
@@ -511,6 +537,62 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
         isDark={isDark}
       />
 
+      {/* ================= BEGIN: Preparing Exercise Progress Animation ================= */}
+      {isPreparing && !showTaskModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4 select-none animate-fadeIn"
+          id="preparing-writerun-modal"
+        >
+          <div
+            className={`w-full max-w-[310px] rounded-2xl border p-5 shadow-2xl flex flex-col items-center text-center animate-scaleUp ${
+              isDark
+                ? 'bg-[#101422] border-indigo-500/30 text-slate-100 shadow-[0_0_35px_rgba(99,102,241,0.25)]'
+                : 'bg-white border-indigo-200 text-slate-900 shadow-[0_12px_36px_rgba(99,102,241,0.15)]'
+            }`}
+          >
+            {/* Animated Icon with subtle ping halo */}
+            <div className="relative mb-3.5 flex items-center justify-center">
+              <span className="animate-ping absolute inline-flex h-11 w-11 rounded-2xl bg-indigo-500/25" />
+              <div
+                className={`relative w-11 h-11 rounded-2xl flex items-center justify-center border shadow-inner ${
+                  isDark
+                    ? 'bg-indigo-950/80 border-indigo-500/40 text-indigo-300'
+                    : 'bg-indigo-50 border-indigo-200 text-indigo-600'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[22px]">terminal</span>
+              </div>
+            </div>
+
+            <h4 className={`font-bold text-sm tracking-tight mb-1 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+              Preparing Write &amp; Run Exercise
+            </h4>
+            <p className={`text-xs mb-3.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              Setting up compiler &amp; test workspace...
+            </p>
+
+            {/* Smooth animated progress bar */}
+            <div className="w-full space-y-1.5">
+              <div
+                className={`w-full h-2 rounded-full overflow-hidden border p-[1px] ${
+                  isDark ? 'bg-[#090d16] border-slate-800' : 'bg-slate-100 border-slate-200'
+                }`}
+              >
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-indigo-400 to-sky-400 transition-all duration-500 ease-out shadow-[0_0_12px_rgba(99,102,241,0.7)]"
+                  style={{ width: `${prepProgress}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[10.5px] font-mono">
+                <span className={isDark ? 'text-slate-500' : 'text-slate-400'}>Initializing</span>
+                <span className="text-indigo-400 font-semibold">{prepProgress}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ================= END: Preparing Exercise Progress Animation ================= */}
+
       {/* ================= BEGIN: Task Details Modal (Hero Scale Animation) ================= */}
       {showTaskModal && (
         <div
@@ -548,7 +630,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                       : 'bg-indigo-100 text-indigo-700 border-indigo-300'
                   }`}
                 >
-                  TASK
+                  STAGE 4 · WRITE & RUN
                 </span>
                 <span className="text-slate-500 text-xs">·</span>
                 <span className={`font-mono text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -572,6 +654,18 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             {/* Scrollable Content */}
             <div className="overflow-y-auto px-5 py-3.5 space-y-3.5 flex-1 overscroll-contain">
               <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold tracking-wider uppercase border ${
+                      isDark
+                        ? 'bg-indigo-950/70 text-indigo-300 border-indigo-700/50'
+                        : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[13px] text-indigo-400">code</span>
+                    Write &amp; Run Exercise
+                  </span>
+                </div>
                 <h3 className={`font-bold text-base mb-1.5 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                   {data.title || topicTitle || 'Kotlin Code Task'}
                 </h3>

@@ -29,8 +29,13 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
   const [showSolutionModal, setShowSolutionModal] = useState<boolean>(false);
   const [showOverflowMenu, setShowOverflowMenu] = useState<boolean>(false);
 
-  // Progressive hints reveal state
-  const [unlockedHintCount, setUnlockedHintCount] = useState<number>(1);
+  // Progressive hints reveal state (0 initially revealed, unlocked on click)
+  const [unlockedHintCount, setUnlockedHintCount] = useState<number>(0);
+
+  // Preparing state with progress animation before auto-opening Task dialog
+  const [isPreparing, setIsPreparing] = useState<boolean>(true);
+  const [prepProgress, setPrepProgress] = useState<number>(15);
+  const prepTimersRef = useRef<NodeJS.Timeout[]>([]);
 
   // Auto-open Task modal with 1 second delay
   const [showTaskModal, setShowTaskModal] = useState<boolean>(false);
@@ -54,13 +59,25 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
     setExecutionResult(null);
     setIsResolved(false);
     setShowOutputPanel(false);
-    setUnlockedHintCount(1);
+    setUnlockedHintCount(0);
   }, [data.brokenCode]);
 
-  // Auto-open Task dialog with a 250ms delay
+  // Auto-open Task dialog with a preparation progress animation ("Preparing Debug Exercise")
   useEffect(() => {
+    prepTimersRef.current.forEach(clearTimeout);
+    prepTimersRef.current = [];
     if (autoOpenTimerRef.current) clearTimeout(autoOpenTimerRef.current);
+
+    setIsPreparing(true);
+    setPrepProgress(12);
+
+    const t1 = setTimeout(() => setPrepProgress(38), 450);
+    const t2 = setTimeout(() => setPrepProgress(65), 1050);
+    const t3 = setTimeout(() => setPrepProgress(88), 1750);
+    const t4 = setTimeout(() => setPrepProgress(100), 2250);
+
     autoOpenTimerRef.current = setTimeout(() => {
+      setIsPreparing(false);
       setHeroStyle(computeHeroStyle(true));
       setShowTaskModal(true);
       setModalAnimState('opening');
@@ -69,9 +86,13 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
       animTimeoutRef.current = setTimeout(() => {
         setModalAnimState('open');
       }, 280);
-    }, 250);
+    }, 2550);
+
+    prepTimersRef.current.push(t1, t2, t3, t4, autoOpenTimerRef.current);
 
     return () => {
+      prepTimersRef.current.forEach(clearTimeout);
+      prepTimersRef.current = [];
       if (autoOpenTimerRef.current) clearTimeout(autoOpenTimerRef.current);
     };
   }, [data]);
@@ -79,6 +100,8 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
   // Clean up animation timeouts on unmount
   useEffect(() => {
     return () => {
+      prepTimersRef.current.forEach(clearTimeout);
+      prepTimersRef.current = [];
       if (autoOpenTimerRef.current) clearTimeout(autoOpenTimerRef.current);
       if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
       if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current);
@@ -132,6 +155,9 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
   };
 
   const handleOpenTaskModal = () => {
+    prepTimersRef.current.forEach(clearTimeout);
+    prepTimersRef.current = [];
+    setIsPreparing(false);
     if (autoOpenTimerRef.current) clearTimeout(autoOpenTimerRef.current);
     soundFX.playClick();
     if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
@@ -527,6 +553,62 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
         isDark={isDark}
       />
 
+      {/* ================= BEGIN: Preparing Debug Exercise Progress Animation ================= */}
+      {isPreparing && !showTaskModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4 select-none animate-fadeIn"
+          id="preparing-debug-modal"
+        >
+          <div
+            className={`w-full max-w-[310px] rounded-2xl border p-5 shadow-2xl flex flex-col items-center text-center animate-scaleUp ${
+              isDark
+                ? 'bg-[#180e1a] border-rose-500/30 text-slate-100 shadow-[0_0_35px_rgba(244,63,94,0.25)]'
+                : 'bg-white border-rose-200 text-slate-900 shadow-[0_12px_36px_rgba(244,63,94,0.15)]'
+            }`}
+          >
+            {/* Animated Icon with subtle ping halo */}
+            <div className="relative mb-3.5 flex items-center justify-center">
+              <span className="animate-ping absolute inline-flex h-11 w-11 rounded-2xl bg-rose-500/25" />
+              <div
+                className={`relative w-11 h-11 rounded-2xl flex items-center justify-center border shadow-inner ${
+                  isDark
+                    ? 'bg-rose-950/80 border-rose-500/40 text-rose-300'
+                    : 'bg-rose-50 border-rose-200 text-rose-600'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[22px]">troubleshoot</span>
+              </div>
+            </div>
+
+            <h4 className={`font-bold text-sm tracking-tight mb-1 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+              Preparing Debug Exercise
+            </h4>
+            <p className={`text-xs mb-3.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              Inspecting defect &amp; runtime harness...
+            </p>
+
+            {/* Smooth animated progress bar */}
+            <div className="w-full space-y-1.5">
+              <div
+                className={`w-full h-2 rounded-full overflow-hidden border p-[1px] ${
+                  isDark ? 'bg-[#0c0810] border-rose-950/60' : 'bg-rose-50/50 border-rose-200'
+                }`}
+              >
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-rose-500 via-rose-400 to-amber-500 transition-all duration-500 ease-out shadow-[0_0_12px_rgba(244,63,94,0.7)]"
+                  style={{ width: `${prepProgress}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[10.5px] font-mono">
+                <span className={isDark ? 'text-rose-400/60' : 'text-slate-400'}>Analyzing</span>
+                <span className="text-rose-400 font-semibold">{prepProgress}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ================= END: Preparing Debug Exercise Progress Animation ================= */}
+
       {/* ================= Hero-Animated Task Modal ================= */}
       {showTaskModal && (
         <div
@@ -568,11 +650,11 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
                       : 'bg-rose-100 text-rose-800 border-rose-300'
                   }`}
                 >
-                  DEFECT #{data.challengeNumber}
+                  STAGE 5 · DEBUG
                 </span>
                 <span className="text-rose-400/50 text-xs">·</span>
                 <span className={`px-2 py-0.5 rounded-md font-mono text-[10.5px] font-semibold border ${getDifficultyColor()}`}>
-                  {data.difficulty.toUpperCase()}
+                  DEFECT #{data.challengeNumber}
                 </span>
               </div>
               <button
@@ -594,6 +676,18 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
             {/* Scrollable Modal Content */}
             <div className="overflow-y-auto px-5 py-3.5 space-y-3.5 flex-1 overscroll-contain text-xs">
               <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold tracking-wider uppercase border ${
+                      isDark
+                        ? 'bg-rose-950/70 text-rose-300 border-rose-700/50'
+                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[13px] text-rose-400">bug_report</span>
+                    Debug Challenge
+                  </span>
+                </div>
                 <h3 className={`font-bold text-base mb-1 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                   {data.title || topicTitle}
                 </h3>
