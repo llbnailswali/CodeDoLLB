@@ -354,7 +354,7 @@ export const Predict: React.FC<PredictStageProps> = ({
       }`}
     >
       {/* 0: Step Header (Always visible initially) */}
-      <section className="pt-1 mb-2">
+      <section className="pt-1 mb-2 px-2.5 sm:px-3.5">
         <h1
           className={`font-['Outfit'] text-2xl font-semibold tracking-tight mb-1.5 ${
             isDark ? 'text-white' : 'text-slate-900'
@@ -362,6 +362,15 @@ export const Predict: React.FC<PredictStageProps> = ({
         >
           {data.title}
         </h1>
+        {data.subtitle && data.subtitle.trim() !== '' && (
+          <p
+            className={`text-[15px] leading-snug font-normal mb-2 transition-all duration-300 animate-fadeIn ${
+              isDark ? 'text-slate-300' : 'text-slate-600'
+            }`}
+          >
+            {data.subtitle}
+          </p>
+        )}
       </section>
 
       {/* Sticky Indicator Navigation Bar - Shown after tap or when tapToReveal is disabled */}

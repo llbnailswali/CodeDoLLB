@@ -264,7 +264,7 @@ export const Explore: React.FC<ExploreStageProps> = ({
       }`}
     >
       {/* 0: Concept Title (Always visible initially) */}
-      <div className="pt-1 mb-2">
+      <div className="pt-1 mb-2 px-2.5 sm:px-3.5">
         <h2
           className={`font-['Outfit'] text-2xl font-semibold tracking-tight mb-1.5 ${
             isDark ? 'text-white' : 'text-slate-900'
@@ -277,7 +277,7 @@ export const Explore: React.FC<ExploreStageProps> = ({
       {/* Subtitle if available */}
       {data.subtitle && data.subtitle.trim() !== '' && (
         <p
-          className={`text-[15px] leading-snug font-normal mb-2 transition-all duration-300 animate-fadeIn ${
+          className={`text-[15px] leading-snug font-normal mb-2 px-2.5 sm:px-3.5 transition-all duration-300 animate-fadeIn ${
             isDark ? 'text-slate-300' : 'text-slate-600'
           }`}
         >

@@ -94,7 +94,7 @@ export const Learn: React.FC<LearnStageProps> = ({
       }`}
     >
       {/* 0: Concept Title (Always visible initially) */}
-      <div className="pt-1 mb-2">
+      <div className="pt-1 mb-2 px-2.5 sm:px-3.5">
         <h1
           className={`font-['Outfit'] text-2xl font-semibold tracking-tight mb-1.5 ${
             isDark ? 'text-white' : 'text-slate-900'
@@ -107,7 +107,7 @@ export const Learn: React.FC<LearnStageProps> = ({
       {/* 1: Concept Subtitle & Brief (Revealed on tap 1 or if tapToReveal is disabled) */}
       {(!tapToRevealEnabled || revealStep >= 1) && (
         <p
-          className={`mt-1 text-[15px] leading-relaxed mb-3 transition-all duration-300 animate-fadeIn ${
+          className={`mt-1 text-[15px] leading-relaxed mb-3 px-2.5 sm:px-3.5 transition-all duration-300 animate-fadeIn ${
             isDark ? 'text-[#94a3b8]' : 'text-slate-600'
           }`}
         >

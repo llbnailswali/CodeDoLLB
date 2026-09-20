@@ -313,14 +313,14 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
           isDark ? 'bg-[#0d121d] border-ide-border' : 'bg-[#e8eaf0] border-slate-300'
         }`}
       >
-      <div className="px-3 h-10 flex items-center justify-between">
+      <div className="px-3 sm:px-4 h-14 flex items-center justify-between">
         {/* Left: Back button & Problem Details Trigger */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:gap-2.5">
           <button
             type="button"
             aria-label="Go Back"
             onClick={onBack || onContinue}
-            className={`w-7 h-7 rounded-lg border flex items-center justify-center active:scale-95 transition-transform cursor-pointer shrink-0 ${
+            className={`w-9 h-9 rounded-xl border flex items-center justify-center active:scale-95 transition-transform cursor-pointer shrink-0 ${
               isDark
                 ? 'bg-slate-800/80 hover:bg-slate-700 border-slate-700/60 text-slate-300'
                 : 'bg-white hover:bg-slate-100 border-slate-300 text-slate-600'
@@ -337,7 +337,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             type="button"
             id="task-trigger-btn"
             onClick={handleToggleTaskModal}
-            className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium active:scale-95 transition-all cursor-pointer ${
+            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium active:scale-95 transition-all cursor-pointer ${
               isTaskButtonCatching ? 'animate-task-catch ring-2 ring-indigo-400' : ''
             } ${
               showTaskModal
@@ -373,12 +373,12 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
 
         {/* Right: Run button and Overflow Menu (Undo/Redo now live above the
             keyboard, right-aligned, within easy thumb reach while typing) */}
-        <div className="flex items-center gap-1.5 relative">
+        <div className="flex items-center gap-2 relative">
           <button
             type="button"
             aria-label="Execute code"
             onClick={handleExecute}
-            className="h-7 px-3.5 rounded-lg bg-[#6366f1] hover:bg-[#4f46e5] text-white font-medium text-xs flex items-center gap-1.5 shadow-[0_0_14px_rgba(99,102,241,0.45)] active:scale-95 transition-all cursor-pointer"
+            className="h-9 px-4 rounded-xl bg-[#6366f1] hover:bg-[#4f46e5] text-white font-semibold text-xs flex items-center gap-1.5 shadow-[0_0_14px_rgba(99,102,241,0.45)] active:scale-95 transition-all cursor-pointer"
             id="run-btn"
           >
             <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
@@ -391,7 +391,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             type="button"
             aria-label="More options"
             onClick={() => setShowOverflowMenu((prev) => !prev)}
-            className={`w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
+            className={`w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-colors ${
               isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -624,17 +624,13 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             <div className={`sticky top-0 z-10 flex items-center justify-between px-5 py-3.5 border-b shrink-0 ${isDark ? 'border-slate-800 bg-[#121622]' : 'border-slate-200 bg-white'}`}>
               <div className="flex items-center gap-2">
                 <span
-                  className={`px-2 py-0.5 rounded-md font-mono text-[10.5px] font-bold border ${
+                  className={`px-2.5 py-1 rounded-md font-mono text-[11px] font-bold border tracking-tight ${
                     isDark
                       ? 'bg-indigo-950/90 text-indigo-300 border-indigo-700/50'
                       : 'bg-indigo-100 text-indigo-700 border-indigo-300'
                   }`}
                 >
-                  STAGE 4 · WRITE & RUN
-                </span>
-                <span className="text-slate-500 text-xs">·</span>
-                <span className={`font-mono text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {data.fileName || `${(topicTitle || 'Main').replace(/[^a-zA-Z0-9]/g, '')}.kt`}
+                  Stage 4 - Write &amp; Run Exercise
                 </span>
               </div>
               <button
@@ -654,18 +650,6 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             {/* Scrollable Content */}
             <div className="overflow-y-auto px-5 py-3.5 space-y-3.5 flex-1 overscroll-contain">
               <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold tracking-wider uppercase border ${
-                      isDark
-                        ? 'bg-indigo-950/70 text-indigo-300 border-indigo-700/50'
-                        : 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[13px] text-indigo-400">code</span>
-                    Write &amp; Run Exercise
-                  </span>
-                </div>
                 <h3 className={`font-bold text-base mb-1.5 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                   {data.title || topicTitle || 'Kotlin Code Task'}
                 </h3>

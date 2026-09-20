@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
+import { Bug } from 'lucide-react';
 import { Stage5DebugData } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
 import { compileAndRunKotlin, KotlinExecutionResult } from '../utils/kotlinRunner';
@@ -291,17 +292,6 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
     return ['val', 'var', 'fun', 'println', 'Int', 'String', 'Boolean', 'Double', 'return', 'if', 'else', '==', '!='];
   }, []);
 
-  const getDifficultyColor = () => {
-    switch (data.difficulty) {
-      case 'hard':
-        return isDark ? 'text-rose-400 bg-rose-950/70 border-rose-800/60' : 'text-rose-700 bg-rose-100 border-rose-300';
-      case 'medium':
-        return isDark ? 'text-amber-400 bg-amber-950/70 border-amber-800/60' : 'text-amber-700 bg-amber-100 border-amber-300';
-      default:
-        return isDark ? 'text-emerald-400 bg-emerald-950/70 border-emerald-800/60' : 'text-emerald-700 bg-emerald-100 border-emerald-300';
-    }
-  };
-
   return (
     <main
       className={`w-full max-w-2xl h-full h-[100dvh] max-h-[100dvh] flex flex-col justify-between relative overflow-hidden shadow-2xl border-x-0 md:border md:rounded-2xl select-none ${
@@ -317,14 +307,14 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
         {/* Subtle accent indicator bar for Debug Stage */}
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-rose-500 via-rose-400 to-amber-500 opacity-90" />
 
-        <div className="px-3 h-10 flex items-center justify-between">
+        <div className="px-3 sm:px-4 h-14 flex items-center justify-between">
           {/* Left: Back button & Task Trigger */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             <button
               type="button"
               aria-label="Go Back"
               onClick={onBack || onContinue}
-              className={`w-7 h-7 rounded-lg border flex items-center justify-center active:scale-95 transition-transform cursor-pointer shrink-0 ${
+              className={`w-9 h-9 rounded-xl border flex items-center justify-center active:scale-95 transition-transform cursor-pointer shrink-0 ${
                 isDark
                   ? 'bg-rose-950/30 hover:bg-rose-900/50 border-rose-900/40 text-rose-200'
                   : 'bg-white hover:bg-rose-50 border-rose-200 text-rose-800'
@@ -335,13 +325,13 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
               </svg>
             </button>
 
-            {/* Short & meaningful Task Button with Hero animation */}
+            {/* Short & meaningful Debug Tag Button with Hero animation */}
             <button
               ref={taskButtonRef}
               type="button"
               id="task-trigger-btn"
               onClick={handleToggleTaskModal}
-              className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium active:scale-95 transition-all cursor-pointer ${
+              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium active:scale-95 transition-all cursor-pointer ${
                 isTaskButtonCatching ? 'animate-task-catch ring-2 ring-rose-400' : ''
               } ${
                 showTaskModal
@@ -350,8 +340,8 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
                   ? 'bg-[#1b0f19] hover:bg-[#281525] border-rose-800/60 text-rose-200'
                   : 'bg-white hover:bg-rose-50 border-rose-300 text-rose-800'
               }`}
-              aria-label="Toggle Task"
-              title="Click to view Task instructions"
+              aria-label="Toggle Debug Details"
+              title="Click to view Debug instructions"
             >
               {!showTaskModal && (
                 <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
@@ -359,7 +349,8 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border border-white/60"></span>
                 </span>
               )}
-              <span className="font-semibold tracking-tight">Task</span>
+              <Bug className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+              <span className="font-semibold tracking-tight">Debug</span>
               <svg
                 className={`w-3.5 h-3.5 text-rose-400 transition-transform duration-200 shrink-0 ${
                   showTaskModal ? 'rotate-180 text-rose-300' : ''
@@ -375,13 +366,13 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
           </div>
 
           {/* Right: Run button and Overflow Menu */}
-          <div className="flex items-center gap-1.5 relative">
+          <div className="flex items-center gap-2 relative">
             <button
               type="button"
               aria-label="Execute code"
               disabled={isTesting}
               onClick={handleExecuteFix}
-              className="h-7 px-3.5 rounded-lg bg-[#f43f5e] hover:bg-[#e11d48] text-white font-medium text-xs flex items-center gap-1.5 shadow-[0_0_14px_rgba(244,63,94,0.45)] active:scale-95 transition-all cursor-pointer"
+              className="h-9 px-4 rounded-xl bg-[#f43f5e] hover:bg-[#e11d48] text-white font-semibold text-xs flex items-center gap-1.5 shadow-[0_0_14px_rgba(244,63,94,0.45)] active:scale-95 transition-all cursor-pointer"
               id="run-btn"
             >
               {isTesting ? (
@@ -410,7 +401,7 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
               type="button"
               aria-label="More options"
               onClick={() => setShowOverflowMenu((prev) => !prev)}
-              className={`w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
+              className={`w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-colors ${
                 isDark ? 'text-rose-300/80 hover:text-rose-200' : 'text-rose-700/80 hover:text-rose-900'
               }`}
             >
@@ -454,8 +445,8 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
                     isDark ? 'hover:bg-rose-950/50 text-rose-200' : 'hover:bg-rose-50 text-slate-700'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[15px] text-rose-400">help_outline</span>
-                  <span>View Task</span>
+                  <Bug className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <span>View Debug</span>
                 </button>
 
                 <button
@@ -644,17 +635,13 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
             >
               <div className="flex items-center gap-2">
                 <span
-                  className={`px-2 py-0.5 rounded-md font-mono text-[10.5px] font-bold border ${
+                  className={`px-2.5 py-1 rounded-md font-mono text-[11px] font-bold border tracking-tight ${
                     isDark
                       ? 'bg-rose-950/90 text-rose-300 border-rose-700/60'
                       : 'bg-rose-100 text-rose-800 border-rose-300'
                   }`}
                 >
-                  STAGE 5 · DEBUG
-                </span>
-                <span className="text-rose-400/50 text-xs">·</span>
-                <span className={`px-2 py-0.5 rounded-md font-mono text-[10.5px] font-semibold border ${getDifficultyColor()}`}>
-                  DEFECT #{data.challengeNumber}
+                  Stage 5 - Debug Exercise
                 </span>
               </div>
               <button
@@ -676,18 +663,6 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
             {/* Scrollable Modal Content */}
             <div className="overflow-y-auto px-5 py-3.5 space-y-3.5 flex-1 overscroll-contain text-xs">
               <div>
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold tracking-wider uppercase border ${
-                      isDark
-                        ? 'bg-rose-950/70 text-rose-300 border-rose-700/50'
-                        : 'bg-rose-50 text-rose-700 border-rose-200'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[13px] text-rose-400">bug_report</span>
-                    Debug Challenge
-                  </span>
-                </div>
                 <h3 className={`font-bold text-base mb-1 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
                   {data.title || topicTitle}
                 </h3>
