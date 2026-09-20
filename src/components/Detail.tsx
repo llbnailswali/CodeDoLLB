@@ -1,4 +1,4 @@
-import React, { forwardRef, useState, useEffect, useLayoutEffect, useImperativeHandle, useRef } from 'react';
+import React, { forwardRef, useState, useEffect, useLayoutEffect, useImperativeHandle, useRef, useMemo } from 'react';
 import { AppTheme, UserStats } from '../types';
 import { FiveStageLesson, AVAILABLE_FIVE_STAGE_LESSONS } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
@@ -98,24 +98,49 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   const [hasRunCode, setHasRunCode] = useState<boolean>(false);
   const [actualOutput, setActualOutput] = useState<string>('');
 
-  // Detailed Tutorial state (available for World 1 Lessons 1, 2, 3)
+  // Detailed Tutorial state
   const [showDetailedTutorial, setShowDetailedTutorial] = useState<boolean>(false);
   const [showTutorialHint, setShowTutorialHint] = useState<boolean>(true);
+  const [isHoveringTutorialBtn, setIsHoveringTutorialBtn] = useState<boolean>(false);
   const tutorialButtonRef = useRef<HTMLButtonElement>(null);
   const tutorialHintRef = useRef<HTMLDivElement>(null);
 
-  const detailedTutorial =
-    getDetailedTutorial(lessonData.id) ||
-    getDetailedTutorial(currentLessonKey) ||
-    getDetailedTutorial(lessonData.topicTitle);
+  const detailedTutorial = useMemo(() => {
+    return (
+      getDetailedTutorial(lessonData.id, lessonData) ||
+      getDetailedTutorial(currentLessonKey, lessonData) ||
+      getDetailedTutorial(lessonData.topicTitle, lessonData)
+    );
+  }, [lessonData, currentLessonKey]);
 
   useEffect(() => {
-    setShowTutorialHint(Boolean(detailedTutorial));
-    // TODO: restore persistence after the hint copy and placement are final.
-    // if (localStorage.getItem('codedo_detailed_tutorial_hint_dismissed') === 'true') {
-    //   setShowTutorialHint(false);
-    // }
-  }, [detailedTutorial]);
+    // Show tutorial hint when entering a lesson with a tutorial
+    if (detailedTutorial) {
+      setShowTutorialHint(true);
+    }
+  }, [currentLessonKey, detailedTutorial]);
+
+  // Click outside to dismiss tutorial hint
+  useEffect(() => {
+    if (!showTutorialHint) return;
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (
+        tutorialHintRef.current &&
+        !tutorialHintRef.current.contains(target) &&
+        tutorialButtonRef.current &&
+        !tutorialButtonRef.current.contains(target)
+      ) {
+        setShowTutorialHint(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showTutorialHint]);
 
   useEffect(() => {
     setUserCode(lessonData.writeRun?.initialCode ?? '');
@@ -360,32 +385,152 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
 
           {/* Action / Tools Area in Toolbar */}
           <div className="flex items-center gap-1.5">
-            {/* Temp: Skip Tap Flow Button on the first active stage */}
+            {/* Detailed Tutorial Book Button & Guidance Tooltip on Stage 1 Learn */}
             {currentStageIndex === 0 && (
               <div className="relative">
                 <button
                   type="button"
+                  id="stage1-tutorial-btn"
                   ref={tutorialButtonRef}
                   onClick={() => {
                     soundFX.playClick();
                     openDetailedTutorial();
+                    setShowTutorialHint(false);
                   }}
-                  className={`text-[11px] font-semibold font-mono px-2 py-1 rounded-lg border flex items-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                  onMouseEnter={() => setIsHoveringTutorialBtn(true)}
+                  onMouseLeave={() => setIsHoveringTutorialBtn(false)}
+                  className={`relative w-9 h-9 rounded-xl border flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-sm ${
                     isDark
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
-                      : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
+                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/25 hover:border-amber-400/60'
+                      : 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100 hover:border-amber-400'
                   }`}
-                  title="Open tutorial"
+                  aria-label="Open detailed tutorial"
+                  title="Detailed Tutorial"
                 >
-                  <span className="material-symbols-outlined text-[18px]">auto_stories</span>
+                  <span className="material-symbols-outlined text-[20px] text-amber-600 dark:text-amber-400">
+                    auto_stories
+                  </span>
                   <span className="tutorial-hint-dot" aria-hidden="true" />
                 </button>
+
+                {/* Guidance Tooltip */}
                 {showTutorialHint && detailedTutorial && (
-                  <div ref={tutorialHintRef} role="status" className={`tutorial-hint ${isDark ? 'tutorial-hint-dark' : 'tutorial-hint-light'} absolute left-[116px] top-[calc(100%+10px)] z-50 w-60 -translate-x-1/2 rounded-xl p-3 shadow-xl ${isDark ? 'bg-[#171b26] border-indigo-400/40 text-slate-200' : 'bg-white border-indigo-200 text-slate-700'}`}>
-                    <span className={`tutorial-hint-arrow ${isDark ? 'tutorial-arrow-dark' : 'tutorial-arrow-light'}`} aria-hidden="true" />
-                    <button type="button" aria-label="Close tutorial hint" onClick={() => setShowTutorialHint(false)} className="absolute right-1.5 top-1.5 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-500"><span className="material-symbols-outlined text-[15px]">close</span></button>
-                    <p className="pr-5 text-[11px] leading-4">Tap the book icon for an in-depth guide.</p>
-                    <button type="button" onClick={() => setShowTutorialHint(false)} className="mt-2 rounded-lg border border-indigo-400/40 bg-indigo-500/10 px-2.5 py-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/20">Understood</button>
+                  <div
+                    ref={tutorialHintRef}
+                    role="tooltip"
+                    aria-live="polite"
+                    className={`tutorial-hint ${
+                      isDark ? 'tutorial-hint-dark text-slate-100' : 'tutorial-hint-light text-slate-900'
+                    } absolute right-0 top-[calc(100%+12px)] z-50 w-72 max-w-[calc(100vw-28px)] rounded-2xl p-4`}
+                  >
+                    <span
+                      className={`tutorial-hint-arrow ${
+                        isDark ? 'tutorial-arrow-dark' : 'tutorial-arrow-light'
+                      }`}
+                      aria-hidden="true"
+                    />
+
+                    {/* Header with icon & close */}
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`flex items-center justify-center w-6 h-6 rounded-lg shrink-0 ${
+                          isDark
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            : 'bg-amber-50 text-amber-800 border border-amber-200/80'
+                        }`}>
+                          <span className="material-symbols-outlined text-[15px]">auto_stories</span>
+                        </span>
+                        <span className={`font-['Outfit'] font-bold text-[11px] tracking-wider uppercase truncate ${
+                          isDark ? 'text-amber-400' : 'text-slate-800'
+                        }`}>
+                          Detailed Tutorial
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        aria-label="Close tutorial hint"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          soundFX.playClick();
+                          setShowTutorialHint(false);
+                        }}
+                        className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                          isDark
+                            ? 'text-slate-400 hover:text-slate-200 hover:bg-white/10'
+                            : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[16px]">close</span>
+                      </button>
+                    </div>
+
+                    {/* Explanatory text */}
+                    <p className={`text-[12px] leading-relaxed mb-3.5 ${
+                      isDark ? 'text-slate-300' : 'text-slate-600'
+                    }`}>
+                      Tap this{' '}
+                      <span className={`inline-flex items-center gap-1 font-semibold px-1.5 py-0.5 rounded-md text-[11px] align-baseline ${
+                        isDark
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          : 'bg-amber-50 text-amber-900 border border-amber-200'
+                      }`}>
+                        <span className="material-symbols-outlined text-[13px] text-amber-600 dark:text-amber-400">auto_stories</span>
+                        book icon
+                      </span>{' '}
+                      anytime for an in-depth guide with code breakdowns, mental models, and quick cheatsheets.
+                    </p>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundFX.playClick();
+                          openDetailedTutorial();
+                          setShowTutorialHint(false);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl font-['Outfit'] text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 active:scale-[0.98] shadow-sm shadow-indigo-600/25 transition-all cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">auto_stories</span>
+                        <span>Open Guide</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          soundFX.playClick();
+                          setShowTutorialHint(false);
+                        }}
+                        className={`px-3 py-2 rounded-xl font-['Outfit'] text-[11px] font-semibold border transition-all active:scale-[0.98] cursor-pointer ${
+                          isDark
+                            ? 'border-white/10 text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                            : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                      >
+                        Got it
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Hover Tooltip (shows on hover after the main hint is closed) */}
+                {!showTutorialHint && isHoveringTutorialBtn && (
+                  <div
+                    role="tooltip"
+                    className={`absolute right-0 top-[calc(100%+8px)] z-50 whitespace-nowrap rounded-xl px-2.5 py-1.5 text-[11px] font-medium pointer-events-none transition-all flex items-center gap-1.5 shadow-xl ${
+                      isDark
+                        ? 'bg-[#151b28] text-slate-200 border border-white/10 shadow-black/60'
+                        : 'bg-slate-900 text-white shadow-slate-900/25'
+                    }`}
+                  >
+                    <span
+                      className={`absolute right-[13px] -top-1 w-2 h-2 rotate-45 ${
+                        isDark ? 'bg-[#151b28] border-l border-t border-white/10' : 'bg-slate-900'
+                      }`}
+                    />
+                    <span className="material-symbols-outlined text-[14px] text-amber-400">auto_stories</span>
+                    <span>Detailed Tutorial Guide</span>
                   </div>
                 )}
 
@@ -489,49 +634,6 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
             >
               {lessonData.topicTitle}
             </span>
-            {false && detailedTutorial && (
-              <div className="relative ml-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    soundFX.playClick();
-                    openDetailedTutorial();
-                  }}
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-['Outfit'] font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95 ${
-                    isDark
-                      ? 'bg-indigo-950/80 text-indigo-300 hover:bg-indigo-900 border border-indigo-700/50'
-                      : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
-                  }`}
-                  title="Open Detailed Tutorial"
-                >
-                  <span className="material-symbols-outlined text-[12px]">auto_stories</span>
-                  <span className="hidden sm:inline">Tutorial</span>
-                  <span className="tutorial-hint-dot" aria-hidden="true" />
-                </button>
-                {showTutorialHint && (
-                  <div
-                    role="status"
-                    ref={tutorialHintRef}
-                    className={`tutorial-hint ${isDark ? 'tutorial-hint-dark' : 'tutorial-hint-light'} absolute left-[116px] top-[calc(100%+10px)] z-50 w-60 -translate-x-1/2 rounded-xl p-3 shadow-xl ${
-                      isDark
-                        ? 'bg-[#171b26] border-indigo-400/40 text-slate-200'
-                        : 'bg-white border-indigo-200 text-slate-700'
-                    }`}
-                  >
-                    <span className={`tutorial-hint-arrow ${isDark ? 'tutorial-arrow-dark' : 'tutorial-arrow-light'}`} aria-hidden="true" />
-                    <button type="button" aria-label="Close tutorial hint" onClick={() => setShowTutorialHint(false)} className="absolute right-1.5 top-1.5 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-500">
-                      <span className="material-symbols-outlined text-[15px]">close</span>
-                    </button>
-                    <p className="pr-5 text-[11px] leading-4">Tap Tutorial for an in-depth guide.</p>
-                    <button type="button" onClick={() => {
-                      // TODO: restore persistence after the hint copy and placement are final.
-                      // localStorage.setItem('codedo_detailed_tutorial_hint_dismissed', 'true');
-                      setShowTutorialHint(false);
-                    }} className="mt-2 rounded-lg border border-indigo-400/40 bg-indigo-500/10 px-2.5 py-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/20">Understood</button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             {activeStages.map((key, idx) => {

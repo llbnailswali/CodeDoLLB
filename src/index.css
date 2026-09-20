@@ -163,14 +163,21 @@
 }
 
 @keyframes tutorial-hint-dot-pulse {
-  0%, 100% { transform: scale(0.85); opacity: 0.65; }
-  50% { transform: scale(1.2); opacity: 1; }
+  0%, 100% {
+    transform: scale(0.85);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+    box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.35);
+  }
 }
 
 @keyframes tutorial-hint-enter {
   from {
     opacity: 0;
-    transform: translateY(-18px) scale(0.78);
+    transform: translateY(-8px) scale(0.92);
   }
   to {
     opacity: 1;
@@ -185,56 +192,59 @@
 
 .tutorial-hint {
   position: absolute;
-  transform-origin: 18px 0;
+  transform-origin: calc(100% - 18px) 0;
   animation:
-    tutorial-hint-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both,
-    tutorial-hint-float 2.2s 420ms ease-in-out infinite;
+    tutorial-hint-enter 350ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    tutorial-hint-float 2.5s 350ms ease-in-out infinite;
 }
 
-.tutorial-hint-dark,
 .tutorial-hint-light {
-  border: 1px solid transparent;
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow:
+    0 16px 36px -6px rgba(15, 23, 42, 0.12),
+    0 6px 14px -4px rgba(15, 23, 42, 0.06),
+    0 0 0 1px rgba(226, 232, 240, 0.7);
 }
 
 .tutorial-hint-dark {
-  background-image: linear-gradient(#171b26, #171b26),
-    linear-gradient(135deg, #60a5fa, #6366f1, #a78bfa);
-}
-
-.tutorial-hint-light {
-  background-image: linear-gradient(#ffffff, #ffffff),
-    linear-gradient(135deg, #2563eb, #6366f1, #a78bfa);
+  background: #151b28;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 20px 40px -8px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .tutorial-hint-arrow {
   position: absolute;
-  left: 18px;
-  top: -7px;
-  width: 14px;
-  height: 14px;
-  border-left: 1px solid #818cf8;
-  border-top: 1px solid #818cf8;
+  right: 12px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
   transform: rotate(45deg);
-}
-
-.tutorial-arrow-dark {
-  background: #171b26;
 }
 
 .tutorial-arrow-light {
   background: #ffffff;
+  border-left: 1px solid #e2e8f0;
+  border-top: 1px solid #e2e8f0;
 }
+
+.tutorial-arrow-dark {
+  background: #151b28;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
 .tutorial-hint-dot {
   position: absolute;
-  right: -3px;
-  top: -3px;
-  width: 7px;
-  height: 7px;
+  right: -2px;
+  top: -2px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
-  background: #818cf8;
-  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.15);
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
   animation: tutorial-hint-dot-pulse 1.4s ease-in-out infinite;
 }
 

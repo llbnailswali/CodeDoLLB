@@ -1,3 +1,5 @@
+import type { FiveStageLesson } from './lessonStagesData';
+
 export interface TutorialSection {
   id: string;
   title: string;
@@ -844,29 +846,137 @@ export const DETAILED_TUTORIALS: Record<string, DetailedTutorialData> = {
 };
 
 /**
- * Helper to fetch detailed tutorial for a given lesson id or alias.
+ * Creates a comprehensive fallback tutorial for lessons that do not yet have a dedicated handcrafted entry.
  */
-export function getDetailedTutorial(lessonIdOrKey?: string): DetailedTutorialData | null {
-  if (!lessonIdOrKey) return null;
+export function createFallbackDetailedTutorial(lesson: FiveStageLesson): DetailedTutorialData {
+  const sections: TutorialSection[] = [
+    {
+      id: 'concept',
+      title: lesson.learn.title || lesson.topicTitle,
+      icon: 'lightbulb',
+      badge: 'CORE CONCEPT',
+      paragraphs: [
+        lesson.learn.subtitle,
+        lesson.learn.explanation,
+      ].filter(Boolean),
+      codeSnippet: lesson.learn.codeSnippet && lesson.learn.codeSnippet.length > 0 ? {
+        title: lesson.learn.exampleTitle || 'Kotlin Example',
+        language: lesson.learn.language || 'kotlin',
+        code: lesson.learn.codeSnippet,
+        explanation: lesson.learn.explanation,
+      } : undefined,
+    },
+  ];
 
-  // Direct key check
-  if (DETAILED_TUTORIALS[lessonIdOrKey]) {
-    return DETAILED_TUTORIALS[lessonIdOrKey];
+  if (lesson.explore?.cards && lesson.explore.cards.length > 0) {
+    lesson.explore.cards.forEach((card, idx) => {
+      sections.push({
+        id: `explore-${card.id || idx}`,
+        title: card.title || `Deep Dive Part ${idx + 1}`,
+        icon: 'code_blocks',
+        badge: 'EXPLORATION',
+        paragraphs: [
+          card.subtitle,
+          ...card.whatItMeans.map((w) => `${w.label}: ${w.description}`),
+        ].filter(Boolean),
+        codeSnippet: card.code && card.code.length > 0 ? {
+          title: card.subtitle || card.title,
+          language: card.language || 'kotlin',
+          code: card.code,
+          explanation: card.whatChanged,
+        } : undefined,
+      });
+    });
   }
 
-  const clean = lessonIdOrKey.toLowerCase().trim();
-
-  // Search by exact alias or lessonId
-  for (const tutorial of Object.values(DETAILED_TUTORIALS)) {
-    if (tutorial.lessonId.toLowerCase() === clean) return tutorial;
-    if (tutorial.aliasKeys.some((k) => k.toLowerCase() === clean)) return tutorial;
+  if (lesson.learn.keyIdeas && lesson.learn.keyIdeas.length > 0) {
+    sections.push({
+      id: 'key-ideas',
+      title: 'Key Ideas & Mechanics',
+      icon: 'psychology',
+      badge: 'ESSENTIALS',
+      paragraphs: [
+        lesson.learn.keyTakeaway || 'Review the core takeaways and mechanics for this topic.',
+      ],
+      bulletPoints: lesson.learn.keyIdeas.map((ki) => ({
+        title: ki.title,
+        desc: ki.description,
+      })),
+    });
   }
 
-  // Normalization match (e.g. "what-is-kotlin", "world-1-what-is-kotlin")
-  const norm = clean.replace(/^world-?\d+-?/, '').replace(/[^a-z0-9]/g, '');
-  for (const tutorial of Object.values(DETAILED_TUTORIALS)) {
-    const tutNorm = tutorial.lessonId.replace(/^world-?\d+-?/, '').replace(/[^a-z0-9]/g, '');
-    if (tutNorm === norm) return tutorial;
+  const cheatsheet = (lesson.learn.keyIdeas || []).map((ki) => ({
+    term: ki.title,
+    syntax: ki.title,
+    description: ki.description,
+  }));
+
+  const quiz = (lesson.predict?.questions || []).map((q, idx) => ({
+    id: q.id || `quiz-${idx}`,
+    question: q.prompt,
+    options: q.options.map((o) => o.label),
+    correctIndex: Math.max(0, q.options.findIndex((o) => o.isCorrect)),
+    explanation: q.explanation?.detail || 'Review the lesson concepts.',
+  }));
+
+  const toc = sections.map((s) => ({ id: s.id, label: s.title }));
+  if (cheatsheet.length > 0) {
+    toc.push({ id: 'cheatsheet', label: 'Quick Reference' });
+  }
+  if (quiz.length > 0) {
+    toc.push({ id: 'quiz', label: 'Knowledge Check' });
+  }
+
+  return {
+    lessonId: lesson.id,
+    aliasKeys: [lesson.id, lesson.topicTitle],
+    worldNumber: 1,
+    lessonNumber: 1,
+    title: lesson.topicTitle,
+    subtitle: lesson.learn.subtitle || lesson.learn.title,
+    badge: `${(lesson.worldName || 'Kotlin').toUpperCase()} · DEEP DIVE`,
+    readTime: '3 min read',
+    overviewSummary: lesson.learn.explanation || lesson.learn.subtitle || 'Comprehensive in-depth guide.',
+    toc,
+    sections,
+    gotchas: [],
+    cheatsheet,
+    quiz,
+  };
+}
+
+/**
+ * Helper to fetch detailed tutorial for a given lesson id or alias,
+ * with optional fallback generation from lesson content.
+ */
+export function getDetailedTutorial(
+  lessonIdOrKey?: string,
+  fallbackLesson?: FiveStageLesson
+): DetailedTutorialData | null {
+  if (lessonIdOrKey) {
+    // Direct key check
+    if (DETAILED_TUTORIALS[lessonIdOrKey]) {
+      return DETAILED_TUTORIALS[lessonIdOrKey];
+    }
+
+    const clean = lessonIdOrKey.toLowerCase().trim();
+
+    // Search by exact alias or lessonId
+    for (const tutorial of Object.values(DETAILED_TUTORIALS)) {
+      if (tutorial.lessonId.toLowerCase() === clean) return tutorial;
+      if (tutorial.aliasKeys.some((k) => k.toLowerCase() === clean)) return tutorial;
+    }
+
+    // Normalization match (e.g. "what-is-kotlin", "world-1-what-is-kotlin")
+    const norm = clean.replace(/^world-?\d+-?/, '').replace(/[^a-z0-9]/g, '');
+    for (const tutorial of Object.values(DETAILED_TUTORIALS)) {
+      const tutNorm = tutorial.lessonId.replace(/^world-?\d+-?/, '').replace(/[^a-z0-9]/g, '');
+      if (tutNorm === norm) return tutorial;
+    }
+  }
+
+  if (fallbackLesson) {
+    return createFallbackDetailedTutorial(fallbackLesson);
   }
 
   return null;

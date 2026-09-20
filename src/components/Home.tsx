@@ -36,25 +36,27 @@ const hasCollectedWorldData = (worldOrder: number) => {
 // node on the snake path, so completed/locked worlds stay visually consistent.
 // Colors reuse the app's own neu-surface recipe; locked/disabled variants
 // maintain a clean slate palette with high legibility while remaining visually distinct.
-const getWorldTitleClass = (isDark: boolean, completed: boolean) =>
-  `text-sm font-['Outfit'] font-bold ${
-    completed ? 'text-inherit' : isDark ? 'text-slate-200' : 'text-slate-800'
+const getWorldTitleClass = (isDark: boolean, isLocked: boolean) =>
+  `text-sm font-['Outfit'] ${
+    isLocked
+      ? isDark
+        ? 'text-slate-300 font-semibold'
+        : 'text-slate-700 font-semibold'
+      : isDark
+      ? 'text-slate-100 font-bold'
+      : 'text-slate-900 font-bold'
   }`;
 
-const getLessonTagClass = (isDark: boolean, completed: boolean) => {
-  if (completed) {
-    return `inline-flex w-fit mt-0.5 text-[10px] font-mono font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${
-      isDark
-        ? 'bg-[#121824] border-emerald-500/30 text-emerald-400'
-        : 'bg-[#e8eaf0] border-emerald-500/20 text-emerald-600'
-    }`;
-  }
-  return `inline-flex w-fit mt-0.5 text-[10px] font-mono font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${
-    isDark
-      ? 'bg-[#121824] border-white/10 text-slate-300'
-      : 'bg-[#dcdee4] border-black/10 text-slate-700'
+const getLessonTagClass = (isDark: boolean, isLocked: boolean) =>
+  `inline-flex w-fit mt-0.5 text-[10px] font-mono font-medium tracking-wide px-1.5 py-0.5 rounded ${
+    isLocked
+      ? isDark
+        ? 'bg-slate-800/40 border border-white/5 text-slate-400'
+        : 'bg-slate-100/90 border border-slate-200/80 text-slate-500'
+      : isDark
+      ? 'bg-slate-800/50 border border-white/5 text-slate-400'
+      : 'bg-slate-100/90 border border-slate-200/80 text-slate-500'
   }`;
-};
 
 const getWorldIcon = (worldOrder: number) => {
   const icons = [
@@ -84,18 +86,46 @@ const getWorldIcon = (worldOrder: number) => {
   return icons[worldOrder - 1] ?? 'code';
 };
 
+const WORLD_ICON_STYLES: Record<
+  number,
+  { lightIcon: string; darkIcon: string; lightBg: string; darkBg: string; lightBorder: string; darkBorder: string }
+> = {
+  1:  { lightIcon: 'text-indigo-700',  darkIcon: 'text-indigo-400',  lightBg: 'bg-indigo-50/90',  darkBg: 'bg-indigo-950/40',  lightBorder: 'border-indigo-200/90',  darkBorder: 'border-indigo-500/30' },
+  2:  { lightIcon: 'text-violet-700',  darkIcon: 'text-violet-400',  lightBg: 'bg-violet-50/90',  darkBg: 'bg-violet-950/40',  lightBorder: 'border-violet-200/90',  darkBorder: 'border-violet-500/30' },
+  3:  { lightIcon: 'text-blue-700',    darkIcon: 'text-blue-400',    lightBg: 'bg-blue-50/90',    darkBg: 'bg-blue-950/40',    lightBorder: 'border-blue-200/90',    darkBorder: 'border-blue-500/30' },
+  4:  { lightIcon: 'text-cyan-700',    darkIcon: 'text-cyan-400',    lightBg: 'bg-cyan-50/90',    darkBg: 'bg-cyan-950/40',    lightBorder: 'border-cyan-200/90',    darkBorder: 'border-cyan-500/30' },
+  5:  { lightIcon: 'text-fuchsia-700', darkIcon: 'text-fuchsia-400', lightBg: 'bg-fuchsia-50/90', darkBg: 'bg-fuchsia-950/40', lightBorder: 'border-fuchsia-200/90', darkBorder: 'border-fuchsia-500/30' },
+  6:  { lightIcon: 'text-amber-700',   darkIcon: 'text-amber-400',   lightBg: 'bg-amber-50/90',   darkBg: 'bg-amber-950/40',   lightBorder: 'border-amber-200/90',   darkBorder: 'border-amber-500/30' },
+  7:  { lightIcon: 'text-rose-700',    darkIcon: 'text-rose-400',    lightBg: 'bg-rose-50/90',    darkBg: 'bg-rose-950/40',    lightBorder: 'border-rose-200/90',    darkBorder: 'border-rose-500/30' },
+  8:  { lightIcon: 'text-teal-700',    darkIcon: 'text-teal-400',    lightBg: 'bg-teal-50/90',    darkBg: 'bg-teal-950/40',    lightBorder: 'border-teal-200/90',    darkBorder: 'border-teal-500/30' },
+  9:  { lightIcon: 'text-purple-700',  darkIcon: 'text-purple-400',  lightBg: 'bg-purple-50/90',  darkBg: 'bg-purple-950/40',  lightBorder: 'border-purple-200/90',  darkBorder: 'border-purple-500/30' },
+  10: { lightIcon: 'text-sky-700',     darkIcon: 'text-sky-400',     lightBg: 'bg-sky-50/90',     darkBg: 'bg-sky-950/40',     lightBorder: 'border-sky-200/90',     darkBorder: 'border-sky-500/30' },
+  11: { lightIcon: 'text-indigo-700',  darkIcon: 'text-indigo-400',  lightBg: 'bg-indigo-50/90',  darkBg: 'bg-indigo-950/40',  lightBorder: 'border-indigo-200/90',  darkBorder: 'border-indigo-500/30' },
+  12: { lightIcon: 'text-emerald-700', darkIcon: 'text-emerald-400', lightBg: 'bg-emerald-50/90', darkBg: 'bg-emerald-950/40', lightBorder: 'border-emerald-200/90', darkBorder: 'border-emerald-500/30' },
+  13: { lightIcon: 'text-orange-700',  darkIcon: 'text-orange-400',  lightBg: 'bg-orange-50/90',  darkBg: 'bg-orange-950/40',  lightBorder: 'border-orange-200/90',  darkBorder: 'border-orange-500/30' },
+  14: { lightIcon: 'text-pink-700',    darkIcon: 'text-pink-400',    lightBg: 'bg-pink-50/90',    darkBg: 'bg-pink-950/40',    lightBorder: 'border-pink-200/90',    darkBorder: 'border-pink-500/30' },
+  15: { lightIcon: 'text-violet-700',  darkIcon: 'text-violet-400',  lightBg: 'bg-violet-50/90',  darkBg: 'bg-violet-950/40',  lightBorder: 'border-violet-200/90',  darkBorder: 'border-violet-500/30' },
+  16: { lightIcon: 'text-amber-700',   darkIcon: 'text-amber-400',   lightBg: 'bg-amber-50/90',   darkBg: 'bg-amber-950/40',   lightBorder: 'border-amber-200/90',   darkBorder: 'border-amber-500/30' },
+  17: { lightIcon: 'text-red-700',     darkIcon: 'text-red-400',     lightBg: 'bg-red-50/90',     darkBg: 'bg-red-950/40',     lightBorder: 'border-red-200/90',     darkBorder: 'border-red-500/30' },
+  18: { lightIcon: 'text-emerald-700', darkIcon: 'text-emerald-400', lightBg: 'bg-emerald-50/90', darkBg: 'bg-emerald-950/40', lightBorder: 'border-emerald-200/90', darkBorder: 'border-emerald-500/30' },
+  19: { lightIcon: 'text-purple-700',  darkIcon: 'text-purple-400',  lightBg: 'bg-purple-50/90',  darkBg: 'bg-purple-950/40',  lightBorder: 'border-purple-200/90',  darkBorder: 'border-purple-500/30' },
+  20: { lightIcon: 'text-cyan-700',    darkIcon: 'text-cyan-400',    lightBg: 'bg-cyan-50/90',    darkBg: 'bg-cyan-950/40',    lightBorder: 'border-cyan-200/90',    darkBorder: 'border-cyan-500/30' },
+  21: { lightIcon: 'text-orange-700',  darkIcon: 'text-orange-400',  lightBg: 'bg-orange-50/90',  darkBg: 'bg-orange-950/40',  lightBorder: 'border-orange-200/90',  darkBorder: 'border-orange-500/30' },
+  22: { lightIcon: 'text-amber-700',   darkIcon: 'text-amber-400',   lightBg: 'bg-amber-50/90',   darkBg: 'bg-amber-950/40',   lightBorder: 'border-amber-200/90',   darkBorder: 'border-amber-500/30' },
+};
+
 export const CHAPTER_1_NODES = [
+  'node-beginner-start',
   'node-1',
   'node-2',
   'node-3',
   'node-4',
-  'node-5-top',
-  'node-5-bot',
+  'node-5',
   'node-6',
   'node-7',
   'node-8',
 ];
-export const CHAPTER_1_STRAIGHT = [4];
+export const CHAPTER_1_STRAIGHT = [0];
 
 export const CHAPTER_2_NODES = [
   'node-9',
@@ -124,10 +154,10 @@ const ALL_JOURNEY_NODES = [
 ];
 
 export const SEC1_DEFAULT_PATH =
-  'M 54,25 C 54,72 306,72 306,118 C 306,164 54,164 54,210 C 54,256 306,256 306,302 C 306,354 180,344 180,396 L 180,638 C 180,689 306,679 306,730 C 306,776 54,776 54,822 C 54,868 306,868 306,914';
+  'M 54,25 C 54,72 306,72 306,118 C 306,164 54,164 54,210 C 54,256 306,256 306,302 C 306,348 54,348 54,394 C 54,440 306,440 306,486 C 306,532 54,532 54,578 C 54,624 306,624 306,670';
 export const SEC1_DEFAULT_ACTIVE =
-  'M 54,25 C 54,72 306,72 306,118 C 306,164 54,164 54,210 C 54,256 306,256 306,302 C 306,354 180,344 180,396';
-export const SEC1_DEFAULT_VIEWBOX = '0 0 360 970';
+  'M 54,25 C 54,72 306,72 306,118 C 306,164 54,164 54,210 C 54,256 306,256 306,302 C 306,348 54,348 54,394';
+export const SEC1_DEFAULT_VIEWBOX = '0 0 360 740';
 
 export const SEC2_DEFAULT_PATH =
   'M 54,30 C 54,76 306,76 306,122 C 306,168 54,168 54,214 C 54,260 306,260 306,306 C 306,352 54,352 54,398 C 54,444 306,444 306,490 C 306,543 180,537 180,586';
@@ -276,7 +306,7 @@ const SnakePathOverlay: React.FC<SnakePathOverlayProps> = ({
   }, [containerRef, nodeIds, straightSegments, activeUpToNodeId]);
 
   // Only resolve activePath if activeUpToNodeId is provided
-  const activePath = activeUpToNodeId ? (pathData.activePath ?? (activeUpToNodeId === 'node-5-top' ? defaultActivePath : undefined)) : undefined;
+  const activePath = activeUpToNodeId ? (pathData.activePath ?? (activeUpToNodeId === 'node-5' ? defaultActivePath : undefined)) : undefined;
   const path = pathData.path || defaultPath;
   const viewBox = pathData.viewBox || defaultViewBox;
 
@@ -374,6 +404,7 @@ const StandardWorldNode: React.FC<WorldNodeProps> = ({
   onWorldClick,
 }) => {
   const world = getWorld(worldOrder);
+  const worldTheme = WORLD_ICON_STYLES[worldOrder] || WORLD_ICON_STYLES[1];
   const isDataAvailable = hasCollectedWorldData(worldOrder);
   const isCompleted = isDataAvailable && worldOrder <= completedWorlds;
   const isCurrent = isDataAvailable && worldOrder === completedWorlds + 1;
@@ -388,28 +419,35 @@ const StandardWorldNode: React.FC<WorldNodeProps> = ({
           className={`w-full max-w-[320px] neu-raised rounded-2xl p-4 relative flex flex-col gap-2.5 border transition-all ${
             isDark
               ? 'bg-[#151b28] border-indigo-500/40 text-white shadow-[0_0_16px_rgba(99,102,241,0.2)]'
-              : 'bg-[#e8eaf0] border-indigo-300 text-[#2e3040] shadow-[0_0_16px_rgba(99,102,241,0.15)]'
+              : 'bg-white border-slate-200/90 text-slate-900 shadow-sm'
           }`}
         >
           <div data-node-id={nodeId} className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 pointer-events-none" />
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border text-indigo-600 dark:text-indigo-300 bg-indigo-500/10 border-indigo-500/30">
+            <span
+              className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                isDark
+                  ? 'text-indigo-300 bg-indigo-500/10 border-indigo-500/30'
+                  : 'text-indigo-700 bg-indigo-50 border-indigo-200'
+              }`}
+            >
               CURRENT WORLD
             </span>
-            <span className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400">
-              World {String(world.order).padStart(2, '0')} / 22
+            <span
+              className={`text-[11px] font-semibold font-mono whitespace-nowrap ${
+                isDark ? 'text-indigo-400' : 'text-indigo-600'
+              }`}
+            >
+              0 / {world.lessons.length} lessons
             </span>
           </div>
           <div className="flex flex-col">
-            <div className="flex items-baseline justify-between gap-2">
-              <h3 className="text-base font-['Outfit'] font-bold text-inherit tracking-tight">
-                World {String(world.order).padStart(2, '0')} · {world.title}
-              </h3>
-              <span className="text-[11px] font-semibold font-mono text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                0 / {world.lessons.length} lessons
-              </span>
-            </div>
-            <p className="text-xs leading-snug mt-0.5 text-slate-600 dark:text-slate-300">
+            <h3 className="text-base font-['Outfit'] font-bold text-inherit tracking-tight">
+              World {String(world.order).padStart(2, '0')} · {world.title}
+            </h3>
+            <p className={`text-xs leading-snug mt-1 ${
+              isDark ? 'text-slate-300' : 'text-slate-700 font-normal'
+            }`}>
               Continue your journey through {world.title}.
             </p>
           </div>
@@ -436,67 +474,107 @@ const StandardWorldNode: React.FC<WorldNodeProps> = ({
       <div
         className={`flex items-center gap-2.5 transition-all ${
           !isLeft && align !== 'center' ? 'flex-row-reverse text-right' : ''
-        } ${isLocked ? 'opacity-55 cursor-not-allowed' : 'opacity-100 cursor-pointer active:scale-95'}`}
+        } ${
+          isLocked
+            ? 'opacity-65 grayscale-[0.35] hover:opacity-80 cursor-not-allowed select-none'
+            : 'opacity-100 cursor-pointer active:scale-95'
+        }`}
         onClick={() => {
-          if (!isLocked) onWorldClick(world.id);
+          onWorldClick(world.id);
         }}
       >
         <div
           data-node-id={nodeId}
-          className={`w-11 h-11 rounded-2xl neu-raised flex items-center justify-center border transition-all ${
+          className={`w-11 h-11 rounded-2xl flex items-center justify-center border transition-all ${
             isCurrent
               ? isDark
-                ? 'bg-[#182030] border-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.5)] ring-2 ring-indigo-500/30'
-                : 'bg-white border-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.3)] ring-2 ring-indigo-500/30'
+                ? 'neu-raised bg-[#182030] border-2 border-indigo-500 shadow-[0_0_14px_rgba(99,102,241,0.5)] ring-2 ring-indigo-500/30'
+                : 'neu-raised bg-gradient-to-br from-indigo-600 to-purple-600 border-2 border-indigo-400 shadow-[0_4px_16px_rgba(99,102,241,0.35)] ring-4 ring-indigo-500/20'
               : isCompleted
               ? isDark
-                ? 'bg-[#151b28] border-indigo-500/30'
-                : 'bg-[#e8eaf0] border-indigo-400/40'
+                ? 'neu-raised bg-[#151b28] border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.15)]'
+                : 'neu-raised bg-emerald-50/95 border-2 border-emerald-300/90 shadow-xs'
+              : isLocked
+              ? isDark
+                ? `neu-raised ${worldTheme.darkBg} border ${worldTheme.darkBorder} shadow-xs`
+                : `neu-raised ${worldTheme.lightBg} border ${worldTheme.lightBorder} shadow-xs hover:border-slate-300`
+              : isAvailableToStart
+              ? isDark
+                ? 'neu-raised bg-[#161d2c] border-2 border-indigo-500/50 shadow-sm'
+                : 'neu-raised bg-indigo-50/90 border-2 border-indigo-400 shadow-xs'
               : isDark
-              ? 'bg-[#151b28] border-white/10'
-              : 'bg-[#e8eaf0] border-white/40'
+              ? `neu-raised ${worldTheme.darkBg} border ${worldTheme.darkBorder} shadow-xs`
+              : `neu-raised ${worldTheme.lightBg} border ${worldTheme.lightBorder} shadow-xs hover:border-slate-300`
           }`}
         >
           <span
             className={`material-symbols-outlined text-[20px] ${
               isCurrent
-                ? 'text-indigo-500 animate-pulse'
+                ? isDark
+                  ? 'text-indigo-300 drop-shadow-[0_0_8px_rgba(99,102,241,0.6)] font-bold'
+                  : 'text-white drop-shadow-xs font-bold'
                 : isCompleted
-                ? 'text-indigo-600 dark:text-indigo-400'
+                ? isDark
+                  ? 'text-emerald-400 font-bold'
+                  : 'text-emerald-700 font-bold'
+                : isLocked
+                ? isDark
+                  ? `${worldTheme.darkIcon} font-medium opacity-80`
+                  : `${worldTheme.lightIcon} font-bold opacity-80`
                 : isAvailableToStart
-                ? 'text-emerald-500'
-                : 'text-slate-500 dark:text-slate-400'
+                ? isDark
+                  ? 'text-indigo-400 font-bold'
+                  : 'text-indigo-700 font-bold'
+                : isDark
+                ? `${worldTheme.darkIcon} font-medium`
+                : `${worldTheme.lightIcon} font-bold`
             }`}
           >
-            {getWorldIcon(worldOrder)}
+            {isLocked ? 'lock' : getWorldIcon(worldOrder)}
           </span>
         </div>
         <div className={`flex flex-col ${!isLeft && align !== 'center' ? 'text-right' : ''}`}>
           <div className={`flex items-center gap-1.5 ${!isLeft && align !== 'center' ? 'justify-end' : ''}`}>
             <span
-              className={`inline-flex w-fit text-[10px] font-mono font-extrabold tracking-wide px-2 py-0.5 rounded-md border shadow-sm ${
-                isDataAvailable
-                  ? 'text-indigo-700 dark:text-indigo-200 bg-indigo-500/10 border-indigo-400/30'
-                  : 'text-slate-600 dark:text-slate-300 bg-slate-500/10 border-slate-400/25'
+              className={`inline-flex w-fit text-[10px] font-mono font-extrabold tracking-wide px-2.5 py-0.5 rounded-md border shadow-xs ${
+                isCompleted
+                  ? isDark
+                    ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]'
+                    : 'text-emerald-800 bg-emerald-100 border-emerald-300 font-bold'
+                  : isCurrent
+                  ? isDark
+                    ? 'text-indigo-200 bg-indigo-500/25 border-indigo-400/50 shadow-[0_0_10px_rgba(99,102,241,0.3)]'
+                    : 'text-indigo-800 bg-indigo-100 border-indigo-300 ring-1 ring-indigo-500/25 font-bold'
+                  : isLocked
+                  ? isDark
+                    ? 'text-slate-300 bg-slate-800/80 border-white/10 font-semibold'
+                    : 'text-slate-700 bg-white border-slate-300/80 font-semibold'
+                  : isAvailableToStart
+                  ? isDark
+                    ? 'text-indigo-200 bg-indigo-500/20 border-indigo-400/35'
+                    : 'text-indigo-800 bg-indigo-50 border-indigo-200 font-bold'
+                  : isDark
+                  ? 'text-slate-400 bg-slate-800/80 border-white/10'
+                  : 'text-slate-700 bg-white border-slate-300/80 font-semibold'
               }`}
             >
               World {String(world.order).padStart(2, '0')}
             </span>
             {isCurrent && (
-              <span className="text-[8px] font-mono font-extrabold uppercase px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-500 border border-indigo-500/30">
+              <span className="text-[8px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-400/40 shadow-xs">
                 CURRENT
               </span>
             )}
             {isAvailableToStart && (
-              <span className="text-[8px] font-mono font-extrabold uppercase px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+              <span className="text-[8px] font-mono font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-500/25 shadow-xs">
                 AVAILABLE
               </span>
             )}
           </div>
-          <span className={getWorldTitleClass(isDark, isDataAvailable)}>
+          <span className={getWorldTitleClass(isDark, isLocked)}>
             {world.title}
           </span>
-          <span className={getLessonTagClass(isDark, isDataAvailable)}>
+          <span className={getLessonTagClass(isDark, isLocked)}>
             {world.lessons.length} lessons
           </span>
         </div>
@@ -548,29 +626,29 @@ export const Home: React.FC<HomeProps> = ({
     if (completedWorldsCount === 1) return 'node-2';
     if (completedWorldsCount === 2) return 'node-3';
     if (completedWorldsCount === 3) return 'node-4';
-    if (completedWorldsCount === 4) return 'node-5-top';
+    if (completedWorldsCount === 4) return 'node-5';
     if (completedWorldsCount === 5) return 'node-6';
     if (completedWorldsCount === 6) return 'node-7';
     return 'node-8';
   }, [completedWorldsCount]);
 
   const journeyActiveNode = React.useMemo(() => {
-    if (completedWorldsCount <= 0) return undefined;
+    if (completedWorldsCount <= 0) return 'node-1';
     if (completedWorldsCount === 1) return 'node-2';
     if (completedWorldsCount === 2) return 'node-3';
     if (completedWorldsCount === 3) return 'node-4';
-    if (completedWorldsCount === 4) return 'node-5-top';
+    if (completedWorldsCount === 4) return 'node-5';
     if (completedWorldsCount === 5) return 'node-6';
     if (completedWorldsCount === 6) return 'node-7';
     if (completedWorldsCount === 7) return 'node-8';
-    if (completedWorldsCount === 8) return 'node-8';
+    if (completedWorldsCount === 8) return 'node-9';
     if (completedWorldsCount === 9) return 'node-10';
     if (completedWorldsCount === 10) return 'node-11';
     if (completedWorldsCount === 11) return 'node-12';
     if (completedWorldsCount === 12) return 'node-13';
     if (completedWorldsCount === 13) return 'node-14';
     if (completedWorldsCount === 14) return 'node-15';
-    if (completedWorldsCount === 15) return undefined;
+    if (completedWorldsCount === 15) return 'node-16';
     if (completedWorldsCount === 16) return 'node-17';
     if (completedWorldsCount === 17) return 'node-18';
     if (completedWorldsCount === 18) return 'node-19';
@@ -628,19 +706,19 @@ export const Home: React.FC<HomeProps> = ({
             className={`neu-raised rounded-2xl p-3.5 sm:p-4 flex flex-col gap-2.5 border transition-all overflow-hidden ${
               isDark
                 ? 'bg-[#151b28] border-white/10 text-white'
-                : 'bg-[#e8eaf0] border-white/60 text-[#2e3040]'
+                : 'bg-white border-slate-200/90 text-slate-900 shadow-sm'
             }`}
           >
             {/* Top Row: Track Identifier & Clickable Progress Status */}
             <div className="flex items-center justify-between gap-2 w-full">
               <div
-                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border shadow-sm ${
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border shadow-xs ${
                   isDark
                     ? 'bg-slate-800/90 border-white/10 text-slate-200'
-                    : 'bg-[#dcdee4] border-white/60 text-[#2e3040]'
+                    : 'bg-slate-100 border-slate-200 text-slate-800'
                 }`}
               >
-                <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24">
                   <defs>
                     <linearGradient id="ktGradSub" x1="0%" x2="100%" y1="100%" y2="0%">
                       <stop offset="0%" stopColor="#7F52FF"></stop>
@@ -662,8 +740,10 @@ export const Home: React.FC<HomeProps> = ({
                   soundFX.playClick();
                   onOpenCurriculum();
                 }}
-                className={`neu-pressed px-2.5 py-1 rounded-xl flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all shrink-0 ${
-                  isDark ? 'bg-[#121824] hover:bg-[#182030]' : 'bg-[#dcdee4] hover:bg-[#d5d7df]'
+                className={`neu-pressed px-2.5 py-1 rounded-xl flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all shrink-0 border ${
+                  isDark
+                    ? 'bg-[#121824] hover:bg-[#182030] border-transparent'
+                    : 'bg-slate-50 hover:bg-slate-100 border-slate-200/80 text-slate-800'
                 }`}
                 title="Open Curriculum Explorer"
               >
@@ -690,7 +770,7 @@ export const Home: React.FC<HomeProps> = ({
             {/* Bottom Progress Bar */}
             <div
               className={`w-full h-1.5 rounded-full overflow-hidden ${
-                isDark ? 'bg-[#090d16]' : 'bg-slate-300/70'
+                isDark ? 'bg-[#090d16]' : 'bg-slate-100 border border-slate-200/60'
               }`}
             >
               <div
@@ -709,11 +789,12 @@ export const Home: React.FC<HomeProps> = ({
           <SnakePathOverlay
             containerRef={journeyRef}
             nodeIds={ALL_JOURNEY_NODES}
+            straightSegments={[0]}
             activeUpToNodeId={journeyActiveNode}
             isDark={isDark}
             gradientId="journeyActive"
             defaultViewBox="0 0 360 2200"
-            defaultPath="M 54,25 C 54,72 306,72 306,118 C 306,164 54,164 54,210 C 54,256 306,256 306,302 C 306,354 180,344 180,396 L 180,638 C 180,689 306,679 306,730 C 306,776 54,776 54,822 C 54,868 306,868 306,914"
+            defaultPath="M 54,0 L 54,60 C 54,107 306,107 306,153 C 306,199 54,199 54,245 C 54,291 306,291 306,337 C 306,383 54,383 54,430 C 54,475 306,475 306,520 C 306,565 54,565 54,610 C 54,655 306,655 306,700"
           />
 
         {/* ================= SECTION 1: BEGINNER (Worlds 1-8) ================= */}
@@ -725,38 +806,66 @@ export const Home: React.FC<HomeProps> = ({
                   ? 'bg-indigo-950/55 border-indigo-400/35 shadow-[0_4px_18px_rgba(99,102,241,0.22)]'
                   : 'bg-indigo-950/25 border-indigo-400/15 shadow-[0_4px_16px_rgba(99,102,241,0.1)]'
                 : activeChapter === 1
-                ? 'bg-indigo-50/95 border-indigo-200 shadow-[0_4px_18px_rgba(99,102,241,0.16)]'
-                : 'bg-indigo-50/65 border-indigo-100/80 shadow-[0_4px_16px_rgba(99,102,241,0.08)]'
+                ? 'bg-white/95 border-indigo-200 shadow-[0_4px_20px_rgba(99,102,241,0.12)]'
+                : 'bg-[#eceef4]/95 border-slate-300/80 shadow-xs'
             }`}
           >
             <div className="max-w-md mx-auto px-5 py-2.5 flex items-center gap-3">
               <span
                 className={`text-[10px] font-mono font-bold tracking-wider uppercase px-3 py-1 rounded-full border transition-all ${
                   activeChapter === 1
-                    ? 'text-indigo-700 dark:text-indigo-200 bg-indigo-500/15 border-indigo-400/40 shadow-[0_0_12px_rgba(99,102,241,0.2)]'
-                    : 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-300/30 shadow-sm'
+                    ? isDark
+                      ? 'text-indigo-200 bg-indigo-500/20 border-indigo-400/40 shadow-[0_0_12px_rgba(99,102,241,0.2)]'
+                      : 'text-indigo-800 bg-indigo-50 border-indigo-300 shadow-xs'
+                    : isDark
+                    ? 'text-indigo-300 bg-indigo-500/10 border-indigo-300/30 shadow-sm'
+                    : 'text-indigo-800 bg-white border-indigo-200 shadow-xs'
                 }`}
               >
-                CHAPTER 1 · BEGINNER · WORLDS 01–08
-                {activeChapter === 1 && <span className="ml-2 text-[8px] tracking-[0.16em]">ACTIVE</span>}
+                BEGINNER · WORLDS 1–8
+                {activeChapter === 1 && (
+                  <span className="ml-2 text-[8px] tracking-[0.16em] font-bold text-indigo-600 dark:text-indigo-300">
+                    ACTIVE
+                  </span>
+                )}
               </span>
-              <div className="flex-1 h-[1px] bg-slate-300/60 dark:bg-white/10"></div>
+              <div
+                className={`flex-1 h-[1px] ${
+                  isDark ? 'bg-white/10' : activeChapter === 1 ? 'bg-indigo-200' : 'bg-slate-300/80'
+                }`}
+              />
             </div>
           </div>
 
           {/* SNAKE PATH SECTION 1: WORLDS 1-8 */}
-          <div ref={sec1Ref} className="relative w-full max-w-[360px] mx-auto px-5 pt-3 pb-12 flex flex-col items-center overflow-hidden">
-          {/* Continuous SVG Path for Section 1 */}
-          {/* WORLD 1 (Left) */}
-          <StandardWorldNode
-            worldOrder={1}
-            completedWorlds={completedWorldsCount}
-            align="left"
-            paddingTop="pt-1"
-            isDark={isDark}
-            nodeId="node-1"
-            onWorldClick={handleWorldClick}
-          />
+          <div ref={sec1Ref} className="relative w-full max-w-[360px] mx-auto px-5 pt-4 pb-8 flex flex-col items-center overflow-hidden">
+            {/* Snake path start anchor directly connected to Beginner stripe */}
+            <div className="relative w-full flex items-center justify-start pl-8 pointer-events-none -mt-4">
+              <div
+                data-node-id="node-beginner-start"
+                className="w-11 h-2 flex items-center justify-center pointer-events-none"
+              >
+                <span
+                  className={`w-3.5 h-3.5 rounded-full border-2 transition-all shadow-xs ${
+                    isDark
+                      ? 'bg-[#151b28] border-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]'
+                      : 'bg-white border-indigo-500 shadow-xs'
+                  }`}
+                />
+              </div>
+            </div>
+
+            {/* Continuous SVG Path for Section 1 */}
+            {/* WORLD 1 (Left) */}
+            <StandardWorldNode
+              worldOrder={1}
+              completedWorlds={completedWorldsCount}
+              align="left"
+              paddingTop="pt-10"
+              isDark={isDark}
+              nodeId="node-1"
+              onWorldClick={handleWorldClick}
+            />
 
           {/* WORLD 2 (Right) */}
           <StandardWorldNode
@@ -791,100 +900,23 @@ export const Home: React.FC<HomeProps> = ({
             onWorldClick={handleWorldClick}
           />
 
-          {/* WORLD 5: CENTER FOCAL POINT */}
-          {completedWorldsCount === 4 ? (
-          <div className="relative w-full flex flex-col items-center pt-10 pb-4 z-20">
-            {/* Attached Callout Card */}
-            <div
-              className={`w-full max-w-[320px] neu-raised rounded-2xl p-4 relative flex flex-col gap-2.5 border transition-all ${
-                isDark
-                  ? 'bg-[#151b28] border-white/10 text-white'
-                  : 'bg-[#e8eaf0] border-white/80 text-[#2e3040]'
-              }`}
-            >
-              <div data-node-id="node-5-top" className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 pointer-events-none" />
-              <div data-node-id="node-5-bot" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-2 pointer-events-none" />
-              <div className="flex items-center justify-between">
-                <span
-                  className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${
-                    completedWorldsCount >= 5
-                      ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
-                      : completedWorldsCount === 4
-                      ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
-                      : 'text-slate-500 bg-slate-500/10 border-slate-500/20'
-                  }`}
-                >
-                  {completedWorldsCount >= 5
-                    ? 'COMPLETED WORLD'
-                    : completedWorldsCount === 4
-                    ? 'CURRENT WORLD'
-                    : 'LOCKED WORLD'}
-                </span>
-                <span className="text-[11px] font-mono font-semibold text-slate-500 dark:text-slate-400">
-                  World 05 / 22
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <div className="flex items-baseline justify-between">
-                  <h3 className="text-base font-['Outfit'] font-bold text-inherit tracking-tight">
-                    World 05 · {getWorld(5).title}
-                  </h3>
-                  <span
-                    className={`text-[11px] font-semibold font-mono ${
-                      isDark ? 'text-indigo-400' : 'text-indigo-600'
-                    }`}
-                  >
-                    {completedWorldsCount >= 5
-                      ? `${getWorld(5).lessons.length} / ${getWorld(5).lessons.length}`
-                      : completedWorldsCount === 4
-                      ? `7 / ${getWorld(5).lessons.length}`
-                      : `0 / ${getWorld(5).lessons.length}`}{' '}
-                    lessons
-                  </span>
-                </div>
-                <p
-                  className={`text-xs leading-snug mt-0.5 ${
-                    isDark ? 'text-slate-300' : 'text-slate-600'
-                  }`}
-                >
-                  Master modular functions, default parameters, named calls, and scope contracts.
-                </p>
-              </div>
-              <button
-                id="startLessonBtn"
-                type="button"
-                onClick={handleStartCurrentLesson}
-                className="h-11 w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-['Outfit'] font-semibold text-sm flex items-center justify-center gap-2 cta-glow active:scale-[0.98] transition-all cursor-pointer"
-              >
-                <span>
-                  {completedWorldsCount >= 5
-                    ? 'REVIEW WORLD 5'
-                    : completedWorldsCount === 4
-                    ? 'START WORLD 5'
-                    : 'EXPLORE WORLD 5'}
-                </span>
-                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-              </button>
-            </div>
-          </div>
-          ) : (
-            <StandardWorldNode
-              worldOrder={5}
-              completedWorlds={completedWorldsCount}
-              align="center"
-              paddingTop="pt-14"
-              isDark={isDark}
-              nodeId="node-5-top"
-              onWorldClick={handleWorldClick}
-            />
-          )}
+          {/* WORLD 5 (Left) */}
+          <StandardWorldNode
+            worldOrder={5}
+            completedWorlds={completedWorldsCount}
+            align="left"
+            paddingTop="pt-16"
+            isDark={isDark}
+            nodeId="node-5"
+            onWorldClick={handleWorldClick}
+          />
 
           {/* WORLD 6 (Right) */}
           <StandardWorldNode
             worldOrder={6}
             completedWorlds={completedWorldsCount}
             align="right"
-            paddingTop="pt-14"
+            paddingTop="pt-16"
             isDark={isDark}
             nodeId="node-6"
             onWorldClick={handleWorldClick}
@@ -915,41 +947,53 @@ export const Home: React.FC<HomeProps> = ({
       </section>
 
         {/* ================= SECTION 2: INTERMEDIATE (Worlds 9-15) ================= */}
-        <section className="relative w-full -mt-6">
+        <section className="relative w-full mt-6">
           <div
-            className={`sticky top-[58px] z-30 w-full backdrop-blur-xl transition-colors border-b ${
+            className={`sticky top-[58px] z-30 w-full backdrop-blur-xl transition-colors border-y ${
               isDark
                 ? activeChapter === 2
-                  ? 'bg-indigo-950/55 border-indigo-400/35 shadow-[0_4px_18px_rgba(99,102,241,0.22)]'
-                  : 'bg-indigo-950/25 border-indigo-400/15 shadow-[0_4px_16px_rgba(99,102,241,0.1)]'
+                  ? 'bg-purple-950/60 border-purple-400/35 shadow-[0_4px_18px_rgba(168,85,247,0.22)]'
+                  : 'bg-purple-950/25 border-purple-400/15 shadow-[0_4px_16px_rgba(168,85,247,0.1)]'
                 : activeChapter === 2
-                ? 'bg-indigo-50/95 border-indigo-200 shadow-[0_4px_18px_rgba(99,102,241,0.16)]'
-                : 'bg-indigo-50/65 border-indigo-100/80 shadow-[0_4px_16px_rgba(99,102,241,0.08)]'
+                ? 'bg-white/95 border-purple-200 shadow-[0_4px_20px_rgba(168,85,247,0.14)]'
+                : 'bg-[#eceef4]/95 border-slate-300/80 shadow-xs'
             }`}
           >
             <div className="max-w-md mx-auto px-5 py-2.5 flex items-center gap-3">
               <span
                 className={`text-[10px] font-mono font-bold tracking-wider uppercase px-3 py-1 rounded-full border transition-all ${
                   activeChapter === 2
-                    ? 'text-indigo-700 dark:text-indigo-200 bg-indigo-500/15 border-indigo-400/40 shadow-[0_0_12px_rgba(99,102,241,0.2)]'
-                    : 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-300/30 shadow-sm'
+                    ? isDark
+                      ? 'text-purple-200 bg-purple-500/20 border-purple-400/40 shadow-[0_0_12px_rgba(168,85,247,0.2)]'
+                      : 'text-purple-800 bg-purple-50 border-purple-300 shadow-xs'
+                    : isDark
+                    ? 'text-purple-300 bg-purple-500/10 border-purple-300/25 shadow-sm'
+                    : 'text-purple-800 bg-white border-purple-200 shadow-xs'
                 }`}
               >
-                CHAPTER 2 · INTERMEDIATE · WORLDS 09–15
-                {activeChapter === 2 && <span className="ml-2 text-[8px] tracking-[0.16em]">ACTIVE</span>}
+                INTERMEDIATE · WORLDS 9–15
+                {activeChapter === 2 && (
+                  <span className="ml-2 text-[8px] tracking-[0.16em] font-bold text-purple-600 dark:text-purple-300">
+                    ACTIVE
+                  </span>
+                )}
               </span>
-              <div className="flex-1 h-[1px] bg-slate-300/60 dark:bg-white/10"></div>
+              <div
+                className={`flex-1 h-[1px] ${
+                  isDark ? 'bg-white/10' : activeChapter === 2 ? 'bg-purple-200' : 'bg-slate-300/80'
+                }`}
+              />
             </div>
           </div>
 
           {/* SNAKE PATH SECTION 2: WORLDS 9-15 */}
-          <div ref={sec2Ref} className="relative w-full max-w-[360px] mx-auto px-5 pt-3 pb-12 flex flex-col items-center overflow-hidden">
+          <div ref={sec2Ref} className="relative w-full max-w-[360px] mx-auto px-5 pt-4 pb-8 flex flex-col items-center overflow-hidden">
           {/* WORLD 9 (Left) */}
           <StandardWorldNode
             worldOrder={9}
             completedWorlds={completedWorldsCount}
             align="left"
-            paddingTop="pt-3"
+            paddingTop="pt-10"
             isDark={isDark}
             nodeId="node-9"
             onWorldClick={handleWorldClick}
@@ -1013,54 +1057,84 @@ export const Home: React.FC<HomeProps> = ({
           {/* WORLD 15: Chapter Boss Milestone (Center) */}
           <div className="relative w-full flex items-center justify-center pt-11 z-10">
             <div
-              className={`flex flex-col items-center cursor-pointer active:scale-95 transition-all ${
-                world15Unlocked ? 'opacity-100' : 'opacity-55 cursor-not-allowed'
+              className={`flex flex-col items-center transition-all ${
+                world15Unlocked
+                  ? 'opacity-100 cursor-pointer active:scale-95'
+                  : 'opacity-65 grayscale-[0.35] hover:opacity-80 cursor-not-allowed select-none'
               }`}
               onClick={() => {
-                if (world15Unlocked) handleWorldClick('world-15');
+                handleWorldClick('world-15');
               }}
             >
               <div
                 data-node-id="node-15"
-                className={`w-12 h-12 rounded-2xl neu-raised flex items-center justify-center border relative transition-all ${
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center border relative transition-all ${
                   world15Completed
                     ? isDark
-                      ? 'bg-[#151b28] border-indigo-500/40'
-                      : 'bg-[#e8eaf0] border-indigo-500/40'
+                      ? 'neu-raised bg-[#151b28] border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.15)]'
+                      : 'neu-raised bg-emerald-50/95 border-2 border-emerald-300/90 shadow-xs'
                     : world15Current
                     ? isDark
-                      ? 'bg-[#1c2236] border-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.5)] ring-2 ring-indigo-500/30'
-                      : 'bg-white border-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.3)] ring-2 ring-indigo-500/30'
+                      ? 'neu-raised bg-[#1c2236] border-2 border-indigo-500 shadow-[0_0_14px_rgba(99,102,241,0.5)] ring-2 ring-indigo-500/30'
+                      : 'neu-raised bg-gradient-to-br from-indigo-600 to-purple-600 border-2 border-indigo-400 shadow-[0_4px_16px_rgba(99,102,241,0.35)] ring-4 ring-indigo-500/20'
+                    : !world15Unlocked
+                    ? isDark
+                      ? 'neu-raised bg-violet-950/30 border border-violet-500/30 shadow-xs'
+                      : 'neu-raised bg-violet-50/90 border border-violet-200/90 shadow-xs hover:border-slate-300'
                     : isDark
-                    ? 'bg-[#151b28] border-white/10'
-                    : 'bg-[#e8eaf0] border-white/50'
+                    ? 'neu-raised bg-violet-950/40 border border-violet-500/30 shadow-xs'
+                    : 'neu-raised bg-violet-50/90 border border-violet-200/90 shadow-xs hover:border-slate-300'
                 }`}
               >
                 <span
                   className={`material-symbols-outlined text-[22px] ${
                     world15Current
-                      ? 'text-indigo-500 animate-pulse'
-                      : world15DataAvailable
-                      ? 'text-indigo-600 dark:text-indigo-400'
-                      : 'text-slate-500 dark:text-slate-400'
+                      ? isDark
+                        ? 'text-indigo-300 drop-shadow-[0_0_8px_rgba(99,102,241,0.6)] font-bold'
+                        : 'text-white drop-shadow-xs font-bold'
+                      : world15Completed
+                      ? isDark
+                        ? 'text-emerald-400 font-bold'
+                        : 'text-emerald-700 font-bold'
+                      : !world15Unlocked
+                      ? isDark
+                        ? 'text-violet-400/80 font-medium'
+                        : 'text-violet-700/80 font-bold'
+                      : isDark
+                      ? 'text-violet-400 font-medium'
+                      : 'text-violet-700 font-bold'
                   }`}
                 >
-                  {getWorldIcon(15)}
+                  {!world15Unlocked ? 'lock' : getWorldIcon(15)}
                 </span>
               </div>
-              <span
-                className={`inline-flex text-[10px] font-mono font-extrabold tracking-wide px-2 py-0.5 rounded-md border shadow-sm mt-1 ${
-                    world15Unlocked
-                    ? 'text-indigo-700 dark:text-indigo-200 bg-indigo-500/10 border-indigo-400/30'
-                    : 'text-slate-600 dark:text-slate-300 bg-slate-500/10 border-slate-400/25'
-                }`}
-              >
-                World 15
-              </span>
-              <span className={getWorldTitleClass(isDark, world15Unlocked)}>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span
+                  className={`inline-flex text-[10px] font-mono font-extrabold tracking-wide px-2.5 py-0.5 rounded-md border shadow-xs ${
+                    world15Completed
+                      ? isDark
+                        ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]'
+                        : 'text-emerald-800 bg-emerald-100 border-emerald-300 font-bold'
+                      : world15Current
+                      ? isDark
+                        ? 'text-indigo-200 bg-indigo-500/25 border-indigo-400/50 shadow-[0_0_10px_rgba(99,102,241,0.3)]'
+                        : 'text-indigo-800 bg-indigo-100 border-indigo-300 ring-1 ring-indigo-500/25 font-bold'
+                      : !world15Unlocked
+                      ? isDark
+                        ? 'text-slate-300 bg-slate-800/80 border-white/10 font-semibold'
+                        : 'text-slate-700 bg-white border-slate-300/80 font-semibold'
+                      : isDark
+                      ? 'text-slate-400 bg-slate-800/80 border-white/10'
+                      : 'text-slate-700 bg-white border-slate-300/80 font-semibold'
+                  }`}
+                >
+                  World 15
+                </span>
+              </div>
+              <span className={getWorldTitleClass(isDark, !world15Unlocked)}>
                 {getWorld(15).title}
               </span>
-              <span className={getLessonTagClass(isDark, world15Unlocked)}>
+              <span className={getLessonTagClass(isDark, !world15Unlocked)}>
                 {getWorld(15).lessons.length} lessons
               </span>
             </div>
@@ -1069,41 +1143,53 @@ export const Home: React.FC<HomeProps> = ({
       </section>
 
         {/* ================= SECTION 3: EXPERIENCED (Worlds 16-22) ================= */}
-        <section className="relative w-full -mt-6">
+        <section className="relative w-full mt-6">
           <div
-            className={`sticky top-[58px] z-30 w-full backdrop-blur-xl transition-colors border-b ${
+            className={`sticky top-[58px] z-30 w-full backdrop-blur-xl transition-colors border-y ${
               isDark
                 ? activeChapter === 3
-                  ? 'bg-indigo-950/55 border-indigo-400/35 shadow-[0_4px_18px_rgba(99,102,241,0.22)]'
-                  : 'bg-indigo-950/25 border-indigo-400/15 shadow-[0_4px_16px_rgba(99,102,241,0.1)]'
+                  ? 'bg-rose-950/60 border-rose-400/35 shadow-[0_4px_18px_rgba(244,63,94,0.22)]'
+                  : 'bg-rose-950/25 border-rose-400/15 shadow-[0_4px_16px_rgba(244,63,94,0.1)]'
                 : activeChapter === 3
-                ? 'bg-indigo-50/95 border-indigo-200 shadow-[0_4px_18px_rgba(99,102,241,0.16)]'
-                : 'bg-indigo-50/65 border-indigo-100/80 shadow-[0_4px_16px_rgba(99,102,241,0.08)]'
+                ? 'bg-white/95 border-rose-200 shadow-[0_4px_20px_rgba(244,63,94,0.14)]'
+                : 'bg-[#eceef4]/95 border-slate-300/80 shadow-xs'
             }`}
           >
             <div className="max-w-md mx-auto px-5 py-2.5 flex items-center gap-3">
               <span
                 className={`text-[10px] font-mono font-bold tracking-wider uppercase px-3 py-1 rounded-full border transition-all ${
                   activeChapter === 3
-                    ? 'text-indigo-700 dark:text-indigo-200 bg-indigo-500/15 border-indigo-400/40 shadow-[0_0_12px_rgba(99,102,241,0.2)]'
-                    : 'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-300/30 shadow-sm'
+                    ? isDark
+                      ? 'text-rose-200 bg-rose-500/20 border-rose-400/40 shadow-[0_0_12px_rgba(244,63,94,0.2)]'
+                      : 'text-rose-800 bg-rose-50 border-rose-300 shadow-xs'
+                    : isDark
+                    ? 'text-rose-300 bg-rose-500/10 border-rose-300/25 shadow-sm'
+                    : 'text-rose-800 bg-white border-rose-200 shadow-xs'
                 }`}
               >
-                CHAPTER 3 · EXPERIENCED · WORLDS 16–22
-                {activeChapter === 3 && <span className="ml-2 text-[8px] tracking-[0.16em]">ACTIVE</span>}
+                EXPERIENCED · WORLDS 16–22
+                {activeChapter === 3 && (
+                  <span className="ml-2 text-[8px] tracking-[0.16em] font-bold text-rose-600 dark:text-rose-300">
+                    ACTIVE
+                  </span>
+                )}
               </span>
-              <div className="flex-1 h-[1px] bg-slate-300/60 dark:bg-white/10"></div>
+              <div
+                className={`flex-1 h-[1px] ${
+                  isDark ? 'bg-white/10' : activeChapter === 3 ? 'bg-rose-200' : 'bg-slate-300/80'
+                }`}
+              />
             </div>
           </div>
 
           {/* SNAKE PATH SECTION 3: WORLDS 16-22 */}
-          <div ref={sec3Ref} className="relative w-full max-w-[360px] mx-auto px-5 pt-3 pb-12 flex flex-col items-center overflow-hidden">
+          <div ref={sec3Ref} className="relative w-full max-w-[360px] mx-auto px-5 pt-4 pb-12 flex flex-col items-center overflow-hidden">
           {/* WORLD 16 (Left) */}
           <StandardWorldNode
             worldOrder={16}
             completedWorlds={completedWorldsCount}
             align="left"
-            paddingTop="pt-3"
+            paddingTop="pt-10"
             isDark={isDark}
             nodeId="node-16"
             onWorldClick={handleWorldClick}
@@ -1165,22 +1251,24 @@ export const Home: React.FC<HomeProps> = ({
           />
 
           {/* WORLD 22: GRAND PINNACLE (Center) */}
-          <div className="relative w-full max-w-[320px] pt-12 pb-4 z-20 flex flex-col items-center">
+          <div className="relative w-full max-w-[330px] pt-12 pb-4 z-20 flex flex-col items-center">
             <div
-              className={`neu-raised rounded-3xl p-4 w-full flex items-center justify-between border cursor-pointer active:scale-95 transition-all relative ${
-                completedWorldsCount >= 21 ? 'opacity-100' : 'opacity-55 cursor-not-allowed'
+              className={`rounded-3xl p-4 w-full flex items-center justify-between border transition-all relative ${
+                completedWorldsCount >= 21
+                  ? 'neu-raised opacity-100 cursor-pointer active:scale-95'
+                  : 'neu-raised opacity-65 grayscale-[0.35] hover:opacity-80 cursor-not-allowed select-none'
               } ${
                 completedWorldsCount >= 22
                   ? isDark
-                    ? 'bg-[#151b28] border-indigo-500/40 text-white'
-                    : 'bg-[#e8eaf0] border-indigo-500/40 text-[#2e3040]'
+                    ? 'bg-[#151b28] border-amber-500/40 text-white'
+                    : 'bg-white border-amber-300 text-slate-900 shadow-md ring-1 ring-amber-400/30'
                   : completedWorldsCount === 21
                   ? isDark
                     ? 'bg-[#1e243a] border-indigo-500 shadow-[0_0_16px_rgba(99,102,241,0.4)] text-white'
-                    : 'bg-white border-indigo-500 shadow-[0_0_16px_rgba(99,102,241,0.3)] text-[#2e3040]'
+                    : 'bg-white border-indigo-500 shadow-[0_8px_24px_rgba(99,102,241,0.18)] text-slate-900 ring-2 ring-indigo-500/20'
                   : isDark
-                  ? 'bg-[#151b28] border-white/10 text-white'
-                  : 'bg-[#e8eaf0] border-white/60 text-[#2e3040]'
+                  ? 'bg-[#151b28]/80 border-slate-700/60 text-slate-300'
+                  : 'bg-white/80 border-slate-300/80 text-slate-700 shadow-xs'
               }`}
               onClick={() => {
                 if (completedWorldsCount >= 21) handleWorldClick('world-22');
@@ -1189,24 +1277,54 @@ export const Home: React.FC<HomeProps> = ({
               <div data-node-id="node-22" className="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 pointer-events-none" />
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-12 h-12 rounded-2xl neu-pressed flex items-center justify-center relative ${
-                    isDark ? 'bg-[#121824]' : 'bg-[#e8eaf0]'
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center relative border ${
+                    completedWorldsCount >= 22
+                      ? isDark
+                        ? 'neu-pressed bg-[#121824] border-amber-500/30 text-amber-400'
+                        : 'neu-pressed bg-amber-50 border-amber-200 text-amber-600'
+                      : completedWorldsCount === 21
+                      ? isDark
+                        ? 'neu-pressed bg-[#121824] border-indigo-500/30 text-indigo-400'
+                        : 'neu-pressed bg-indigo-50 border-indigo-200 text-indigo-600'
+                      : isDark
+                      ? 'neu-pressed bg-[#121824] border-slate-700/60 text-slate-400'
+                      : 'neu-pressed bg-slate-100 border-slate-300/80 text-slate-500'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-[26px]">
-                    military_tech
+                  <span className="material-symbols-outlined text-[24px]">
+                    {completedWorldsCount >= 21 ? 'military_tech' : 'lock'}
                   </span>
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5">
-                    <span className="inline-flex w-fit text-[10px] font-mono font-extrabold tracking-wide uppercase px-2 py-0.5 rounded-md border shadow-sm text-indigo-700 dark:text-indigo-200 bg-indigo-500/10 border-indigo-400/30">
+                    <span
+                      className={`inline-flex w-fit text-[10px] font-mono font-extrabold tracking-wide uppercase px-2 py-0.5 rounded-md border shadow-xs ${
+                        completedWorldsCount >= 22
+                          ? isDark
+                            ? 'text-amber-300 bg-amber-500/15 border-amber-500/30'
+                            : 'text-amber-800 bg-amber-50 border-amber-300/80 font-bold'
+                          : completedWorldsCount === 21
+                          ? isDark
+                            ? 'text-indigo-200 bg-indigo-500/15 border-indigo-400/30'
+                            : 'text-indigo-700 bg-indigo-50 border-indigo-200/90 font-bold'
+                          : isDark
+                          ? 'text-slate-300 bg-slate-800/80 border-white/10 font-semibold'
+                          : 'text-slate-700 bg-white border-slate-300/80 font-semibold'
+                      }`}
+                    >
                       FINAL WORLD 22
                     </span>
-                    <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400">
+                    <span className="text-[9px] font-mono font-bold text-slate-500 dark:text-slate-400">
                       • 500 XP
                     </span>
                   </div>
-                  <h3 className="text-xs font-['Outfit'] font-bold text-inherit">
+                  <h3 className={`text-xs font-['Outfit'] mt-0.5 ${
+                    completedWorldsCount >= 21
+                      ? 'font-bold text-inherit'
+                      : isDark
+                      ? 'font-semibold text-slate-200'
+                      : 'font-semibold text-slate-800'
+                  }`}>
                     {getWorld(22).title}
                   </h3>
                   <span className="text-[10px] text-slate-500 dark:text-slate-400">
@@ -1215,20 +1333,36 @@ export const Home: React.FC<HomeProps> = ({
                 </div>
               </div>
               <div
-                className={`w-8 h-8 rounded-xl neu-raised flex items-center justify-center ${
-                  isDark ? 'bg-[#151b28]' : 'bg-[#e8eaf0]'
+                className={`w-8 h-8 rounded-xl flex items-center justify-center border ${
+                  completedWorldsCount >= 22
+                    ? isDark
+                      ? 'neu-raised bg-[#151b28] border-white/10'
+                      : 'neu-raised bg-amber-50/90 border-amber-200/90 shadow-xs'
+                    : completedWorldsCount === 21
+                    ? isDark
+                      ? 'neu-raised bg-[#151b28] border-white/10'
+                      : 'neu-raised bg-indigo-50/90 border-indigo-200/90 shadow-xs'
+                    : isDark
+                    ? 'neu-raised bg-[#151b28] border-slate-700/60 text-slate-400'
+                    : 'neu-raised bg-slate-100 border-slate-300/80 text-slate-500'
                 }`}
               >
                 <span
                   className={`material-symbols-outlined text-[18px] ${
                     completedWorldsCount === 21
-                      ? 'text-indigo-500 animate-pulse'
+                      ? isDark
+                        ? 'text-indigo-400 animate-pulse'
+                        : 'text-indigo-700 font-bold'
                       : completedWorldsCount >= 22
-                      ? 'text-indigo-600 dark:text-indigo-400'
-                      : 'text-slate-400'
+                      ? isDark
+                        ? 'text-amber-400 font-bold'
+                        : 'text-amber-700 font-bold'
+                      : isDark
+                      ? 'text-slate-400'
+                      : 'text-slate-500'
                   }`}
                 >
-                  {getWorldIcon(22)}
+                  {completedWorldsCount >= 21 ? getWorldIcon(22) : 'lock'}
                 </span>
               </div>
             </div>

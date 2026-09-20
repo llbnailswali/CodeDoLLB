@@ -11,6 +11,7 @@ interface LearnStageProps {
   revealStep: number;
   setRevealStep: React.Dispatch<React.SetStateAction<number>>;
   onContinue: () => void;
+  onSkip?: () => void;
   tapToRevealEnabled?: boolean;
   /** Label of whichever stage actually comes next for this lesson (Explore,
    * Predict, etc.) -- stages can be skipped per-lesson, so this must not be
@@ -31,6 +32,7 @@ export const Learn: React.FC<LearnStageProps> = ({
   revealStep,
   setRevealStep,
   onContinue,
+  onSkip,
   tapToRevealEnabled = true,
   nextStageLabel = 'Explore',
 }) => {
@@ -301,7 +303,7 @@ export const Learn: React.FC<LearnStageProps> = ({
               The wrapper (not just the pill) carries the click handler and extra vertical padding so
               taps slightly above/below/left/right of the visible pill still register. */
           <div
-            className="flex justify-center w-full py-3 cursor-pointer"
+            className="flex items-center justify-center gap-2.5 w-full py-3"
             onClick={(e) => {
               e.stopPropagation();
               handleNextReveal();
@@ -322,6 +324,26 @@ export const Learn: React.FC<LearnStageProps> = ({
                 Tap to continue
               </span>
             </button>
+
+            {onSkip && (
+              <button
+                type="button"
+                id="learn-bottom-skip-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSkip();
+                }}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-xs font-['Outfit'] font-semibold shadow-md transition-all duration-200 active:scale-95 cursor-pointer select-none ${
+                  isDark
+                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/25 hover:border-amber-400'
+                    : 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100 hover:border-amber-400 shadow-slate-200'
+                }`}
+                title="Skip to next screens (2, 3, 4, 5)"
+              >
+                <span className="material-symbols-outlined text-[15px] text-amber-500">fast_forward</span>
+                <span>Skip</span>
+              </button>
+            )}
           </div>
         ) : (
           /* Final step: Button to advance to Step 2 (Explore) */
