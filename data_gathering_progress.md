@@ -32,6 +32,51 @@ has exact evidence for inheritance, interfaces, data classes/enums, object
 declarations, and the Boss. Companion objects, nested/inner classes, extension
 properties, delegation, delegated properties, and visibility diagnostics remain
 engine work. See [WORLD_11_CONTENT_REVIEW.md](WORLD_11_CONTENT_REVIEW.md).
+World 12: **Verified** — all 15 lessons. See
+[WORLD_12_CONTENT_REVIEW.md](WORLD_12_CONTENT_REVIEW.md).
+World 13: **Verified** for execution/coverage correctness — all 10 lessons,
+after this session built the engine's first `let`/`run`/`apply`/`also`/`with`
+support from zero and fixed a real array-hole content bug and a stale-starter
+Write & Run task. See [WORLD_13_CONTENT_REVIEW.md](WORLD_13_CONTENT_REVIEW.md).
+A later pass also found and fixed the card/question-level content this world
+needed under [LESSON_CLARITY_STANDARD.md](LESSON_CLARITY_STANDARD.md), but
+that world's own stage-level `explore.subtitle`/`predict.subtitle` were later
+found reused across 9 of 10 lessons and are NOT yet fixed — see that
+standard's per-world status table (World 13 is "Partial" there, not "Passed").
+World 14: **Verified** for execution/coverage correctness — all 13 lessons,
+after this session built the engine's first `Sequence`/`sequenceOf`/
+`generateSequence`/`.asSequence()` lazy-evaluation support from zero (real JS
+generators, genuine element-by-element evaluation order, single-use-vs-
+reusable semantics matching real Kotlin) and fixed two previously-invisible
+pre-existing engine bugs it surfaced (a JS automatic-semicolon-insertion
+hazard, and `KotlinList` silently comparing as unequal via reference identity
+instead of structural equality). See
+[WORLD_14_CONTENT_REVIEW.md](WORLD_14_CONTENT_REVIEW.md). This world has NOT
+had a [LESSON_CLARITY_STANDARD.md](LESSON_CLARITY_STANDARD.md) pass at all —
+deferred deliberately to the later, batch clarity audit across every world.
+World 15: **Verified** for execution/coverage correctness — all 15 lessons,
+after this session built the engine's first real exception hierarchy
+(`Throwable`/`Exception`/`RuntimeException`/`IllegalStateException`/
+`IllegalArgumentException`/`NumberFormatException`/etc., matching real
+Kotlin's subtype relationships), typed multi-catch dispatch, try/catch as
+an expression, expression-position `throw` (Elvis/if-branch), `Result`/
+`runCatching`, `require`/`check`/`error`, a throwing `String.toInt()`
+(previously silently lenient), and a real compile-time "class is final by
+default" check — plus fixed a genuine array-hole data-corruption bug (30
+literal `},,` double-commas silently dropping cards/questions from
+iteration) and several undefined-helper-function content bugs. See
+[WORLD_15_CONTENT_REVIEW.md](WORLD_15_CONTENT_REVIEW.md). This world has
+NOT had a [LESSON_CLARITY_STANDARD.md](LESSON_CLARITY_STANDARD.md) pass at
+all — deferred deliberately to the later, batch clarity audit across every
+world.
+Worlds 16–17 are authored in `masterCurriculumCatalog.ts` (synced in the same
+way World 12/13/14/15 arrived) but have **no content-review file and no
+execution-correctness audit at all** — treat as Not audited, not as any
+lesser degree of "done," until each gets the same engine-capability check and
+lesson-by-lesson review World 13/14/15 just received. World 16 (Coroutine
+Academy) and World 17 (Flow Universe) in particular almost certainly need
+real async/coroutine engine support this simulator has never had, before any
+of their content can be trusted to run.
 Later worlds are not certified under this standard by this audit. Earlier reviews
 remain useful evidence but do not automatically establish acceptance.
 
@@ -60,19 +105,19 @@ markers below is overwritten.
 | World 9 — Lambda Lab | 12 / 12 | ✅ Complete |
 | World 10 — Collection Wizardry | 10 / 10 | ✅ Complete |
 | World 11 — OOP Evolution | 14 / 14 | ✅ Complete |
-| World 12 — Generic Realm | 0 / 15 | ⬜ Not started |
-| World 13 — Scope Masters | 0 / 10 | ⬜ Not started |
-| World 14 — Sequence Dimension | 0 / 13 | ⬜ Not started |
-| World 15 — Error Fortress | 0 / 15 | ⬜ Not started |
-| World 16 — Coroutine Academy | 0 / 12 | ⬜ Not started |
-| World 17 — Flow Universe | 0 / 10 | ⬜ Not started |
+| World 12 — Generic Realm | 15 / 15 | ✅ Complete |
+| World 13 — Scope Masters | 10 / 10 | ✅ Complete |
+| World 14 — Sequence Dimension | 13 / 13 | ✅ Complete |
+| World 15 — Error Fortress | 15 / 15 | ✅ Complete |
+| World 16 — Coroutine Academy | 12 / 12 | ✅ Complete |
+| World 17 — Flow Universe | 10 / 10 | ✅ Complete |
 | World 18 — Concurrency Arena | 0 / 14 | ⬜ Not started |
 | World 19 — Kotlin Blacksmith | 0 / 16 | ⬜ Not started |
 | World 20 — JVM Bridge | 0 / 10 | ⬜ Not started |
 | World 21 — Performance Lab | 0 / 15 | ⬜ Not started |
 | World 22 — Production Kotlin | 0 / 22 | ⬜ Not started |
 
-**11 of 22 worlds complete by the format that actually ships.** Everything else in `masterCurriculumCatalog.ts` beyond the complete worlds is placeholder metadata (`questionsCount: 0`, no `fiveStageLessonKey`) — this is expected and self-documented in that file, not a bug.
+**17 of 22 worlds complete by the format that actually ships.** Everything else in `masterCurriculumCatalog.ts` beyond the complete worlds is placeholder metadata (`questionsCount: 0`, no `fiveStageLessonKey`) — this is expected and self-documented in that file, not a bug.
 
 <!-- AUTO-GENERATED:FIVE-STAGE-PROGRESS:END -->
 
@@ -115,11 +160,34 @@ The "topic → real world" mapping above is a first-pass guess based on topic ov
 
 ## 4. Next action
 
-The next un-authored curriculum world is **World 12 — Generic Realm** (`0 / 15`).
-Before authoring it, finish the World 11 OOP capabilities that World 12 relies
-on, beginning with companion objects, then nested/inner classes. Each runner
-feature must have direct regression cases and exact checks against the actual
-World 11 Learn, Explore, and Predict activity arrays.
+All 22 worlds' `masterCurriculumCatalog.ts` slots through World 17 are
+authored (Worlds 18-22 are the real gap: `0/N` each). But authored is not
+audited: the next execution-correctness audit target is
+**World 16 — Coroutine Academy**, the earliest authored-but-never-reviewed
+world remaining (World 15 was just completed this session; Worlds 16-17
+arrived the same way World 12/13/14/15 did, via a sync commit, with no
+`WORLD_N_CONTENT_REVIEW.md` and no engine-capability check at all). Follow
+the exact process World 13/14/15 just went through: check whether the
+topic's core operations even parse/execute in
+`kotlinRunner.ts`/`kotlinFunctions.ts` (for World 16, coroutines/`suspend`/
+`launch`/`async`/`await`/dispatchers/structured concurrency -- check
+whether any of this exists at all before assuming it does; a browser-based
+teaching simulator has no real thread pool, so a "coroutine" here will
+likely need to be modeled as something JS-native like a Promise/generator
+rather than genuine concurrency), build only what's missing, then run
+every lesson's actual Learn/Explore/Predict/Write&Run/Debug content through
+`compileAndRunKotlin` before trusting any of it. World 16 (Coroutine
+Academy) and World 17 (Flow Universe) should both be expected to need
+substantial new engine work (coroutines/Flow have never been touched),
+likely the largest remaining engine effort in the beginner-through-
+intermediate curriculum.
+
+Separately, a full [LESSON_CLARITY_STANDARD.md](LESSON_CLARITY_STANDARD.md)
+pass (readability/confusion/dash-collision/generic-subtitle) is queued for
+ALL worlds (1-14 so far, growing) as its own later, batch effort -- not
+folded into each world's execution-correctness audit going forward, per
+explicit direction. Track that separately in that standard's own per-world
+status table, not here.
 
 In parallel, close the non-engine acceptance work already identified:
 
@@ -127,6 +195,8 @@ In parallel, close the non-engine acceptance work already identified:
   real-Kotlin comparison.
 - World 11: per-activity capability classification, remaining OOP engine work,
   browser QA, and hardcode-resistance review for existing Write/Debug tasks.
+- World 13: browser visual QA and a real-Kotlin-compiler comparison (not
+  performed this session; see WORLD_13_CONTENT_REVIEW.md).
 
 Use [LESSON_QUALITY_STANDARD.md](LESSON_QUALITY_STANDARD.md), not the master
 plan, for activity selection, counts, stage acceptance, and audit status. Do
@@ -159,6 +229,179 @@ complete.
 Append one entry per meaningful session, most recent first.
 
 ```text
+## 2026-09-21 (World 15 quality audit, VERIFIED for execution correctness)
+
+World/Lesson: World 15 — Error Fortress, execution-correctness audit of all
+15 lessons (Exceptions & try, Catch, finally, throw, Multiple catch blocks,
+Try as an expression, Custom exceptions, Checked vs unchecked exception
+model, Result, runCatching, Success/failure handling, Error handling
+patterns, Avoiding swallowed errors, Designing meaningful failure paths,
+Boss).
+
+What/Why: World 15's whole topic (exceptions) had ZERO real engine support
+before this session -- no exception class hierarchy, no typed multi-catch
+dispatch (a single untyped catch only, and a second consecutive catch was
+a hard parse error), no try/catch as an expression, no expression-position
+`throw`, no `Result`/`runCatching`, no `require`/`check`, and a lenient
+(never-throwing) `String.toInt()`. Built, in order: a real
+Throwable/Exception/RuntimeException/IllegalStateException/
+IllegalArgumentException/NumberFormatException/etc. hierarchy (new file
+`src/utils/kotlinExceptions.ts`, matching real Kotlin's subtype
+relationships); Result<T> + runCatching (standalone and receiver forms); a
+full try/catch/finally rewrite in `kotlinFunctions.ts` (typed
+instanceof-chain dispatch, statement vs. expression-position rendering
+decided from the real preceding token, a real-control-flow no-IIFE path
+for the tail-of-block case mirroring the existing if-expression
+precedent); expression-position `throw` via a `__kt_throw` helper (Elvis
+RHS and if-expression branches); a throwing `String.toInt()` with the
+exact JVM error message format; `require`/`check`/`error`; and a genuine
+compile-time "class is final by default" check
+(`checkFinalClassInheritance`) that a `bugType: 'type'` debug exercise
+depended on and the engine had never modeled at all. Two boundary-
+detection helpers (`expressionEnd`/`statements` in kotlinFunctions.ts)
+needed `catch`/`finally` added to their newline-triggers-a-split exclusion
+lists to support a multi-line `try {...}` \n `catch (...) {...}` shape
+common in this world's Predict content. Also fixed a genuine, previously-
+undetected data-corruption bug: 30 literal `},,` double-commas across
+`world15LessonsData.ts` silently created sparse-array holes (inflating
+`.length` while `.map()`/iteration skipped the hole entirely -- caught by
+the audit's own `assert.ok(card, ...)` hole check, not by reading the
+data), plus 9 Explore/Predict snippets referencing an undefined helper
+function (`risky()`/`useDefault()`/`load()`), each fixed with a minimal,
+type-matching throwing definition.
+
+Evidence: `npm run test:world15-content` (new script, 227 checks: every
+Explore card, every Predict question -- including real call-graph
+reachability analysis to correctly distinguish "this snippet is expected
+to crash/propagate/fail-to-compile" from an actual runner regression --
+every Write & Run solution/starter pair, every Debug fixed/broken pair).
+Full cross-world regression, zero failures: test:lambda-runner (80),
+test:collection-runner (31+5+20), test:world11-content (56),
+test:world12-runner (6), test:world13-content (158), test:world14-content
+(197), audit:output-quotes (49 blocks), audit:dash-collision (0 findings),
+tsc --noEmit, npm run build.
+
+Content/catalog fixes: stale questionsCount across all 15 catalog rows
+(same recurring pattern as every other synced world); the 30-instance
+`},,` array-hole bug; 9 undefined-helper-function snippets.
+
+Full detail: WORLD_15_CONTENT_REVIEW.md. New PITFALLS.md entry: "World 15
+(Error Fortress): building a real exception hierarchy, try/catch dispatch,
+and expression-position `throw` from zero" (covers the final-class-
+inheritance type-bug generalization and the array-hole-comma pitfall).
+
+Next: World 16 (Coroutine Academy) is the next execution-correctness audit
+target -- expect this and World 17 (Flow Universe) to need the largest
+remaining engine effort so far, since neither coroutines nor Flow have
+ever been touched, and this is a browser-based simulator with no real
+thread pool to model true concurrency against.
+```
+
+```text
+## 2026-09-21 (World 14 quality audit, VERIFIED for execution correctness)
+
+World/Lesson: World 14 — Sequence Dimension, execution-correctness audit of
+all 13 lessons (What sequences are, Eager collection processing, Lazy
+processing, Creating sequences, asSequence(), Intermediate operations,
+Terminal operations, Sequence evaluation order, Short-circuiting,
+Sequences vs collections, Performance trade-offs, When sequences should
+and should not be used, and the Boss). Content had already been authored
+via a prior sync commit with zero engine support and zero audit; unlike
+most prior synced worlds, every card/question was already pre-labeled
+verified-by-real-kotlin / conceptual-real-kotlin-required /
+deferred-by-capability by whoever authored it.
+Completed:
+- Confirmed via compileAndRunKotlin that Sequence/sequenceOf/
+  generateSequence/.asSequence() had zero support at all before this
+  session.
+- Built a real, generator-backed KotlinSequence class from scratch
+  (kotlinCollections.ts): genuine element-by-element lazy evaluation
+  (verified against the lesson's own expected interleaved println
+  traces, not just final values), single-use-vs-reusable semantics
+  matching real Kotlin exactly (no-seed generateSequence and a bare
+  Iterator.asSequence() throw on a second traversal), a sequence{}
+  builder via a new protect-and-restore pass for yield/yieldAll,
+  standalone range values (1..100) as a new capability, and
+  is Sequence<Int>/is List<Int> support.
+- Added .take()/.drop()/.takeWhile()/.dropWhile() to KotlinList itself
+  (eager) alongside the lazy KotlinSequence versions, and
+  .takeIf/.takeUnless to Object.prototype (World 13-style).
+Found and fixed (engine, pre-existing, not new-feature gaps): a JS
+automatic-semicolon-insertion hazard (bare literal declaration + a
+following statement starting with "(" got misparsed as calling the
+literal as a function), and KotlinList had no real .equals(), so == on
+two structurally-identical-but-distinct Lists silently returned false
+via reference-equality fallback. See PITFALLS.md for both.
+Found and fixed (content/catalog): stale questionsCount across all 13
+catalog rows, and a genuine id-truncation bug (catalog id, catalog
+fiveStageLessonKey, and lessonStagesData.ts's registration key were all
+truncated to "...should-and-should-not-be-" while the lesson's own
+internal id field was the full, untruncated string).
+Verification:
+- New scripts/test-world14-content.ts (npm run test:world14-content):
+  197 checks, 0 failures.
+- Zero regressions: npm run test:lambda-runner (80), test:collection-runner
+  (31+5+20), test:world11-content (56), test:world12-runner (6),
+  test:world13-content (158), audit:output-quotes (49 blocks),
+  audit:dash-collision (0 findings), npx tsc --noEmit, npm run build.
+Explicitly deferred: LESSON_CLARITY_STANDARD.md's readability/confusion/
+dash-collision/generic-subtitle checks were NOT performed for this world
+-- per explicit direction, queued for a later batch pass across every
+world instead of folding into each world's own execution-correctness
+audit going forward.
+Gaps found: Worlds 15-17 remain authored-but-unaudited, same situation
+World 13/14 were in before their own passes -- World 15 (Error Fortress)
+flagged as the next execution-correctness audit target in Section 4.
+
+## 2026-09-21 (World 13 quality audit, VERIFIED)
+
+World/Lesson: World 13 — Scope Masters, quality audit of all 10 lessons
+(let & run, apply, also, with, this vs it, Return values of scope
+functions, Choosing the appropriate scope function, Scope-function
+chaining, Avoiding overuse and nesting, and the Boss). Content had already
+been authored via a prior sync commit with zero engine support and zero
+audit.
+Completed:
+- Confirmed via `compileAndRunKotlin` that NONE of let/run/apply/also/with
+  worked at all before this session -- every one failed with either
+  "X.let is not a function" or a hard parse error.
+- Built full engine support for all five in kotlinFunctions.ts/
+  kotlinRunner.ts, verified with a 16-case scratch harness before trusting
+  any lesson content, then re-verified against the actual lesson data.
+- Added StringBuilder (zero prior support) and a general fix for a bare
+  Int literal immediately followed by `.member` (`4.also{...}`, a real JS
+  SyntaxError otherwise).
+Found and fixed (content, not engine):
+- A real array-hole bug (`[..., , {...}]`) in the let & run lesson's
+  Explore/Predict arrays, silently making one card/question `undefined`.
+- A Write & Run starter (Avoiding overuse and nesting) that already
+  produced the expected output before any edit -- rewrote to the standard
+  TODO()-based starter shape.
+- An Explore card and Debug pair relying on unsupported labeled receivers
+  (`this@outer`) -- rewritten to use a named local variable instead,
+  preserving the same teaching point.
+- Stale `questionsCount` (all still `4`) across all 10 World 13 catalog
+  rows in masterCurriculumCatalog.ts.
+Found (engine, serious, not scope-function-specific): a class's primary
+constructor parameter with a default value (`class Box(var n: Int = 0)`)
+was silently registering that name as a real ROOT-SCOPE variable
+everywhere later in the file -- completely invisible until World 13's new
+bare-receiver-member-write rule started checking "does this name already
+exist in scope," which is exactly what tripped over it. Fixed with a new
+constructorParamTokens exclusion set. See PITFALLS.md for the full story
+and WORLD_13_CONTENT_REVIEW.md for the complete audit.
+Verification:
+- New `scripts/test-world13-content.ts` (`npm run test:world13-content`):
+  158 checks, 0 failures -- every Explore card, every Predict question,
+  every Write & Run solution/starter pair, every Debug fixed/broken pair.
+- Zero regressions: npm run test:lambda-runner (80), test:collection-runner
+  (31+5+20), test:world11-content (56), test:world12-runner (6),
+  audit:output-quotes (49 blocks), npx tsc --noEmit, npm run build.
+- Not performed: browser visual QA, real-Kotlin-compiler comparison.
+Gaps found: Worlds 14-17 are authored in the catalog but have zero
+content-review files and zero audits, same situation World 13 was in
+before this session -- flagged as the next audit target in Section 4.
+
 ## 2026-09-18 (World 9, COMPLETE)
 
 World/Lesson: World 9 — Lambda Lab, all 12 lessons: Lambda Expressions,

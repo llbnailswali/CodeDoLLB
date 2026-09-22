@@ -1,6 +1,17 @@
 import { prepareKotlinSource, scanKotlin, KotlinSourceError } from './kotlinSource';
-import { KotlinList, KotlinPair } from './kotlinCollections';
+import { KotlinList, KotlinPair, KotlinSequence } from './kotlinCollections';
 import { lowerKotlinFunctions, KotlinFunctionError } from './kotlinFunctions';
+import {
+  Throwable, Exception, RuntimeException, IllegalStateException, IllegalArgumentException,
+  NumberFormatException, IndexOutOfBoundsException, ArithmeticException, NoSuchElementException,
+  UnsupportedOperationException, KotlinResult, kotlinRunCatching,
+} from './kotlinExceptions';
+
+const BUILTIN_EXCEPTION_NAMES = [
+  'Throwable', 'Exception', 'RuntimeException', 'IllegalStateException', 'IllegalArgumentException',
+  'NumberFormatException', 'IndexOutOfBoundsException', 'ArithmeticException', 'NoSuchElementException',
+  'UnsupportedOperationException',
+];
 
 /**
  * Kotlin In-Browser Compilation & Execution Engine
@@ -31,6 +42,42 @@ interface VarDeclaration {
   isVal: boolean;
   type?: string;
   line: number;
+}
+
+/**
+ * World 15: Kotlin classes are final (non-inheritable) by default -- only
+ * `open`/`abstract`/`sealed` classes may be subclassed. This engine had no
+ * such check at all (see PITFALLS.md's "Debug exercises: the bug must be
+ * reproducible" entry): a `class Parent(...)` (no `open`) subclassed by
+ * `class Child : Parent(...)` previously transpiled and ran successfully
+ * either way, making a `bugType: 'type'` debug exercise built around
+ * exactly this mistake (World 15's Custom Exceptions lesson) auto-"pass"
+ * with zero edits, since broken and fixed code produced identical output.
+ * Scoped narrowly to classes DECLARED IN THIS SAME SOURCE -- a built-in
+ * exception class like `Exception`/`RuntimeException` (see
+ * kotlinExceptions.ts) is never flagged, since it is real Kotlin's own
+ * open type and this simulator has no source text for it to check a
+ * modifier against.
+ */
+function checkFinalClassInheritance(code: string): KotlinDiagnostic | null {
+  const declaredOpen = new Map<string, boolean>();
+  for (const line of code.split('\n')) {
+    const m = line.match(/^(.*?)\bclass\s+([A-Za-z_][A-Za-z0-9_]*)/);
+    if (!m) continue;
+    const [, prefix, name] = m;
+    const isOpen = /\b(open|abstract|sealed)\b/.test(prefix);
+    declaredOpen.set(name, isOpen);
+  }
+  const superRe = /\bclass\s+[A-Za-z_][A-Za-z0-9_]*(?:\s*<[^>{}]+>)?\s*(?:\([^)]*\))?\s*:\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(/g;
+  let match: RegExpExecArray | null;
+  while ((match = superRe.exec(code)) !== null) {
+    const parentName = match[1];
+    if (declaredOpen.get(parentName) === false) {
+      const line = code.slice(0, match.index).split('\n').length;
+      return { message: `Compilation error: '${parentName}' is final, so it cannot be inherited from -- mark it 'open' (or 'abstract'/'sealed') to allow subclassing`, line, type: 'compiler_error' };
+    }
+  }
+  return null;
 }
 
 /**
@@ -420,7 +467,22 @@ function transformTypeChecks(line: string, interfaceNames: Set<string> = new Set
     // matching the identical class-vs-primitive split already used inside
     // a `when` branch's `is Type ->` condition (see `parseWhenBranches`)
     // -- this is the standalone-expression form of the same check.
-    /([a-zA-Z_][a-zA-Z0-9_.]*|\([^()]*\))\s+(is|!is)\s+([A-Z][a-zA-Z0-9_]*)\b/g,
+    // The trailing boundary is a negative lookahead, not `\b`: when the
+    // optional `<...>` generic suffix IS consumed, the character right
+    // after it (typically `)` or end of line) is non-word, and so is the
+    // `>` right before it -- `\b` requires a word/non-word transition, so
+    // it would fail exactly there and force the regex to backtrack into
+    // NOT consuming the generic after all, silently leaving `<Int>`
+    // dangling, unconverted, in the output (confirmed directly: `s is
+    // Sequence<Int>` produced `(s instanceof Sequence)<Int>`, a syntax
+    // error). `(?![A-Za-z0-9_])` only asserts "not immediately followed by
+    // another identifier character," which is satisfiable regardless of
+    // what came just before it.
+    // World 15: the LHS can also be a zero/simple-arg method call on a
+    // dotted receiver (`r.exceptionOrNull() is NumberFormatException`) --
+    // the optional `(?:\([^()]*\))?` tail covers that shape without
+    // needing full nested-call parsing, matching every lesson usage.
+    /([a-zA-Z_][a-zA-Z0-9_.]*(?:\([^()]*\))?|\([^()]*\))\s+(is|!is)\s+([A-Z][a-zA-Z0-9_]*)(?:<[^<>]*>)?(?![A-Za-z0-9_])/g,
     (_m, expr, kw, type) => {
       const jsType = typeofMap[type];
       const check = jsType
@@ -437,11 +499,22 @@ function transformTypeChecks(line: string, interfaceNames: Set<string> = new Set
  * Recursively converts a Kotlin if-expression (including chained `else if`)
  * into nested JS ternaries.
  */
+// World 15: a `throw` in an if-expression branch (`if (cond) value else
+// throw X(...)`) is real, common Kotlin -- `throw` has type `Nothing`,
+// which is compatible with any expected type. JS has no such expression
+// (`throw` is a statement, so a bare `throw` inside a ternary branch is a
+// SyntaxError), so a branch that is exactly `throw EXPR` is rewritten to
+// call `__kt_throw(EXPR)` (a plain function that throws its argument)
+// instead -- valid anywhere an expression is expected.
+function wrapThrowBranch(branch: string): string {
+  const m = branch.match(/^throw\s+(.+)$/);
+  return m ? `__kt_throw(${m[1]})` : branch;
+}
 function convertIfExpr(expr: string): string {
   const m = expr.match(/^\s*if\s*\((.+?)\)\s+([^\n]+?)\s+else\s+([^\n]+)$/);
-  if (!m) return expr;
+  if (!m) return wrapThrowBranch(expr.trim());
   const [, cond, thenBranch, elseBranch] = m;
-  return `((${cond}) ? (${thenBranch.trim()}) : (${convertIfExpr(elseBranch.trim())}))`;
+  return `((${cond}) ? (${wrapThrowBranch(thenBranch.trim())}) : (${convertIfExpr(elseBranch.trim())}))`;
 }
 
 /**
@@ -1388,7 +1461,16 @@ function transpileDataClassCopyCalls(code: string): string {
 }
 
 function eraseGenericConstructorArguments(code: string): string {
-  return code.replace(/\b([A-Z][A-Za-z0-9_]*)\s*<[^>{}]+>\s*\(/g, '$1(');
+  code = code.replace(/\b([A-Z][A-Za-z0-9_]*)\s*<[^>{}]+>\s*\(/g, '$1(');
+  // World 15: an explicit type argument on a member/static call
+  // (`Result.failure<Int>(...)`) is compile-time-only, same as a
+  // constructor's -- but the callee name here (`failure`) is lowercase, so
+  // the capitalized-name-only pattern above never matches it. Scoped to a
+  // dot-prefixed call specifically (`.name<...>(`), which is never
+  // confusable with a `<`/`>` comparison chain the way a bare identifier
+  // would be.
+  code = code.replace(/\.([a-zA-Z_][A-Za-z0-9_]*)\s*<[^>{}]+>\s*\(/g, '.$1(');
+  return code;
 }
 
 /**
@@ -1739,7 +1821,7 @@ function transpileOOPDeclarations(code: string): string {
   code = eraseGenericConstructorArguments(code);
   code = transpileEnumClasses(code);
   code = transpileInterfaceDeclarations(code);
-  const classNames = new Set<string>();
+  const classNames = new Set<string>(['StringBuilder', ...BUILTIN_EXCEPTION_NAMES]);
   code = transpileClassDeclarations(code, classNames, interfaceMembers);
   code = transpileObjectDeclarations(code, objectInterfaces);
   code = insertNewForInstantiation(code, classNames);
@@ -1860,6 +1942,43 @@ function protectBlockGetterProperties(code: string): { code: string; blocks: str
  * as a runtime helper. Balanced-brace scanned, since a lazy block's own
  * body can contain further nested braces (an `if`, a lambda argument).
  */
+/**
+ * World 14's `sequence { yield(1); yieldAll(listOf(2, 3)) }` builder is
+ * protected the same way `by lazy { ... }` is: replaced with a placeholder
+ * before `lowerKotlinFunctions` ever tokenizes the source (its generic
+ * lambda/trailing-call lowering has no concept of `yield`/`yieldAll` and
+ * would otherwise mangle the block trying to treat it as an ordinary
+ * lambda argument), then restored -- transformed -- immediately after.
+ * Restoring before the OOP pass and the later per-line loop (rather than
+ * at the very end) is deliberate: it lets the block's own inner Kotlin
+ * (e.g. `listOf(2, 3)` inside `yieldAll`) still go through every normal
+ * later transform (collection-name rewriting, etc.) instead of needing
+ * its own separate, parallel mini-pipeline.
+ */
+function protectSequenceBuilders(code: string): { code: string; blocks: string[] } {
+  const blocks: string[] = [];
+  const re = /\bsequence\s*\{/g;
+  let result = '';
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(code)) !== null) {
+    const openIdx = match.index + match[0].length - 1;
+    let depth = 1;
+    let end = openIdx + 1;
+    for (; end < code.length && depth > 0; end++) {
+      if (code[end] === '{') depth++;
+      else if (code[end] === '}') depth--;
+    }
+    if (depth !== 0) continue;
+    const marker = `__KT_SEQBLOCK_${blocks.length}__`;
+    blocks.push(code.slice(openIdx + 1, end - 1));
+    result += code.slice(cursor, match.index) + marker;
+    cursor = end;
+    re.lastIndex = end;
+  }
+  return { code: result + code.slice(cursor), blocks };
+}
+
 function protectLazyBlocks(code: string): { code: string; blocks: string[] } {
   const blocks: string[] = [];
   const re = /\bby\s+lazy\s*\{/g;
@@ -2100,6 +2219,23 @@ export function transpileKotlinToJS(kotlinCode: string): string {
   // so it never lingers as stray leftover text in front of the generated
   // `function getValue(...)`.
   kotlinCode = kotlinCode.replace(/KProperty<[^>]*>/g, 'KProperty').replace(/\boperator\s+(?=fun\b)/g, '');
+  // World 15: `e::class.simpleName` (a caught exception's runtime type
+  // name, e.g. printed as "NumberFormatException") -> `e.constructor.name`.
+  // Every built-in and user-declared exception class is named exactly like
+  // its real Kotlin counterpart (see kotlinExceptions.ts), so the JS
+  // class's own `.name` already IS the right string with no extra mapping.
+  // Scoped to a bare identifier receiver (`e`, `it`) -- the only shape any
+  // lesson content actually uses.
+  kotlinCode = kotlinCode.replace(/\b([A-Za-z_][A-Za-z0-9_]*)::class\.simpleName\b/g, '$1.constructor.name');
+  // A whole-line `@Annotation(...)` (World 15's Checked vs Unchecked
+  // Exception Model lesson uses `@Throws(...)` purely to illustrate a
+  // Java-interop concept Kotlin itself does not enforce -- see PITFALLS.md)
+  // has no runtime meaning this simulator needs to model; JS has no
+  // annotation syntax at all, so left in place it would be a hard
+  // SyntaxError. Scoped to a line that IS only the annotation (matching
+  // how this and every other annotation appear in lesson content, always
+  // on their own source line immediately before the thing they annotate).
+  kotlinCode = kotlinCode.replace(/^[ \t]*@[A-Za-z_][A-Za-z0-9_.]*\([^\n]*\)[ \t]*$/gm, '');
   // A `where T : X, T : Y` clause (multiple upper bounds on one type
   // parameter) is compile-time-only constraint metadata with no runtime
   // meaning, but kotlinFunctions.ts's return-type reader has no concept of
@@ -2110,6 +2246,37 @@ export function transpileKotlinToJS(kotlinCode: string): string {
   // ever runs; non-greedy up to the next `=`/`{`, since a `where` clause's
   // own comma list never itself contains one.
   kotlinCode = kotlinCode.replace(/\s*\bwhere\s+[A-Za-z_][\s\S]*?(?=[={])/g, '');
+  // A bare integer literal immediately followed by `.member` (e.g.
+  // `4.also { ... }`, from World 13's scope-function lessons) is valid
+  // Kotlin, but JS's own numeric-literal grammar greedily consumes the
+  // trailing `.` into the number itself (`4.` is a complete float), then
+  // fails to parse the immediately-adjacent identifier with no operator
+  // between them (`4.also` -> `SyntaxError: Invalid or unexpected token`).
+  // Existing lesson content already sidesteps this by hand (`(250).foo()`
+  // in World 11) -- generalized here so new content doesn't have to. The
+  // lookahead requires a letter/underscore right after the dot, so a real
+  // decimal literal (`3.14`, digit after the dot) is never touched.
+  kotlinCode = kotlinCode.replace(/\b(\d+)\.(?=[A-Za-z_])/g, '($1).');
+  // A standalone Kotlin range VALUE used as an expression (World 14, e.g.
+  // `(1..100).asSequence()`, `(1..1_000_000).filter { ... }`) is not
+  // valid JS at all -- `1..100` isn't a JS token sequence -- unlike a
+  // for-loop header's `a..b` (`transformForLoops`, a separate later
+  // pass). Every lesson usage wraps the range in its own parens
+  // specifically to call a method off the result, so requiring `(` and
+  // `)` immediately around the range is enough to avoid colliding with a
+  // for-loop header (`for (i in 1..10)` -- the parens there belong to the
+  // `for(...)` call, not to `1..10` alone) or the existing `x in a..b`
+  // boolean-membership form. `__kt_range` (added to the runtime below)
+  // returns a real, reusable KotlinList so every existing List operation
+  // -- and the new `.asSequence()` -- already works on it for free.
+  kotlinCode = kotlinCode.replace(/\((\d[\d_]*)\.\.(\d[\d_]*)\)/g, '(__kt_range($1, $2))');
+  // The same range-as-value case, but assigned directly with no wrapping
+  // parens at all (World 14's Boss lesson: `val source = 1..100`, then
+  // `source.filter { ... }` later) -- unambiguous only when the range is
+  // the WHOLE remaining line (`$`, in multiline mode), since a range used
+  // as part of a larger expression on the same line already needs its own
+  // parens in real Kotlin to chain a method off it.
+  kotlinCode = kotlinCode.replace(/=(\s*)(\d[\d_]*)\.\.(\d[\d_]*)\s*$/gm, '=$1__kt_range($2, $3)');
   kotlinCode = transpileReifiedFunctions(kotlinCode);
   // Capture Map-producing declarations before lambda lowering expands a
   // chained expression across lines. The post-lowering scan below still
@@ -2127,7 +2294,18 @@ export function transpileKotlinToJS(kotlinCode: string): string {
   kotlinCode = protectedBlockGetters.code;
   const protectedLazyBlocks = protectLazyBlocks(kotlinCode);
   kotlinCode = protectedLazyBlocks.code;
+  const protectedSequenceBuilders = protectSequenceBuilders(kotlinCode);
+  kotlinCode = protectedSequenceBuilders.code;
   kotlinCode = lowerKotlinFunctions(kotlinCode);
+  protectedSequenceBuilders.blocks.forEach((block, index) => {
+    // `yield(x)` is already valid JS as-is inside a `function*` (a plain
+    // parenthesized operand of the `yield` keyword) -- only `yieldAll(x)`
+    // needs rewriting, to JS's `yield* (x)`. Deliberately narrow ([^)]* --
+    // a single argument, no nested parens): every lesson usage is exactly
+    // this shape; widen only if real content needs more.
+    const generatorBody = block.replace(/\byieldAll\(([^)]*)\)/g, 'yield* ($1)');
+    kotlinCode = kotlinCode.replace(`__KT_SEQBLOCK_${index}__`, `new Sequence(function* () {${generatorBody}}, false)`);
+  });
   protectedLazyBlocks.blocks.forEach((block, index) => {
     kotlinCode = kotlinCode.replace(`__KT_LAZYBLOCK_${index}__`, block);
   });
@@ -2198,6 +2376,22 @@ export function transpileKotlinToJS(kotlinCode: string): string {
     // than leaving a stray `?` behind that would break the rest of the line.
     line = line.replace(/\bval\s+([a-zA-Z0-9_]+)(?:\s*:\s*[a-zA-Z0-9_<>?,\s]+)?\s*=/g, 'const $1 =');
     line = line.replace(/\bvar\s+([a-zA-Z0-9_]+)(?:\s*:\s*[a-zA-Z0-9_<>?,\s]+)?\s*=/g, 'let $1 =');
+    // A `const`/`let` declaration whose RHS is a bare, self-contained
+    // literal (never continued onto a later line, unlike a chained
+    // pipeline's receiver expression) needs an explicit trailing `;` --
+    // Kotlin never requires one, so the line is otherwise emitted exactly
+    // as written. Without it, if the VERY NEXT statement happens to start
+    // with `(` (World 14's standalone `(a..b)` range values, or any bare
+    // parenthesized expression used as its own statement), JS automatic
+    // semicolon insertion does NOT insert a semicolon before a line
+    // starting with `(` -- so `let c = 0\n(range).map(...)` is parsed as
+    // ONE statement, `let c = 0(range).map(...)`, calling the number `0`
+    // as a function (`TypeError: 0 is not a function`). Confirmed via
+    // direct execution before narrowing the fix to this literal-RHS-only
+    // shape, specifically to avoid ever terminating a real multi-line
+    // chain (`val result = source\n    .filter { ... }`), whose own
+    // first line's RHS is never a bare literal.
+    if (/=\s*(-?\d+(?:\.\d+)?|true|false|null)\s*$/.test(line)) line = line + ';';
 
     // Kotlin single-line if-expression (`val x = if (cond) a else b`) ->
     // JS ternary -- see `transformIfExpression` above.
@@ -2335,6 +2529,11 @@ export async function compileAndRunKotlin(
       exitCode: 1,
     };
   }
+  const inheritanceError = checkFinalClassInheritance(code);
+  if (inheritanceError) {
+    const elapsed = Math.round(performance.now() - startTime);
+    return { success: false, output: '', logs: [], error: inheritanceError, executionTimeMs: elapsed, exitCode: 1 };
+  }
 
   // 2. Transpilation to Safe JS
   let transpiledJS = '';
@@ -2404,6 +2603,149 @@ export async function compileAndRunKotlin(
       toFloat: { value: function () { return Number(Math.fround(Number(this)).toPrecision(7)); } },
     });
   }
+  // World 13's `let`/`run`/`apply`/`also` are Kotlin extension functions on
+  // EVERY type (`T.let(...)`, etc.), so this simulator has no single
+  // built-in prototype to attach them to -- Object.prototype is the one
+  // place every value (including boxed primitives, via the standard JS
+  // autoboxing that already happens for e.g. `"x".length`) inherits from.
+  // kotlinFunctions.ts already lowers each call's trailing lambda to a
+  // plain function that takes the receiver as its own first positional
+  // parameter (never JS `this`) -- see the `size: String.() -> Int = {
+  // length }` case this reuses -- so all four just need to call `block`
+  // with `this` (unboxed back to a primitive first; a boxed String/Number/
+  // Boolean would otherwise make e.g. `it is String` checks see `typeof
+  // 'object'` instead of the real primitive type). `run`/`apply` receive a
+  // receiver-style block (no separate argument), but that's exactly the
+  // same call shape once lowered -- both forms already collapse to a
+  // single positional parameter. `also`/`apply` discard the block's own
+  // result and return the original (unboxed) receiver instead, matching
+  // Kotlin. `Object.prototype.apply` does not shadow `Function.prototype
+  // .apply` for an actual function value -- Function.prototype is closer
+  // in the prototype chain and already defines its own `apply` -- so this
+  // only ever applies to non-function receivers, which is the only case
+  // any World 13 lesson exercises.
+  if (!(Object.prototype as any).let) {
+    const __kt_unbox = (value: any) => (value instanceof Number || value instanceof String || value instanceof Boolean) ? value.valueOf() : value;
+    Object.defineProperties(Object.prototype, {
+      let: { value: function (block: (receiver: any) => any) { return block(__kt_unbox(this)); }, configurable: true, writable: true },
+      run: { value: function (block: (receiver: any) => any) { return block(__kt_unbox(this)); }, configurable: true, writable: true },
+      also: { value: function (block: (receiver: any) => any) { const receiver = __kt_unbox(this); block(receiver); return receiver; }, configurable: true, writable: true },
+      apply: { value: function (block: (receiver: any) => any) { const receiver = __kt_unbox(this); block(receiver); return receiver; }, configurable: true, writable: true },
+      // World 14's Creating Sequences lesson uses `(n--).takeIf { it > 0 }`
+      // to model the single-use, no-seed generateSequence overload. Same
+      // `it`-argument shape as let/also -- kotlinFunctions.ts's generic
+      // trailing-lambda lowering already defaults an UNREGISTERED call
+      // name to an `it`-bound lambda (see the `!expected?.params && label`
+      // branch in `lambda()`), so no signature registration was needed
+      // here, only the runtime method itself.
+      takeIf: { value: function (predicate: (receiver: any) => boolean) { const receiver = __kt_unbox(this); return predicate(receiver) ? receiver : null; }, configurable: true, writable: true },
+      takeUnless: { value: function (predicate: (receiver: any) => boolean) { const receiver = __kt_unbox(this); return predicate(receiver) ? null : receiver; }, configurable: true, writable: true },
+      // World 15's receiver form, `"25".runCatching { toInt() }` -- a
+      // dot-prefixed call, so kotlinFunctions.ts resolves it via
+      // `scopeMemberSignatures` (like let/run/also/apply) rather than the
+      // bare-name `__kt_runCatching` rename above, and it reaches the
+      // runtime as a real method call needing a real prototype method.
+      runCatching: { value: function (block: () => any) { return kotlinRunCatching(block, __kt_unbox(this)); }, configurable: true, writable: true },
+    });
+  }
+  // World 13's apply/also Explore examples build up text with
+  // StringBuilder (`StringBuilder().apply { append("dark"); append(...) }`)
+  // -- there is no JS equivalent, so `new StringBuilder()` (inserted by
+  // `insertNewForInstantiation`, which also needs "StringBuilder" added to
+  // its recognized class-name set -- see transpileKotlinToJS) would
+  // otherwise fail with "StringBuilder is not defined". Defined as a real
+  // global rather than a sandbox-passed parameter, the same way Number/
+  // Array/Map already work inside the generated code without being
+  // explicitly injected. `.append` returns `this` to support the real
+  // Kotlin chaining style (`sb.append(a).append(b)`), and `toString()`
+  // covers both explicit calls and this simulator's own print/format path
+  // (`formatKotlinValue` falls back to `String(value)`, which itself calls
+  // `toString()`).
+  if (!(globalThis as any).StringBuilder) {
+    (globalThis as any).StringBuilder = class KotlinStringBuilder {
+      __kt_text: string;
+      constructor(initial: string = '') { this.__kt_text = initial; }
+      append(value: any) { this.__kt_text += String(value); return this; }
+      get length() { return this.__kt_text.length; }
+      toString() { return this.__kt_text; }
+    };
+  }
+  // World 15: the exception hierarchy, `Result`/`runCatching`, `require`/
+  // `check`, and `__kt_throw` -- all exposed as real globals (not sandbox
+  // parameters) the same way StringBuilder/Sequence already are, so
+  // generated code can reference them by their literal Kotlin names with
+  // no separate call-site renaming pass. `__kt_throw` turns Kotlin's
+  // expression-position `throw` (Elvis right-hand side, an if-expression
+  // branch) into a plain function call -- JS's own `throw` is a statement
+  // and cannot appear inside a ternary or `??`, so every expression-
+  // position `throw` is rewritten to call this instead (see
+  // `transformIfExpression`/`kotlinFunctions.ts`'s elvis handling).
+  if (!(globalThis as any).Exception) {
+    (globalThis as any).Throwable = Throwable;
+    (globalThis as any).Exception = Exception;
+    (globalThis as any).RuntimeException = RuntimeException;
+    (globalThis as any).IllegalStateException = IllegalStateException;
+    (globalThis as any).IllegalArgumentException = IllegalArgumentException;
+    (globalThis as any).NumberFormatException = NumberFormatException;
+    (globalThis as any).IndexOutOfBoundsException = IndexOutOfBoundsException;
+    (globalThis as any).ArithmeticException = ArithmeticException;
+    (globalThis as any).NoSuchElementException = NoSuchElementException;
+    (globalThis as any).UnsupportedOperationException = UnsupportedOperationException;
+    (globalThis as any).Result = KotlinResult;
+    (globalThis as any).runCatching = (block: () => any) => kotlinRunCatching(block);
+    (globalThis as any).require = (condition: boolean, lazyMessage?: () => string) => {
+      if (!condition) throw new IllegalArgumentException(lazyMessage ? lazyMessage() : 'Failed requirement.');
+    };
+    (globalThis as any).check = (condition: boolean, lazyMessage?: () => string) => {
+      if (!condition) throw new IllegalStateException(lazyMessage ? lazyMessage() : 'Check failed.');
+    };
+    (globalThis as any).error = (message: any) => { throw new IllegalStateException(String(message)); };
+    (globalThis as any).__kt_throw = (error: any) => { throw error; };
+  }
+  // World 14: Sequence and its creation functions, exposed as real
+  // globals (not sandbox parameters) the same way StringBuilder is --
+  // generated code references them by their literal Kotlin names
+  // (`Sequence`, `sequenceOf`, `generateSequence`), so no separate
+  // call-site renaming pass is needed.
+  if (!(globalThis as any).Sequence) {
+    (globalThis as any).Sequence = KotlinSequence;
+    // World 14's Eager Collection Processing lesson has a Predict question
+    // asking `x is List<Int>` (contrasted against `is Sequence<Int>`
+    // elsewhere in the same world) -- needs "List" resolvable as a real
+    // instanceof target the same way "Sequence" now is. Scoped to just
+    // List for now, matching the one case that actually needs it; extend
+    // with MutableList/Set/Map only once real content requires them too.
+    (globalThis as any).List = KotlinList;
+    (globalThis as any).sequenceOf = (...items: any[]) => new KotlinSequence(() => items[Symbol.iterator](), false);
+    // Two distinct real-Kotlin overloads, disambiguated by arity (JS
+    // leaves `next` undefined for a one-argument call): `generateSequence
+    // (seed, nextFunction)` always yields the seed first, then repeatedly
+    // reapplies nextFunction to the previous value until it returns null
+    // -- reusable, since each fresh iteration recomputes from the same
+    // seed. `generateSequence(nextFunction)` (no seed) instead calls a
+    // stateful zero-arg function for every value including the first, and
+    // real Kotlin documents this overload as constrained to one
+    // iteration -- a second traversal must throw, not silently restart.
+    (globalThis as any).generateSequence = (seedOrNext: any, next?: (prev: any) => any) => {
+      if (typeof next === 'function') {
+        const seed = seedOrNext;
+        return new KotlinSequence(function* () {
+          let current = seed;
+          while (current != null) { yield current; current = next(current); }
+        }, false);
+      }
+      const nextFn = seedOrNext as () => any;
+      return new KotlinSequence(function* () {
+        let value = nextFn();
+        while (value != null) { yield value; value = nextFn(); }
+      }, true);
+    };
+    (globalThis as any).__kt_range = (a: number, b: number) => {
+      const out = new KotlinList();
+      for (let i = a; i <= b; i++) out.push(i);
+      return out;
+    };
+  }
   if (!(String.prototype as any).trimIndent) Object.defineProperty(String.prototype, 'trimIndent', { value: function () {
     const lines = String(this).split(/\r?\n/);
     if (lines.length && !lines[0].trim()) lines.shift();
@@ -2429,9 +2771,31 @@ export async function compileAndRunKotlin(
       return this.toUpperCase();
     };
   }
-  if (typeof (String.prototype as any).toInt !== 'function') {
+  // World 15: real Kotlin's `String.toInt()` validates the WHOLE string
+  // (optional leading sign, then digits only -- no surrounding whitespace,
+  // no trailing garbage) and throws `NumberFormatException` otherwise, with
+  // an exact, JVM-matching message (`For input string: "text"`) that
+  // World 15's own Boss lesson asserts verbatim in its `expectedOutput`.
+  // The previous `parseInt(this, 10)` was lenient exactly like JS's own
+  // `parseInt` -- `"12x".toInt()` silently returned 12 instead of throwing
+  // -- a silent-wrong-answer bug of exactly the kind this codebase's own
+  // pitfalls file warns about repeatedly, invisible until a lesson actually
+  // needed the throwing behavior (World 1-14 content never did).
+  if (typeof (String.prototype as any).toInt !== 'function' || !(String.prototype as any).__kt_toIntThrows) {
     (String.prototype as any).toInt = function () {
-      return parseInt(this, 10);
+      const s = String(this);
+      if (!/^[+-]?\d+$/.test(s) || !Number.isSafeInteger(parseInt(s, 10))) {
+        throw new NumberFormatException(`For input string: "${s}"`);
+      }
+      return parseInt(s, 10);
+    };
+    (String.prototype as any).__kt_toIntThrows = true;
+  }
+  if (typeof (String.prototype as any).toIntOrNull !== 'function') {
+    (String.prototype as any).toIntOrNull = function () {
+      const s = String(this);
+      if (!/^[+-]?\d+$/.test(s) || !Number.isSafeInteger(parseInt(s, 10))) return null;
+      return parseInt(s, 10);
     };
   }
   if (typeof (String.prototype as any).toDouble !== 'function') {
@@ -2447,6 +2811,16 @@ export async function compileAndRunKotlin(
   if (typeof (String.prototype as any).isNotBlank !== 'function') {
     (String.prototype as any).isNotBlank = function () {
       return this.trim().length > 0;
+    };
+  }
+  if (typeof (String.prototype as any).isEmpty !== 'function') {
+    (String.prototype as any).isEmpty = function () {
+      return this.length === 0;
+    };
+  }
+  if (typeof (String.prototype as any).isNotEmpty !== 'function') {
+    (String.prototype as any).isNotEmpty = function () {
+      return this.length > 0;
     };
   }
   if (typeof (Array.prototype as any).joinToString !== 'function') {
@@ -2481,6 +2855,7 @@ export async function compileAndRunKotlin(
     (list as any).joinToString = (separator: string = ', ') => list.map(formatKotlinValue).join(separator);
     (list as any).reversed = () => [...list].reverse();
     (list as any).count = () => list.length;
+    (list as any).asSequence = () => new KotlinSequence(() => list[Symbol.iterator](), false);
     return list;
   };
   const withSetContains = (set: Set<any>) => {
@@ -2489,6 +2864,7 @@ export async function compileAndRunKotlin(
     (set as any).isNotEmpty = () => set.size > 0;
     (set as any).first = () => [...set][0];
     (set as any).last = () => [...set][set.size - 1];
+    (set as any).asSequence = () => new KotlinSequence(() => set[Symbol.iterator](), false);
     return set;
   };
   const __kt_arrayOf = (...items: any[]) => withArrayContains([...items]);
@@ -2580,12 +2956,28 @@ export async function compileAndRunKotlin(
 
       const __kt_decimalText = (value) => value == null ? 'null' : Number.isInteger(value) ? String(value) + '.0' : String(value);
       const __kt_run = (action) => action();
+      // with(receiver) { block } -- registered as a plain builtins entry
+      // in kotlinFunctions.ts (same as run/repeat above), which already
+      // auto-renames a bare "with" token to "__kt_with" wherever it's
+      // used, so the reserved JS "with" statement keyword never reaches
+      // the generated code. block is already lowered to take the receiver
+      // as its own first positional parameter (same shape as the
+      // Object.prototype.let/run/also/apply helpers below), so calling it
+      // directly with receiver is all that's needed.
+      const __kt_with = (receiver, block) => block(receiver);
       const __kt_repeat = (times, action) => {
         for (let index = 0; index < times; index++) {
           __kt_check_loop();
           action(index);
         }
       };
+      // World 15's standalone \`runCatching { block }\` -- registered as a
+      // plain builtins entry in kotlinFunctions.ts (same as run/with/repeat
+      // above), so it is likewise auto-renamed to \`__kt_runCatching\` at
+      // every call site. Delegates to the real \`runCatching\` global
+      // (kotlinRunner.ts exposes it on globalThis) rather than duplicating
+      // its Result-wrapping logic here.
+      const __kt_runCatching = (block) => runCatching(block);
 
       ${transpiledJS}
 

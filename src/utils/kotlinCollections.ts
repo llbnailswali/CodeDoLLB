@@ -67,4 +67,147 @@ export class KotlinList extends ArrayBase {
   isEmpty() { return this.length === 0; }
   isNotEmpty() { return this.length !== 0; }
   get(index: number) { if (!Number.isInteger(index) || index < 0 || index >= this.length) throw new Error('Index out of bounds'); return this[index]; }
+  // `__kt_equals` (kotlinRunner.ts, backing every `==` comparison) only
+  // ever calls a value's own `.equals` method, falling back to `===`
+  // (reference equality) when one isn't defined -- so two structurally
+  // identical but reference-distinct Lists (e.g. World 14's
+  // `listOf(1,2,3).map{...}` vs the same values built through a Sequence
+  // pipeline, `a == b`) silently compared as unequal until this existed,
+  // even though the shared `equal()` helper above already implements the
+  // right structural comparison and every other KotlinList method already
+  // uses it internally (`.contains`, `.distinct`, ...) -- it just was
+  // never exposed as `.equals` itself.
+  equals(other: any) { return equal(this, other); }
+  // World 14's Eager Collection Processing / Performance Trade-offs
+  // lessons deliberately compare the SAME operation names on both List
+  // (eager -- these four) and Sequence (lazy -- see KotlinSequence below)
+  // to make the evaluation-model difference observable, so a real
+  // Iterable.take/drop/takeWhile/dropWhile is needed here too, not just
+  // on KotlinSequence.
+  take(n: number) { return new KotlinList(Array.prototype.slice.call(this, 0, Math.max(0, n))); }
+  drop(n: number) { return new KotlinList(Array.prototype.slice.call(this, Math.max(0, n))); }
+  takeWhile(fn: any) { const out = new KotlinList(); for (const v of this) { if (!fn(v)) break; out.push(v); } return out; }
+  dropWhile(fn: any) { let i = 0; while (i < this.length && fn(this[i])) i++; return new KotlinList(Array.prototype.slice.call(this, i)); }
+  asSequence() { const self = this; return new KotlinSequence(() => Array.prototype[Symbol.iterator].call(self), false); }
+  iterator() {
+    const it: any = Array.prototype[Symbol.iterator].call(this);
+    it.asSequence = () => new KotlinSequence(() => it, true);
+    return it;
+  }
+}
+
+// World 14: a lazy, generator-backed Sequence<T>. Every intermediate
+// operation (map/filter/take/takeWhile/drop) wraps the upstream iterable
+// in a new `function*`, so pulling one element from the OUTERMOST
+// generator naturally pulls exactly one element through every stage
+// before requesting the next source element -- this is what gives real
+// element-by-element evaluation order (verified against real Kotlin: a
+// `filter` then `map` prints F1, M1, F2, M2, ..., never a whole filter
+// pass before any map), not just a correct final result. See PITFALLS.md.
+//
+// `singleUse` models Kotlin's own distinction between a reusable sequence
+// (sequenceOf, a seeded generateSequence, an Iterable's own asSequence)
+// and the no-seed `generateSequence(nextFunction)` overload and a bare
+// Iterator's `asSequence()`, both of which real Kotlin documents as
+// constrained to exactly one iteration -- a second traversal throws.
+//
+// Every terminal operation guards its own iteration count independently
+// of the transpiled-loop `__kt_check_loop` mechanism (which only
+// instruments actual Kotlin while/for loops): a synchronous JS `for...of`
+// draining an unbounded generator would otherwise block the single
+// JS thread forever, and no external timeout can preempt a loop that
+// never yields control back to the event loop.
+const SEQUENCE_ITERATION_CAP = 250_000;
+export class KotlinSequence {
+  private genFn: () => Iterator<any>;
+  private singleUse: boolean;
+  private used = false;
+  constructor(genFn: () => Iterator<any>, singleUse: boolean) {
+    this.genFn = genFn;
+    this.singleUse = singleUse;
+  }
+  [Symbol.iterator](): Iterator<any> {
+    if (this.singleUse) {
+      if (this.used) throw new Error('This sequence can only be iterated once.');
+      this.used = true;
+    }
+    return this.genFn();
+  }
+  private static guard(count: number) {
+    if (count > SEQUENCE_ITERATION_CAP) throw new Error('Execution timed out (possible infinite loop)');
+  }
+  map(fn: any): KotlinSequence {
+    const self = this;
+    return new KotlinSequence(function* () { for (const v of self) yield fn(v); }, self.singleUse);
+  }
+  filter(fn: any): KotlinSequence {
+    const self = this;
+    return new KotlinSequence(function* () { for (const v of self) if (fn(v)) yield v; }, self.singleUse);
+  }
+  take(n: number): KotlinSequence {
+    const self = this;
+    return new KotlinSequence(function* () {
+      if (n <= 0) return;
+      let i = 0;
+      for (const v of self) { yield v; if (++i >= n) return; }
+    }, self.singleUse);
+  }
+  takeWhile(fn: any): KotlinSequence {
+    const self = this;
+    return new KotlinSequence(function* () { for (const v of self) { if (!fn(v)) return; yield v; } }, self.singleUse);
+  }
+  drop(n: number): KotlinSequence {
+    const self = this;
+    return new KotlinSequence(function* () { let i = 0; for (const v of self) { if (i++ < n) continue; yield v; } }, self.singleUse);
+  }
+  toList(): KotlinList {
+    const out = new KotlinList(); let c = 0;
+    for (const v of this) { KotlinSequence.guard(++c); out.push(v); }
+    return out;
+  }
+  first(fn?: any): any {
+    let c = 0;
+    for (const v of this) { KotlinSequence.guard(++c); if (!fn || fn(v)) return v; }
+    throw new Error('Sequence contains no element matching the predicate.');
+  }
+  firstOrNull(fn?: any): any {
+    let c = 0;
+    for (const v of this) { KotlinSequence.guard(++c); if (!fn || fn(v)) return v; }
+    return null;
+  }
+  find(fn: any): any { return this.firstOrNull(fn); }
+  count(fn?: any): number {
+    let c = 0, n = 0;
+    for (const v of this) { KotlinSequence.guard(++c); if (!fn || fn(v)) n++; }
+    return n;
+  }
+  fold(initial: any, fn: any): any {
+    let acc = initial, c = 0;
+    for (const v of this) { KotlinSequence.guard(++c); acc = fn(acc, v); }
+    return acc;
+  }
+  forEach(fn: any): void {
+    let c = 0;
+    for (const v of this) { KotlinSequence.guard(++c); fn(v); }
+  }
+  any(fn: any): boolean {
+    let c = 0;
+    for (const v of this) { KotlinSequence.guard(++c); if (fn(v)) return true; }
+    return false;
+  }
+  all(fn: any): boolean {
+    let c = 0;
+    for (const v of this) { KotlinSequence.guard(++c); if (!fn(v)) return false; }
+    return true;
+  }
+  none(fn: any): boolean {
+    let c = 0;
+    for (const v of this) { KotlinSequence.guard(++c); if (fn(v)) return false; }
+    return true;
+  }
+  sum(): number {
+    let s = 0, c = 0;
+    for (const v of this) { KotlinSequence.guard(++c); s += v; }
+    return s;
+  }
 }

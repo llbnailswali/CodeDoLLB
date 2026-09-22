@@ -461,7 +461,7 @@ export const Explore: React.FC<ExploreStageProps> = ({
                 >
                   WHAT CHANGED
                 </h4>
-                <p className="text-xs font-medium">{card.whatChanged}</p>
+                <p className="text-xs font-medium whitespace-pre-line">{card.whatChanged}</p>
               </div>
             </article>
           );

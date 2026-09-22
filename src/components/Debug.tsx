@@ -509,7 +509,7 @@ export const Debug: React.FC<DebugStageProps> = ({
 
           <div className="text-xs mb-2">
             {isResolved ? (
-              <p className="leading-relaxed text-emerald-600 dark:text-emerald-400 font-medium">
+              <p className="leading-relaxed whitespace-pre-line text-emerald-600 dark:text-emerald-400 font-medium">
                 {data.explanation}
               </p>
             ) : (

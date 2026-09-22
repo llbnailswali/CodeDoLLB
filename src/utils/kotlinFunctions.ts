@@ -151,7 +151,7 @@ export function lowerKotlinFunctions(source: string): string {
     let i = a;
     for (; i < end; i++) {
       if ([',', ';', '}', ')', ']'].includes(at(i))) break;
-      if (i > a && newline(i - 1, i) && !['.', '?.', '?:', 'else', '{', '(', '+', '-', '*', '/', '&&', '||'].includes(at(i)) && !['=', '->', '+', '-', '*', '/', '&&', '||', ',', 'return'].includes(at(i - 1))) break;
+      if (i > a && newline(i - 1, i) && !['.', '?.', '?:', 'else', 'catch', 'finally', '{', '(', '+', '-', '*', '/', '&&', '||'].includes(at(i)) && !['=', '->', '+', '-', '*', '/', '&&', '||', ',', 'return'].includes(at(i - 1))) break;
       if (pairs.has(i) && pairs.get(i)! > i) i = pairs.get(i)!;
     }
     return i;
@@ -239,6 +239,21 @@ export function lowerKotlinFunctions(source: string): string {
   };
   const declarationBodies = new Set<number>();
   const constructors = new Map<string, Type[]>();
+  // A primary constructor's own parameter list (`class Box(var n: Int = 0)`)
+  // is never re-lowered as a class body -- only actual class/object/
+  // interface BODY braces are protected via `declarationBodies` above --
+  // so the top-level statement walk further below still passes straight
+  // through these tokens like any other code. A parameter written with
+  // `val`/`var` and a default value (`var n: Int = 0`) is then
+  // indistinguishable, token-by-token, from a genuine local `var n: Int =
+  // 0` declaration statement, and gets registered into the (shared, root)
+  // `ctx.vars` map as if it were one -- silently leaking a name that only
+  // ever exists as a constructor parameter into every later scope in the
+  // file, including a completely unrelated `run`/`apply`/`with` receiver
+  // block that reuses the same name for its own receiver property. Every
+  // token inside such a parameter list is recorded here so that specific
+  // branch can skip it.
+  const constructorParamTokens = new Set<number>();
   for (let i = 0; i < t.length; i++) {
     if (at(i) === 'typealias') {
       const end = expressionEnd(i + 3, t.length);
@@ -266,9 +281,13 @@ export function lowerKotlinFunctions(source: string): string {
         classTypeParams.set(at(i + 1), rawNames.map((n) => n.replace(/^(in|out)\s+/, '').split(/[\s:]/)[0]));
         ctorAt = j;
       }
-      if (at(ctorAt) === '(') constructors.set(at(i + 1), split(ctorAt + 1, pairs.get(ctorAt)!).map(([a, b]) => {
-        const colon = top(a, b, ':'); const eq = top(a, b, '='); return readType(colon + 1, eq < 0 ? b : eq);
-      }));
+      if (at(ctorAt) === '(') {
+        const ctorClose = pairs.get(ctorAt)!;
+        constructors.set(at(i + 1), split(ctorAt + 1, ctorClose).map(([a, b]) => {
+          const colon = top(a, b, ':'); const eq = top(a, b, '='); return readType(colon + 1, eq < 0 ? b : eq);
+        }));
+        for (let k = ctorAt; k <= ctorClose; k++) constructorParamTokens.add(k);
+      }
     }
     // Interfaces are registered the same way classes are (into the shared
     // `classes` set the loose `compatible()` name-check below consults) so
@@ -330,7 +349,46 @@ export function lowerKotlinFunctions(source: string): string {
   const builtins = new Map<string, Signature>([
     ['run', { inline: true, params: [{ name: 'block', type: { name: 'Function', params: [], result: unknown } }], result: unknown }],
     ['repeat', { inline: true, params: [{ name: 'times', type: { name: 'Int' } }, { name: 'action', type: { name: 'Function', params: [{ name: 'Int' }], result: unit } }], result: unit }],
+    // `with(receiver) { block }` (World 13) is a plain top-level call, not a
+    // member call. Registered under its real Kotlin name -- the existing
+    // `builtins.has(at(i))` bare-name check further below already renames
+    // any occurrence of a `builtins` key to `__kt_<name>` in the generated
+    // JS (the same mechanism `run`/`repeat` above already rely on), which
+    // is what keeps the literal word `with` -- reserved by JS's own,
+    // unrelated `with` statement -- out of the final generated code.
+    ['with', { inline: true, params: [{ name: 'receiver', type: { name: 'T' } }, { name: 'block', type: { name: 'Function', receiver: { name: 'T' }, params: [], result: { name: 'R' } } }], result: { name: 'R' } }],
+    // World 15's `runCatching { block }` takes a ZERO-parameter block, same
+    // shape as `run` above -- registering it here (rather than leaving it
+    // unregistered) matters specifically to stop `lambda()`'s own
+    // no-signature fallback from defaulting an unregistered call's trailing
+    // block to a single `it`-bound parameter, which would be wrong here.
+    ['runCatching', { inline: true, params: [{ name: 'block', type: { name: 'Function', params: [], result: unknown } }], result: { name: 'Result' } }],
   ]);
+  // `let`/`run`/`apply`/`also` (World 13) are only ever used as extension
+  // calls (`X.let { ... }`) -- registering them in `builtins` would also
+  // make bare `run { ... }` (already a distinct, receiver-less builtin
+  // above) match this receiver-having signature instead. Kept in their own
+  // map, consulted only for a dot-prefixed call in `callInfo` below, so the
+  // pre-existing standalone `run { ... }` is completely unaffected.
+  const scopeReceiver: Type = { name: 'T' };
+  const scopeResult: Type = { name: 'R' };
+  const scopeMemberSignatures = new Map<string, Signature>([
+    ['let', { inline: true, receiver: scopeReceiver, params: [{ name: 'block', type: { name: 'Function', params: [scopeReceiver], result: scopeResult } }], result: scopeResult }],
+    ['also', { inline: true, receiver: scopeReceiver, params: [{ name: 'block', type: { name: 'Function', params: [scopeReceiver], result: unknown } }], result: scopeReceiver }],
+    ['run', { inline: true, receiver: scopeReceiver, params: [{ name: 'block', type: { name: 'Function', receiver: scopeReceiver, params: [], result: scopeResult } }], result: scopeResult }],
+    ['apply', { inline: true, receiver: scopeReceiver, params: [{ name: 'block', type: { name: 'Function', receiver: scopeReceiver, params: [], result: unknown } }], result: scopeReceiver }],
+    // Receiver form: `"25".runCatching { toInt() }` (World 15) -- the block
+    // is a receiver-style, zero-argument function, same shape as `run`'s
+    // receiver entry above.
+    ['runCatching', { inline: true, receiver: scopeReceiver, params: [{ name: 'block', type: { name: 'Function', receiver: scopeReceiver, params: [], result: scopeResult } }], result: { name: 'Result' } }],
+  ]);
+  // Names a receiver-context block's bare identifiers must NEVER resolve
+  // to `receiver.name` for -- every global the sandbox actually injects
+  // (see the `new Function(...)` parameter list in kotlinRunner.ts) plus
+  // the Kotlin-level collection-factory names it recognizes before they are
+  // renamed to their `__kt_`-prefixed runtime equivalents, and a few bare
+  // keywords/literals that can appear in an expression position.
+  const receiverExcludedNames = new Set(['println', 'print', 'listOf', 'mutableListOf', 'arrayOf', 'setOf', 'mutableSetOf', 'mapOf', 'mutableMapOf', 'emptyList', 'Pair', 'TODO', 'true', 'false', 'null', 'it', 'this', 'super']);
   let serial = 0;
   const child = (ctx: Context): Context => ({ ...ctx, vars: new Map(ctx.vars), frames: [...ctx.frames] });
   const frame = (kind: Frame['kind'], result?: Type, label?: string, inline = false): Frame => ({ token: `__kt_target_${++serial}`, label, kind, inline, used: false, result });
@@ -473,13 +531,96 @@ export function lowerKotlinFunctions(source: string): string {
     const parts: [number, number][] = []; let start = a;
     for (let i = a; i < b; i++) {
       if (at(i) === ';') { if (start < i) parts.push([start, i]); start = i + 1; continue; }
-      if (i > start && newline(i - 1, i) && !['else', '.', '?.', '?:', '+', '-', '*', '/', '&&', '||', '{', '('].includes(at(i)) && !['=', '->', '+', '-', '*', '/', ',', 'return'].includes(at(i - 1))) {
+      if (i > start && newline(i - 1, i) && !['else', 'catch', 'finally', '.', '?.', '?:', '+', '-', '*', '/', '&&', '||', '{', '('].includes(at(i)) && !['=', '->', '+', '-', '*', '/', ',', 'return'].includes(at(i - 1))) {
         parts.push([start, i]); start = i;
       }
       if (pairs.has(i) && pairs.get(i)! > i) i = pairs.get(i)!;
     }
     if (start < b) parts.push([start, b]);
     return parts;
+  }
+  // World 15: try/catch/finally. `parseTryChain` walks the token stream
+  // starting at a `try` keyword, collecting every consecutive `catch (name:
+  // Type) { ... }` clause plus an optional trailing `finally { ... }` --
+  // Kotlin requires at least one of the two. `branchBody` is a narrower
+  // sibling of `valueBody` above: it lowers a branch's statements the same
+  // way, but the caller supplies HOW the final expression should be
+  // embedded (`wrap`) instead of always prepending `return` -- reused both
+  // for a real `return`-per-branch rendering (the tail-of-block case, and
+  // any try/catch used as a value) and, via `renderTry`'s `asValue: false`
+  // path, not used at all (plain `lower()` suffices when no value is
+  // needed). It deliberately does NOT replicate `valueBody`'s own nested
+  // if-expression-branch recursion (see the if-inside-when gap documented
+  // in PITFALLS.md for the same kind of narrow, deliberate scope limit) --
+  // no lesson content nests an if-expression as a try/catch branch's last
+  // statement.
+  function parseTryChain(i: number): { tryOpen: number; tryClose: number; catches: { varName: string; typeName: string; open: number; close: number }[]; finallyOpen: number; finallyClose: number; end: number } {
+    const tryOpen = i + 1;
+    const tryClose = pairs.get(tryOpen)!;
+    let cursor = tryClose + 1;
+    const catches: { varName: string; typeName: string; open: number; close: number }[] = [];
+    while (at(cursor) === 'catch' && at(cursor + 1) === '(') {
+      const pClose = pairs.get(cursor + 1)!;
+      const varName = at(cursor + 2);
+      const typeName = text(cursor + 4, pClose).trim();
+      const bodyOpen = pClose + 1;
+      const bodyClose = pairs.get(bodyOpen)!;
+      catches.push({ varName, typeName, open: bodyOpen, close: bodyClose });
+      cursor = bodyClose + 1;
+    }
+    let finallyOpen = -1, finallyClose = -1;
+    if (at(cursor) === 'finally' && at(cursor + 1) === '{') {
+      finallyOpen = cursor + 1;
+      finallyClose = pairs.get(finallyOpen)!;
+      cursor = finallyClose + 1;
+    }
+    if (!catches.length && finallyOpen < 0) fail('A try expression must have at least one catch or finally block', i);
+    return { tryOpen, tryClose, catches, finallyOpen, finallyClose, end: cursor };
+  }
+  function branchBody(a: number, b: number, ctx: Context, expected: Type | undefined, wrap: (expr: string) => string): string {
+    const parts = statements(a, b);
+    if (!parts.length) return '';
+    const last = parts.pop()!;
+    let output = parts.map(([x, y]) => lower(x, y, ctx) + ';').join('\n');
+    const [x, y] = last;
+    const statement = ['return', 'throw', 'val', 'var', 'for', 'while', 'if'].includes(at(x));
+    const code = lower(x, y, ctx, expected);
+    output += `\n${statement ? code : wrap(code)};`;
+    return output;
+  }
+  function renderCatchDispatch(chain: ReturnType<typeof parseTryChain>, ctx: Context, branchRender: (open: number, close: number, ctx2: Context) => string): string {
+    // The `__kt_target` check preserves the non-local-return jump-object
+    // transfer protocol used elsewhere in this file (see the inline-lambda
+    // frame handling above) -- a user catch block must never swallow one of
+    // these internal transfers meant for an outer frame.
+    const errVar = `__kt_e_${++serial}`;
+    const arms = chain.catches.map(c => {
+      const branchCtx = child(ctx);
+      branchCtx.vars.set(c.varName, unknown);
+      return `if (${errVar} instanceof ${c.typeName}) {\nconst ${c.varName} = ${errVar};\n${branchRender(c.open, c.close, branchCtx)}\n}`;
+    });
+    const chainText = arms.join(' else ') + ` else { throw ${errVar}; }`;
+    return `catch (${errVar}) {\nif (${errVar} && ${errVar}.__kt_target) { throw ${errVar}; }\n${chainText}\n}`;
+  }
+  // `asValue: true` renders every branch (try body and each catch body) with
+  // its trailing expression turned into a real `return` statement instead
+  // of a plain lowered expression -- valid real JS control flow, no IIFE
+  // needed, so a `return` a lesson's own try/catch body might independently
+  // contain still targets the correct (real, enclosing) function. The ONE
+  // caller that still needs an IIFE (`val x = try {...} catch...`, where
+  // there is no enclosing function boundary to return into at this point)
+  // wraps this function's own output in `(() => { ... })()` itself.
+  function renderTry(i: number, ctx: Context, opts: { expected?: Type; asValue: boolean }): { text: string; end: number } {
+    const chain = parseTryChain(i);
+    const tryBody = opts.asValue
+      ? branchBody(chain.tryOpen + 1, chain.tryClose, child(ctx), opts.expected, (e) => `return ${e}`)
+      : lower(chain.tryOpen + 1, chain.tryClose, child(ctx));
+    const catchText = chain.catches.length
+      ? renderCatchDispatch(chain, ctx, (o, c, bctx) => opts.asValue ? branchBody(o + 1, c, bctx, opts.expected, (e) => `return ${e}`) : lower(o + 1, c, bctx))
+      : '';
+    const finallyText = chain.finallyOpen >= 0 ? `finally {\n${lower(chain.finallyOpen + 1, chain.finallyClose, child(ctx))}\n}` : '';
+    const text = `try {\n${tryBody}\n} ${catchText} ${finallyText}`.trim();
+    return { text, end: chain.end };
   }
   function valueBody(a: number, b: number, ctx: Context, expected?: Type): string {
     const parts = statements(a, b);
@@ -502,6 +643,10 @@ export function lowerKotlinFunctions(source: string): string {
         if (otherwise >= 0) return output + `\nif (${lower(x + 2, close, ctx)}) {\n${valueBody(branch, otherwise, child(ctx), expected)}\n} else {\n${valueBody(otherwise + 1, y, child(ctx), expected)}\n}`;
       }
     }
+    if (at(x) === 'try' && at(x + 1) === '{') {
+      const { text: tryText } = renderTry(x, ctx, { expected, asValue: true });
+      return output + '\n' + tryText;
+    }
     const statement = ['return', 'throw', 'val', 'var', 'for', 'while', 'if'].includes(at(x));
     const actual = statement ? unit : infer(x, y, ctx);
     if (!statement && expected?.name !== 'Unit') check(expected, actual, x);
@@ -519,13 +664,44 @@ export function lowerKotlinFunctions(source: string): string {
     const f = frame('lambda', expected?.result, label, allowed); inner.frames.push(f);
     let receiver = '';
     if (expected?.receiver) { receiver = `__kt_receiver_${++serial}`; inner.receiver = receiver; inner.receiverType = expected.receiver; }
-    const body = valueBody(arrow < 0 ? a + 1 : arrow + 1, b, inner, expected?.result);
+    let body = valueBody(arrow < 0 ? a + 1 : arrow + 1, b, inner, expected?.result);
+    // A string template inside a `run`/`apply`/`with` receiver block (World
+    // 13) is never re-parsed as Kotlin by this function -- `lower()`
+    // leaves a string literal's contents completely untouched, so
+    // `$this`/`${this.x}`/a bare `$name` referring to the receiver are
+    // still the literal, unresolved characters from the source once
+    // `body` is computed here. kotlinRunner.ts's own later pass turns a
+    // template placeholder into a real JS expression using WHATEVER
+    // identifier text is already there, with no idea that a name like
+    // `length` was meant to mean the block's receiver rather than an
+    // undeclared bare reference -- so every one of these forms is rewritten
+    // to use the real receiver parameter name now, while it's still known.
+    // A name already declared locally inside this very block (`const`/`let`
+    // in the lowered body), one of the lambda's own parameters, or a name
+    // `receiverExcludedNames` already treats as a real global is left
+    // alone, matching the equivalent, narrower `$this`-only fixup already
+    // used for a declared receiver FUNCTION's body a few lines below.
+    if (receiver) {
+      const declaredLocally = new Set(params.map(p => p.name));
+      for (const m of body.matchAll(/\b(?:const|let)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=/g)) declaredLocally.add(m[1]);
+      body = body
+        .replace(/\$\{\s*this\.([A-Za-z_][A-Za-z0-9_]*)\s*\}/g, `\${${receiver}.$1}`)
+        .replace(/\$\{\s*this\s*\}/g, `\${${receiver}}`)
+        .replace(/\$this\b/g, `$${receiver}`)
+        .replace(/\$\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}/g, (whole, name) =>
+          declaredLocally.has(name) || receiverExcludedNames.has(name) ? whole : `\${${receiver}.${name}}`)
+        .replace(/\$([A-Za-z_][A-Za-z0-9_]*)\b/g, (whole, name) =>
+          declaredLocally.has(name) || receiverExcludedNames.has(name) || name === receiver ? whole : `\${${receiver}.${name}}`);
+    }
     return `((${[...(receiver ? [receiver] : []), ...params.map((p, i) => p.name === '_' ? `__kt_unused_${i}` : p.name)].join(', ')}) => {\n${wrap(body, f)}\n})`;
   }
   function callInfo(open: number, ctx: Context): { signature?: Signature; name: string; inline: boolean } {
     const name = at(open - 1) === 'invoke' && ['.', '?.'].includes(at(open - 2)) ? at(open - 3) : at(open - 1);
     const variable = ctx.vars.get(name);
-    const signature = variable?.name === 'Function' ? { params: (variable.receiver ? [variable.receiver, ...variable.params!] : variable.params!).map((type, i) => ({ name: `p${i}`, type })), result: variable.result, inline: false } : functions.get(name) ?? (!['.', '?.'].includes(at(open - 2)) && !(ctx.receiver && name === 'repeat') ? builtins.get(name) : undefined);
+    const memberDot = ['.', '?.'].includes(at(open - 2));
+    const signature = variable?.name === 'Function' ? { params: (variable.receiver ? [variable.receiver, ...variable.params!] : variable.params!).map((type, i) => ({ name: `p${i}`, type })), result: variable.result, inline: false }
+      : (memberDot && !ctx.vars.has(name) && scopeMemberSignatures.has(name)) ? scopeMemberSignatures.get(name)
+      : functions.get(name) ?? (!['.', '?.'].includes(at(open - 2)) && !(ctx.receiver && name === 'repeat') ? builtins.get(name) : undefined);
     return { signature, name, inline: signature?.inline ?? ['forEach', 'map', 'filter', 'fold', 'flatMap', 'mapNotNull', 'filterNot', 'run', 'let', 'also', 'apply', 'repeat'].includes(name) };
   }
   function lower(a: number, b: number, ctx: Context, expected?: Type, callLabel?: string, inline = false, allowInlineValue = false): string {
@@ -547,7 +723,15 @@ export function lowerKotlinFunctions(source: string): string {
             return at(splitAt) === '/' && ['Int', 'Long'].includes(infer(a, splitAt, ctx).name) && ['Int', 'Long'].includes(infer(splitAt + 1, b, ctx).name) ? `Math.trunc(${expression})` : expression;
           }
         }
-        if (elvis > a) return `(${lower(a, elvis, ctx)} ?? ${lower(elvis + 1, b, ctx)})`;
+        if (elvis > a) {
+          // World 15: `expr ?: throw X(...)`. JS's `??` requires a real
+          // expression on both sides, and `throw` is a statement -- a bare
+          // `expr ?? throw x` is invalid JS. `__kt_throw` (a plain runtime
+          // function that throws its argument) turns it into a call
+          // expression instead, valid anywhere an expression is expected.
+          const rhs = at(elvis + 1) === 'throw' ? `__kt_throw(${lower(elvis + 2, b, ctx)})` : lower(elvis + 1, b, ctx);
+          return `(${lower(a, elvis, ctx)} ?? ${rhs})`;
+        }
         for (const operators of [['+', '-'], ['*', '/', '%']]) {
           const splitAt = lastOperator(a, b, operators);
           if (splitAt > a) {
@@ -651,7 +835,7 @@ export function lowerKotlinFunctions(source: string): string {
         emit(i, end, `${h.anonymous ? 'function' : 'fun ' + declaredName}(${paramCode})${h.anonymous ? '' : ': ' + (sig.result?.name === 'Function' ? 'Function' : (sig.result?.name === '?' ? 'Any' : sig.result?.name) ?? 'Any')} {\n${wrap(body, f)}\n}`);
         i = end - 1; continue;
       }
-      if (['val', 'var'].includes(at(i)) && at(i + 1) === '(') {
+      if (['val', 'var'].includes(at(i)) && !constructorParamTokens.has(i) && at(i + 1) === '(') {
         const close = pairs.get(i + 1)!;
         if (at(close + 1) === '=') {
           const names = split(i + 2, close).map(([start]) => at(start));
@@ -660,7 +844,7 @@ export function lowerKotlinFunctions(source: string): string {
           i = close; continue;
         }
       }
-      if (['val', 'var'].includes(at(i)) && isName(at(i + 1))) {
+      if (['val', 'var'].includes(at(i)) && !constructorParamTokens.has(i) && isName(at(i + 1))) {
         const end = expressionEnd(i + 2, b);
         const eq = top(i + 2, end, '=');
         const colon = at(i + 2) === ':' ? i + 2 : -1;
@@ -684,6 +868,14 @@ export function lowerKotlinFunctions(source: string): string {
           i = end - 1; continue;
         }
       }
+      // A bare `name = value` inside a `run`/`apply`/`with` receiver block
+      // (World 13) that ISN'T a known local var can only be a write to a
+      // receiver property -- Kotlin has no bare, undeclared assignment
+      // target otherwise. Rewriting just the LHS token is enough; the `=`
+      // and the RHS lower normally on the following iterations.
+      if (ctx.receiver && isName(at(i)) && at(i + 1) === '=' && !['.', '?.'].includes(at(i - 1)) && !ctx.vars.has(at(i)) && !['val', 'var', 'fun'].includes(at(i - 1)) && !functions.has(at(i)) && !classes.has(at(i))) {
+        emit(i, i + 1, `${ctx.receiver}.${at(i)}`);
+      }
       if (isName(at(i)) && at(i + 1) === '=' && ctx.vars.has(at(i))) {
         const end = expressionEnd(i + 2, b);
         const type = ctx.vars.get(at(i));
@@ -694,15 +886,24 @@ export function lowerKotlinFunctions(source: string): string {
           emit(i, end, `${at(i)} = ${rhs}`); i = end - 1; continue;
         }
       }
-      if (at(i) === 'catch' && at(i + 1) === '(') {
-        const close = pairs.get(i + 1)!;
-        const body = close + 1, end = pairs.get(body)!;
-        const name = at(i + 2);
-        emit(i, end + 1, `catch (${name}) {
-if (${name} && ${name}.__kt_target) { throw ${name}; }
-${lower(body + 1, end, child(ctx))}
-}`);
-        i = end; continue;
+      // World 15: `try { ... } catch (e: T) { ... } catch (...) { ... }
+      // finally { ... }`. Whether this construct needs to PRODUCE a value
+      // (`val x = try {...} catch...`, `return try {...} catch...`) is
+      // decided purely from the REAL token immediately preceding it in the
+      // original source (`=` or `return`) -- reliable here because `at()`
+      // indexes the whole token stream, not just this call's `[a, b)`
+      // sub-range, so it still sees that outer context even when this
+      // `try` is the very first token this particular `lower()` call was
+      // asked to process (exactly the case for a val/var RHS or a
+      // `return`'s value expression). The tail-of-block case (an implicit,
+      // `return`-free last expression) is handled separately, directly in
+      // `valueBody` above, which is why it's deliberately NOT one of the
+      // two triggers here.
+      if (at(i) === 'try' && at(i + 1) === '{') {
+        const asValue = ['=', 'return'].includes(at(i - 1));
+        const { text: tryText, end } = renderTry(i, ctx, { expected, asValue });
+        emit(i, end, asValue ? `(() => {\n${tryText}\n})()` : tryText);
+        i = end - 1; continue;
       }
       if (at(i) === 'return') {
         let start = i + 1; let target: Frame | undefined;
@@ -916,7 +1117,17 @@ ${lower(body + 1, end, child(ctx))}
       }
       if (builtins.has(at(i)) && !(ctx.receiver && at(i) === 'repeat') && !functions.has(at(i)) && !ctx.vars.has(at(i)) && !['.', '?.'].includes(at(i - 1))) emit(i, i + 1, `__kt_${at(i)}`);
       if (ctx.receiver && at(i) === 'this') emit(i, i + 1, ctx.receiver);
-      else if (ctx.receiver && !ctx.vars.has(at(i)) && at(i - 1) !== '.' && ['length', 'uppercase', 'lowercase', 'reversed', 'repeat', 'toInt', 'toString'].includes(at(i))) emit(i, i + 1, `${ctx.receiver}.${at(i)}`);
+      // Any other bare identifier read inside a receiver block (World 13's
+      // `run`/`apply`/`with`) that isn't a known local var, a declared
+      // function/class, a `builtins` name, or a name the sandbox injects as
+      // a real global (see `receiverExcludedNames` above) can only be a
+      // receiver member -- Kotlin resolves a bare name to the implicit
+      // receiver exactly when nothing else in scope already owns it.
+      // `at(i + 1) !== '='` excludes an assignment TARGET, which the
+      // dedicated rule above already rewrites on its own -- without this,
+      // both rules fire for the same token and the receiver prefix is
+      // emitted twice (`receiver.name` then `receiver.namereceiver.name =`).
+      else if (ctx.receiver && isName(at(i)) && !ctx.vars.has(at(i)) && !['.', '?.'].includes(at(i - 1)) && at(i + 1) !== '=' && !['val', 'var', 'fun'].includes(at(i - 1)) && !functions.has(at(i)) && !classes.has(at(i)) && !builtins.has(at(i)) && !receiverExcludedNames.has(at(i))) emit(i, i + 1, `${ctx.receiver}.${at(i)}`);
       if (at(i) === '/' && i > a && i + 1 < b && isName(at(i - 1)) && /^(Int|Long)$/.test(ctx.vars.get(at(i - 1))?.name ?? '') && (ctx.vars.get(at(i + 1))?.name === 'Int' || /^\d+$/.test(at(i + 1)))) {
         emit(i - 1, i + 2, `Math.trunc(${at(i - 1)} / ${at(i + 1)})`); i++;
       }

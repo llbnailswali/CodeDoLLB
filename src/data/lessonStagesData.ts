@@ -1953,7 +1953,7 @@ export const AVAILABLE_FIVE_STAGE_LESSONS: Record<string, FiveStageLesson> = {
   'world-14-short-circuiting': WORLD_14_LESSONS[8],
   'world-14-sequences-vs-collections': WORLD_14_LESSONS[9],
   'world-14-performance-trade-offs': WORLD_14_LESSONS[10],
-  'world-14-when-sequences-should-and-should-not-be-': WORLD_14_LESSONS[11],
+  'world-14-when-sequences-should-and-should-not-be-used': WORLD_14_LESSONS[11],
   'world-14-boss': WORLD_14_LESSONS[12],
   'world-15-exceptions-try': WORLD_15_LESSONS[0],
   'world-15-catch': WORLD_15_LESSONS[1],

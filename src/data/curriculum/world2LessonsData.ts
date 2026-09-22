@@ -1337,7 +1337,9 @@ export const INCREMENT_DECREMENT_LESSON: FiveStageLesson = {
   learn: {
     title: 'Increment and Decrement Operators',
     subtitle:
-      'Kotlin gives you two shorthand operators for adjusting a variable by exactly 1: ++ (increment) and -- (decrement). Both come in a prefix form (++x) and a postfix form (x++), and both only work on a mutable var -- never on a read-only val.',
+      'Kotlin gives you two shorthand operators for adjusting a variable by exactly 1: ++ (increment) and -- (decrement).\n' +
+      'Both come in a prefix form (++x) and a postfix form (x++).\n' +
+      'Both only work on a mutable var, never on a read-only val.',
     exampleTag: 'EXAMPLE',
     exampleTitle: '++ and -- in action',
     language: 'Kotlin',
@@ -1353,14 +1355,15 @@ export const INCREMENT_DECREMENT_LESSON: FiveStageLesson = {
       'println(lives) // 4'
     ],
     explanation:
-      "lives++ and ++lives both add 1 to lives as a standalone statement -- the variable ends up at the same value either way. The prefix/postfix difference only matters when the ++/-- expression's own result is used directly inside a larger expression, which this lesson intentionally avoids.",
+      "lives++ and ++lives both add 1 to lives as a standalone statement -- the variable ends up at the same value either way.\n\n" +
+      "The prefix/postfix difference only matters when the ++/-- expression's own result is used directly inside a larger expression, which this lesson intentionally avoids.",
     keyIdeas: [
       { number: 1, title: '++ adds 1', description: "Increments the variable's current value by exactly 1." },
       { number: 2, title: '-- subtracts 1', description: "Decrements the variable's current value by exactly 1." },
       { number: 3, title: 'Prefix vs postfix', description: '++x (prefix) and x++ (postfix) both increment x by 1. Used as their own statement, the end result is identical either way.' },
       { number: 4, title: 'Only works on var', description: 'Both operators reassign the variable, so they require var. Using ++ or -- on a val is a compile error, just like any other reassignment.' }
     ],
-    keyTakeaway: 'x++, ++x, x--, and --x are shorthand for "reassign x to x + 1" or "x - 1" -- and like any reassignment, they require var.'
+    keyTakeaway: 'x++ and ++x are shorthand for "reassign x to x + 1"; x-- and --x are shorthand for "reassign x to x - 1". Like any reassignment, they require var.'
   },
   explore: {
     title: 'Explore the Concept',
@@ -1664,7 +1667,9 @@ export const INCREMENT_DECREMENT_LESSON: FiveStageLesson = {
       'Change val lives = 3 to var lives = 3 so lives++ is allowed.'
     ],
     explanation:
-      'The ++ operator increments a variable by reassigning it, just like lives = lives + 1 would. Since lives was declared with val, this reassignment produces a compile error: "Val cannot be reassigned". Changing val to var allows lives++ to run, taking lives from 3 to 4.'
+      'The ++ operator increments a variable by reassigning it, just like lives = lives + 1 would.\n\n' +
+      'Since lives was declared with val, this reassignment produces a compile error: "Val cannot be reassigned".\n\n' +
+      'Changing val to var allows lives++ to run, taking lives from 3 to 4.'
   },
   mastered: {
     topicTitle: 'Increment & Decrement',

@@ -1456,3 +1456,424 @@ None of World 12's actual lesson content needs anything wider; extend this
 narrowly, and re-verify with `compileAndRunKotlin`, if a future lesson
 actually requires a block-bodied reified function or more than one reified
 parameter.
+
+## World 13 (Scope Masters): `let`/`run`/`apply`/`also`/`with` from zero, and a defaulted constructor parameter that silently leaked into every later scope in the file
+
+World 13's content (synced in from another source with no prior engine
+support or quality audit -- see `WORLD_13_CONTENT_REVIEW.md`) needed all
+five scope functions built from scratch. The mechanics mirror earlier
+receiver-function work (`String.() -> Int` values already had correct
+bare-member resolution and receiver-as-first-parameter lowering) --
+`let`/`run`/`apply`/`also` were registered as a new, dot-call-only
+`scopeMemberSignatures` map in `kotlinFunctions.ts` (kept separate from the
+pre-existing, receiver-less standalone `run { ... }` builtin so the two
+don't collide), and `with` reuses the existing `builtins` map plus its
+already-established bare-name-to-`__kt_`-prefix auto-rename mechanism
+(the same one `run`/`repeat` already relied on), which is what keeps JS's
+own reserved `with` statement keyword out of the generated code -- no
+separate source-level rename pass needed. Every generated lambda for any
+of these already takes the receiver as an ordinary first positional
+parameter (argument- and receiver-style alike), so the ENTIRE runtime side
+is four `Object.prototype.let/run/also/apply` helpers in `kotlinRunner.ts`
+that call `block(receiver)`, with `also`/`apply` returning the receiver
+instead of the block's result. `Object.prototype.apply` does not shadow
+`Function.prototype.apply` for a real function value (closer in the
+prototype chain), so this is safe.
+
+Three smaller, narrowly-scoped additions were needed alongside this:
+
+1. **Bare receiver-member access with no `this.` prefix** -- `apply`'s
+   entire reason to exist is exactly this
+   (`Profile().apply { name = "Ada" }`). A previous six-name hardcoded
+   whitelist (`length`, `uppercase`, `lowercase`, `reversed`, `repeat`,
+   `toInt`, `toString`) was generalized into a real rule: any bare
+   identifier inside a receiver context that isn't a known local var,
+   function, class, `builtins` entry, or one of a short list of real
+   sandbox globals (`println`, `listOf`, `Pair`, etc. -- see
+   `receiverExcludedNames`) is a receiver member, for both reads AND (a
+   separate, new rule) assignment targets. Also extended into STRING
+   TEMPLATES: a string literal's `$` content is never touched by the
+   general lowering pass, so `$this`, `${this.x}`, and now a bare
+   `$name`/`${name}` referring to the receiver are rewritten to the real
+   receiver parameter before the lambda body is returned -- reusing the
+   exact pattern an existing `fun`-header receiver-function fixup already
+   used for `$this` alone, generalized to any name not already declared
+   locally inside that specific block.
+2. **`StringBuilder`** had zero support at all (World 13's `apply`/`also`
+   Explore content uses it as the flagship example). Added as a real
+   global `class KotlinStringBuilder` with `.append()` (returns `this`)
+   and `toString()`, the same way `Number`/`Array`/`Map` already work
+   without being passed as sandbox parameters, plus added to
+   `insertNewForInstantiation`'s recognized class-name set so
+   `StringBuilder()` gets `new` inserted.
+3. **A bare Int literal immediately followed by `.member`** (`4.also {
+   ... }`, from an actual Predict question) is valid Kotlin but a JS
+   `SyntaxError` -- verified directly: `4.toString()` alone throws,
+   because JS's numeric-literal grammar greedily consumes the trailing `.`
+   into the literal itself, leaving `also`/`toString` with no operator
+   before it. World 11 content had already hand-parenthesized this one
+   occurrence at a time (`(250).centsLabel(...)`); generalized here with a
+   `(\d+)\.(?=[A-Za-z_])` -> `($1).` pre-pass (the lookahead requires a
+   letter/underscore right after the dot, so a real decimal literal like
+   `3.14` is never touched) so future content doesn't need to remember to
+   do this by hand.
+
+**The serious one, found only because of #1 above:** `kotlinFunctions.ts`'s
+top-level statement walk processes every token in the whole file,
+including inside a class's own primary-constructor parameter list --
+nothing had ever protected that specific range (only class/object/
+interface BODY braces were tracked, via `declarationBodies`). Its
+`val`/`var`-declaration recognizer distinguishes "a real declaration" from
+"the keyword just appears somewhere" by checking for a following `=` --
+and a defaulted constructor parameter (`class Box(var n: Int = 0)`) is
+textually indistinguishable from a genuine local declaration once that
+check passes, so `n` got silently registered into `ctx.vars` at the ROOT
+context, which every later scope in the file inherits from. This was
+**completely invisible through Worlds 1-12**, because nothing before
+World 13 needed to check "does an unqualified name already exist
+somewhere in scope" -- that check (`!ctx.vars.has(name)`) is exactly what
+#1 above introduced as its condition for treating a bare name as a
+receiver member. The very first lesson combining a defaulted-parameter
+data class with `.apply { name = "..." }` -- a completely ordinary,
+idiomatic pattern, not an edge case -- hit it immediately: `Account().apply
+{ name = "Mira" }` silently wrote to an accidental global `name` instead
+of the receiver's property, leaving `account.name` untouched. Exactly the
+"plausible-looking wrong answer" failure mode this file warns about
+repeatedly, not a loud crash -- caught only by actually running the code
+and checking the real output value, never by reading the generated JS or
+the Kotlin source.
+
+Fixed with a `constructorParamTokens` token-index set, populated alongside
+the existing primary-constructor scan (which already computes the exact
+paren range for `constructors.set(...)`), and consulted by both
+`val`/`var`-declaration branches (destructuring and plain) to skip a
+parameter-list token instead of processing it as a statement.
+
+**Deliberate scope limitation, not a bug:** labeled receivers (`this@label`,
+used to disambiguate a nested receiver lambda) are NOT supported. This
+engine's lambda labels already exist but only drive *return*-label
+resolution (`return@outer`); there is no mechanism tracking a *receiver*
+frame's label to resolve `this@label` back to the right ancestor's
+parameter name -- building that is a real, separate feature. World 13's
+one lesson that taught this was rewritten to reach the same "nested
+receivers can be ambiguous" point through a named local variable instead,
+which loses nothing pedagogically (it's the more commonly recommended,
+more readable Kotlin style anyway). Build the real feature, verified with
+a scratch harness the same way as every other entry here, only once a
+future lesson actually needs it.
+
+**Rule, reinforced once more, and by the worst instance yet:** every one
+of these gaps -- especially the constructor-parameter leak, which produced
+a silently WRONG value with no error at all -- was found only by actually
+executing representative code through `compileAndRunKotlin` and checking
+the real output, not by reading the transform code or the lesson data.
+The leak bug in particular is a reminder that a fix motivated by ONE new
+feature (bare receiver-member resolution) can surface a completely
+unrelated, previously-dormant bug elsewhere in the same shared lowering
+pass -- re-run the FULL existing regression suite (every prior world, not
+just the one being worked on) after any change to shared tokenizing/
+scoping logic in `kotlinFunctions.ts`, exactly as was done here (Worlds
+1-12, lambda-runner, and collection-runner all re-verified with zero
+regressions before this work was considered done).
+
+## Lesson prose: the plain-ASCII `--` em-dash convention collides with `--` as an operator
+
+This codebase's lesson prose widely uses plain ASCII `--` as a stand-in for
+an em dash (a house-style convention, not a typo -- see its use throughout
+this very file: `"...-- see also..."`, `"...-- not a bug..."`). That
+convention is harmless almost everywhere, but it silently backfires in any
+lesson whose own subject matter is the `--` (decrement) operator -- or,
+less severely, `++`, since the two-character `--` glyph is identical
+either way.
+
+Found while auditing World 2's Increment & Decrement lesson (`world-2` ->
+lesson 5 -> stage 1, Learn): both `learn.subtitle` and `learn.keyTakeaway`
+used a punctuation `--` in the same sentence as -- or immediately after --
+a literal mention of the `--` operator itself:
+
+```
+subtitle: '... ++ (increment) and -- (decrement). ... and both only work on a mutable var -- never on a read-only val.'
+keyTakeaway: 'x++, ++x, x--, and --x are shorthand for "reassign x to x + 1" or "x - 1" -- and like any reassignment, they require var.'
+```
+
+A reader's eye, already primed by the operator discussion a few words
+earlier, is prone to misread the punctuation dash as another instance of
+the operator rather than as a sentence break -- exactly the kind of subtle,
+easy-to-miss-by-reading confusion this file otherwise exists to catch for
+code, not just prose. `keyTakeaway` additionally had an independent,
+compounding wording bug: its two quoted phrases weren't parallel
+(`"reassign x to x + 1"` vs. a bare `"x - 1"` missing its own `"reassign x
+to"`), and which operator maps to `+1` vs. `-1` was only implied by list
+order, never stated.
+
+Fixed (see `WORLD_2_CONTENT_REVIEW.md`'s W2-08 for the full record) by
+replacing the colliding dash with a comma in the subtitle, and rewriting
+the keyTakeaway into two explicit, parallel, semicolon-joined clauses
+naming the +1/-1 pairing directly instead of leaving it implied.
+
+**Rule: don't rely on re-reading prose to catch this -- run the mechanical
+scan instead.**
+
+```sh
+npm run audit:dash-collision
+```
+
+This runs `scripts/audit-dash-collision.mjs`, which scans every
+`.ts`/`.tsx` file under `src/data` for a prose-bearing field (`subtitle`,
+`explanation`, `keyTakeaway`, `description`, `whatChanged`, `detail`,
+`summary`, `title`, `label`, `bugLabel` -- deliberately excluding
+`code`/`codeSnippet`/`initialCode`/`solutionCode`/`fixedCode`/`brokenCode`,
+where a bare `--`/`++` is real Kotlin syntax, not prose) that contains
+BOTH the house-style punctuation dash (`--` with a space on each side) AND
+a glued operator mention (`--`/`++` touching a non-space character, e.g.
+`x--`, `--x`, `x++`, `` `--` ``) in the same string. It prints every match
+across the WHOLE curriculum, not just World 2 -- this is what makes it
+scannable by an AI agent or a human auditor without having to remember to
+re-read any specific lesson.
+
+This is a candidate scanner, not an auto-fail check: a match still needs a
+read to tell a real misread risk (operator mention and punctuation dash
+sitting close enough in the same sentence to actually confuse a reader --
+the World 2 subtitle/keyTakeaway case above) apart from a harmless
+coincidence (e.g. `-- (decrement)` itself, which the running script still
+flags in World 2's Increment & Decrement subtitle even after the fix above
+-- it's self-disambiguating by the parenthetical right next to it, so it's
+a legitimate remaining match with nothing left to fix). Treat every run's
+output as a worklist, not a pass/fail gate.
+
+Not yet swept-and-fixed everywhere a match appears: the tool itself is new
+and this world's own Explore/Predict/Debug copy (several more instances
+noted in W2-08 but left unfixed) and every other world have not had their
+flagged candidates individually triaged yet. Run this audit whenever
+authoring or editing lesson prose for a topic involving `++`/`--` (or any
+other operator/symbol likely to visually collide with this codebase's
+ASCII punctuation conventions), and whenever doing a broader content
+sweep -- triage its findings the same way W2-08 did before deciding
+whether each one needs a rewrite.
+
+## Learn's subtitle/explanation/keyTakeaway and Debug's explanation silently dropped every `\n` line break
+
+`WriteRun.tsx`'s `description` paragraph has always used `whitespace-pre-line`
+(so its established `'step 1.\n\nstep 2.\n\n...'` authoring convention -- see
+`CODEDO_MASTER_PLAN.md`'s Write & Run Task Authoring Standard -- actually
+renders as separate paragraphs). But `Learn.tsx`'s `subtitle`, `explanation`,
+and `keyTakeaway` paragraphs, and `Debug.tsx`/`DebugIde.tsx`'s `explanation`
+paragraph, had no such class -- plain browser-default `white-space: normal`,
+which collapses a literal `\n` (and any run of whitespace) into a single
+space. Any multi-sentence Learn/Debug prose written with `\n\n` between
+ideas -- exactly the "break at natural idea boundaries" authoring guidance
+this project follows for readability -- would have silently rendered as one
+dense, run-on paragraph with no visible break at all, not an error and not
+even a visual difference a quick glance would catch.
+
+Found while adding paragraph breaks to World 2's Increment & Decrement
+lesson (`learn.subtitle`, `learn.explanation`, `debug.explanation`) for
+readability -- the breaks were invisible in the actual rendered app until
+this was fixed. Fixed by adding `whitespace-pre-line` to all four
+containers: `Learn.tsx`'s subtitle `<p>`, explanation `<span>`, and
+keyTakeaway `<p>`; `Debug.tsx`'s resolved-state explanation `<p>`;
+`DebugIde.tsx`'s Defect Diagnosis explanation `<p>`. `whitespace-pre-line`
+(not `whitespace-pre-wrap`) matches `WriteRun.tsx`'s existing choice: it
+preserves line breaks while still collapsing incidental multiple spaces,
+which is the right behavior for authored prose (as opposed to code/output,
+which needs every space preserved -- see the "Expected/actual output
+panels: always make whitespace visible" entries above for that separate,
+stricter case).
+
+**Rule:** any Learn/Explore/Predict/Debug text container that is meant to
+hold more than one idea must be checked for `whitespace-pre-line` (or
+equivalent) before authoring a `\n`-separated multi-paragraph string into
+it -- a missing class here doesn't error, doesn't look obviously wrong in
+the data file, and doesn't fail any of `audit:output-quotes`/
+`audit:dash-collision`/`tsc`/`build`; it only becomes visible by actually
+opening the rendered page. Verify by rendering the actual component (or,
+short of that, grep the component for the field and confirm
+`whitespace-pre-line`/`whitespace-pre-wrap` is present on its container)
+before assuming a `\n\n` added to lesson prose will actually show up as a
+line break.
+
+## The simulator can't correctly print or compare Kotlin's `Unit` value
+
+Found while authoring a World 13 (`with`) Predict question meant to
+demonstrate that `with`'s return type follows its block's last
+expression, using a block whose last statement was itself `println(...)`
+(which returns `Unit`). Real Kotlin prints `kotlin.Unit` for a `Unit`
+value; this simulator's `formatKotlinValue` instead prints `null` --
+confirmed directly: `with("Kotlin") { println(length) }` assigned to a
+`val r` and then `println(r)` outputs `null`, not `kotlin.Unit`. Worse,
+there is no `Unit` identifier usable in generated code at all: `println(r
+== Unit)` throws `Runtime error: Unit is not defined`. So this gap can't
+even be worked around with an equality check.
+
+This means any lesson content whose correctness depends on Kotlin's real
+`Unit` representation (printing it, or comparing a value against it) will
+silently teach the simulator's own formatting bug (`null`) as if it were
+real Kotlin, or hit a hard `ReferenceError` if it tries the `== Unit`
+route -- both are exactly the "simulator disagrees with real Kotlin"
+failure mode `LESSON_QUALITY_STANDARD.md` section 4 already warns about
+generally ("The teaching runner is not the authority on Kotlin"), just
+newly confirmed for this specific case.
+
+**Not fixed at the engine level** -- no World 13 lesson's *graded*
+content actually needed this (the Predict question was rewritten to use a
+Boolean-returning example instead, sidestepping Unit entirely; see
+`WORLD_13_CONTENT_REVIEW.md`'s clarity-pass section). If a future lesson
+genuinely needs to demonstrate printing or comparing `Unit` (Null Safety/
+Advanced Types territory, `Unit` is explicitly in `CODEDO_MASTER_PLAN.md`'s
+"Advanced Nullability & Types" topic list for a later world), this needs
+real engine work first: register a `Unit` singleton value the sandbox
+recognizes for equality/`is` checks, and fix `formatKotlinValue` to print
+`kotlin.Unit` instead of falling through to the `null`/`undefined` case --
+verified with `compileAndRunKotlin` the same way as every other gap on
+this page, before authoring content that depends on it.
+
+## World 14 (Sequence Dimension): real lazy `Sequence` from zero, and two pre-existing bugs it surfaced
+
+World 14's whole topic is lazy evaluation, and the simulator had zero
+support for `Sequence`/`sequenceOf`/`generateSequence`/`.asSequence()`
+beforehand. The build (`KotlinSequence` in `kotlinCollections.ts`) uses
+real JS generators: every intermediate operation (`map`/`filter`/`take`/
+`takeWhile`/`drop`) wraps its upstream iterable in a fresh `function*`, so
+pulling one element from the outermost generator naturally pulls exactly
+one element through every stage first -- this is what gives genuine
+element-by-element evaluation order (a `filter` then `map` prints F1, M1,
+F2, M2, ..., never a whole filter pass before any map), not just a
+correct final result, which matters enormously here since three whole
+lessons (Lazy Processing, Sequence Evaluation Order, Short-Circuiting)
+exist specifically to teach that ordering via `println` side effects.
+Terminal operations (`toList`/`first`/`count`/`fold`/`forEach`/`any`/
+`all`/`none`/`sum`) each guard their own iteration count independently of
+`__kt_check_loop` (which only instruments actual transpiled Kotlin `while`/
+`for` loops) -- a synchronous `for...of` draining an infinite generator
+would otherwise block the single JS thread forever, and no external
+`Promise.race` timeout can preempt a loop that never yields control back
+to the event loop.
+
+Single-use vs. reusable semantics are modeled explicitly and match real
+Kotlin: `sequenceOf`, a seeded `generateSequence(seed) { next }`, and
+`Iterable.asSequence()` are reusable; the no-seed `generateSequence {
+next }` overload and a bare `Iterator.asSequence()` are single-use and
+throw `"This sequence can only be iterated once."` on a second traversal
+-- confirmed against real Kotlin's own documented behavior for that
+overload specifically, the same way every other exact-behavior claim on
+this page is checked rather than assumed.
+
+Standalone range VALUES (`(1..100).asSequence()`, `val source = 1..100`)
+had no support at all outside a for-loop header (`1..100` alone isn't
+valid JS) -- added `__kt_range(a, b)`, returning a real, reusable
+`KotlinList` so every existing List operation works on it for free,
+including the new `.asSequence()`.
+
+**Two pre-existing, previously-invisible bugs this content surfaced, not
+new-feature gaps:**
+
+1. **A JS automatic-semicolon-insertion hazard.** `let c = 0` (no trailing
+   `;` -- Kotlin never requires one) immediately followed by a statement
+   starting with `(` is misparsed by JS as ONE statement, `let c =
+   0(...)`, calling the number `0` as a function
+   (`TypeError: 0 is not a function`). This could not have surfaced
+   before World 14, since nothing previously produced a bare
+   parenthesized expression statement immediately after a
+   literal-initialized declaration -- the new standalone-range support is
+   exactly that shape (`var c=0` followed by `(1..5).map{...}.take(2)` as
+   its own statement, no assignment). Fixed narrowly: a declaration whose
+   RHS is a bare, self-contained literal (`=\s*(-?\d+(\.\d+)?|true|false|
+   null)\s*$`) gets an explicit trailing `;` appended. Deliberately scoped
+   to literal RHS only, NEVER a general "add `;` after every declaration"
+   rule -- that would terminate a real multi-line chain
+   (`val result = source\n    .filter { ... }`) after its first line,
+   since Kotlin's own multi-line chains never start with a bare literal.
+2. **`KotlinList` had no real `.equals()` method.** `__kt_equals`
+   (backing every `==` comparison, `kotlinRunner.ts`) only ever calls a
+   value's own `.equals` method, falling back to `===` (reference
+   equality) when one isn't defined -- so two structurally-identical but
+   reference-distinct Lists (`listOf(1,2,3).map{...} ==
+   listOf(1,2,3).asSequence().map{...}.toList()`) silently compared as
+   `false` instead of `true`, even though `KotlinList`'s own internal
+   `equal()` helper already implements correct structural comparison and
+   is used internally by `.contains()`/`.distinct()` the whole time -- it
+   just was never exposed as `.equals` itself. Exactly the
+   "plausible-looking wrong answer" failure mode this file warns about
+   repeatedly: caught only because World 14's Sequences-vs-Collections
+   lesson happens to compare two Lists built two different ways, which no
+   prior lesson's graded content ever did. Fixed by adding a real
+   `.equals()` delegating to the same `equal()` helper every other
+   KotlinList method already trusts.
+
+**Rule, reinforced once more:** both bugs above were found only by
+actually executing the lesson's own `writeRun.solutionCode` through
+`compileAndRunKotlin` and reading the real error/output, not by reading
+either the transform code or the runtime helper code. A new engine
+feature (standalone ranges; nothing new for `.equals()`) can surface a
+completely unrelated, previously-dormant bug in shared code the moment
+some new content shape happens to exercise it for the first time -- the
+exact same lesson as World 13's constructor-parameter-leak bug, one world
+earlier.
+
+## World 15 (Error Fortress): building a real exception hierarchy, try/catch dispatch, and expression-position `throw` from zero
+
+World 15 is entirely about exceptions, and before this world
+`kotlinRunner.ts`/`kotlinFunctions.ts` had **zero** real support for any of
+it: no exception class hierarchy (`Exception`/`RuntimeException`/etc. all
+undefined), a single untyped `catch` clause only (no dispatch, and a
+second consecutive `catch` was a hard parse error), no try/catch as an
+expression, no expression-position `throw` (Elvis/if-branch), no
+`Result`/`runCatching`, no `require`/`check`, and `String.toInt()` used
+lenient `parseInt` (never threw). See `WORLD_15_CONTENT_REVIEW.md` for the
+full engine-capability writeup; the two most generalizable lessons from
+building it:
+
+**A "type" simulation gap can hide inside CONTROL FLOW, not just a
+value's runtime representation.** Every prior `bugType: 'type'` entry on
+this page (see "Debug/Write & Run: the 'bug' must be reproducible...")
+was about a value looking the same at runtime despite a real Kotlin type
+distinction (Boolean-vs-String, Char-vs-String, etc.). World 15's Custom
+Exceptions debug exercise hit a NEW variant of the same root problem:
+Kotlin classes are final unless marked `open`/`abstract`/`sealed`, and
+this simulator had never modeled that at all -- a `class Child :
+Parent(...)` subclassing a non-open `Parent` transpiled and ran
+successfully regardless, so the debug exercise's broken (`class
+Parent(...)`) and fixed (`open class Parent(...)`) code produced
+IDENTICAL output, auto-"passing" with zero edits. Fixed with a real,
+narrowly-scoped compile-time check (`checkFinalClassInheritance` in
+`kotlinRunner.ts`, run alongside `staticValidateKotlin`): scan same-source
+`class Name` declarations for an `open`/`abstract`/`sealed` modifier, then
+flag any `class Child : Parent(...)` whose `Parent` was declared plain.
+**Rule, generalized:** a `bugType: 'type'` exercise is suspect not just
+when its two variants look the same VALUE-wise at runtime, but whenever it
+depends on a compile-time-only Kotlin rule (visibility, finality,
+overload resolution, variance) this simulator has no dedicated check for
+-- the same "does the engine actually enforce this distinction" question
+applies to control-flow/declaration-level rules, not only primitive-value
+representation.
+
+**A double comma in a hand-authored array literal (`},,`) is a silent,
+invisible data-loss bug, not a typo that merely looks odd.** Found via
+this world's own content audit: 30 occurrences of `},,` across
+`predict.questions`/`explore.cards` arrays in `world15LessonsData.ts`. A
+JS array literal treats a doubled comma as a sparse hole (`[a, b,, c]` has
+`.length === 4` with index 2 EMPTY) -- `.length` reports the padded,
+too-large count (masking the bug from any naive "does the array have the
+right length" check), while `.map()`/`for...of`/spread all silently SKIP
+the hole, dropping that one card/question from iteration -- including in
+the real learner-facing UI, not just this audit's own test script. This
+is exactly why `LESSON_QUALITY_STANDARD.md`'s audit process asserts
+`cards.length === new Set(cards.map(c => c.id)).size` AND actually runs
+every card through the real engine, rather than trusting `.length` alone:
+the very first attempt at that assertion here threw "Explore cards array
+has a hole" from `assert.ok(card, ...)` inside the loop, which is what
+surfaced this. **Rule:** when authoring or editing a lesson data file by
+hand (or via a bulk script), grep the file for `},,` (or more generally
+`,\s*,`) before trusting the array's own reported length -- a sparse hole
+does not throw, does not change `.length`, and is invisible to anything
+that doesn't specifically iterate and check every element.
+
+**Reinforced again:** an Explore/Predict card whose own code references an
+undefined helper (`risky()`, `useDefault()`, `load()` -- a recurring
+placeholder pattern in this world's content, standing in for "some
+operation that might fail") throws a plain, loud `ReferenceError` the
+moment it's actually run, exactly the kind of gap this page insists on
+catching by executing content rather than reading it. Nine separate
+snippets across World 15 had this; fixed by prepending a minimal, real
+definition to each (matching the specific exception TYPE its surrounding
+catch clause(s) actually expect, not just making it parse).

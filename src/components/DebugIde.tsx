@@ -866,7 +866,7 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
                         <span className="material-symbols-outlined text-[14px] text-rose-500">troubleshoot</span>
                         <span>Defect Diagnosis</span>
                       </div>
-                      <p className="leading-relaxed text-xs">{data.explanation}</p>
+                      <p className="leading-relaxed whitespace-pre-line text-xs">{data.explanation}</p>
                     </div>
                   )}
 

@@ -1661,7 +1661,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use let and run with the correct lambda context and return behavior.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-13-let-run"
+        "questionsCount": 6, "fiveStageLessonKey": "world-13-let-run"
       },
       {
         "id": "world-13-apply",
@@ -1671,7 +1671,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Configure an object with receiver-style access using apply.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-13-apply"
+        "questionsCount": 5, "fiveStageLessonKey": "world-13-apply"
       },
       {
         "id": "world-13-also",
@@ -1681,7 +1681,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Observe a value with also while preserving the receiver for the next step.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-13-also"
+        "questionsCount": 5, "fiveStageLessonKey": "world-13-also"
       },
       {
         "id": "world-13-with",
@@ -1691,7 +1691,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Group operations on an object with with and return the block result.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-13-with"
+        "questionsCount": 5, "fiveStageLessonKey": "world-13-with"
       },
       {
         "id": "world-13-this-vs-it",
@@ -1701,7 +1701,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Choose and trace implicit this and it contexts, including nested scopes.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-13-this-vs-it"
+        "questionsCount": 6, "fiveStageLessonKey": "world-13-this-vs-it"
       },
       {
         "id": "world-13-return-values-of-scope-functions",
@@ -1711,7 +1711,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Track whether a scope function returns its receiver or the lambda result.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-13-return-values-of-scope-functions"
+        "questionsCount": 6, "fiveStageLessonKey": "world-13-return-values-of-scope-functions"
       },
       {
         "id": "world-13-choosing-the-appropriate-scope-function",
@@ -1721,7 +1721,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Choose the scope function whose context and return behavior match the intent.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-13-choosing-the-appropriate-scope-function"
+        "questionsCount": 7, "fiveStageLessonKey": "world-13-choosing-the-appropriate-scope-function"
       },
       {
         "id": "world-13-scope-function-chaining",
@@ -1731,7 +1731,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Compose scope functions while tracking the value and type through each step.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-13-scope-function-chaining"
+        "questionsCount": 6, "fiveStageLessonKey": "world-13-scope-function-chaining"
       },
       {
         "id": "world-13-avoiding-overuse-and-nesting",
@@ -1741,7 +1741,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Recognize when ordinary statements or named values are clearer than nested scope functions.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-13-avoiding-overuse-and-nesting"
+        "questionsCount": 6, "fiveStageLessonKey": "world-13-avoiding-overuse-and-nesting"
       },
       {
         "id": "world-13-boss",
@@ -1751,7 +1751,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 10,
         "xpReward": 50,
         "description": "Refactor and construct objects using scope functions appropriately.",
-        "questionsCount": 4,
+        "questionsCount": 7,
         "isBoss": true,
         "fiveStageLessonKey": "world-13-boss"
       }
@@ -1776,7 +1776,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Understand sequences as lazy, ordered pipelines of values.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-14-what-sequences-are"
+        "questionsCount": 5, "fiveStageLessonKey": "world-14-what-sequences-are"
       },
       {
         "id": "world-14-eager-collection-processing",
@@ -1786,7 +1786,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Contrast eager collection operations with deferred sequence operations.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-14-eager-collection-processing"
+        "questionsCount": 5, "fiveStageLessonKey": "world-14-eager-collection-processing"
       },
       {
         "id": "world-14-lazy-processing",
@@ -1796,7 +1796,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Trace when lazy pipeline operations actually execute.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-14-lazy-processing"
+        "questionsCount": 5, "fiveStageLessonKey": "world-14-lazy-processing"
       },
       {
         "id": "world-14-creating-sequences",
@@ -1806,7 +1806,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Create sequences with sequenceOf, generateSequence, and sequence builders.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-14-creating-sequences"
+        "questionsCount": 6, "fiveStageLessonKey": "world-14-creating-sequences"
       },
       {
         "id": "world-14-assequence",
@@ -1816,7 +1816,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Convert collections to sequences with asSequence and understand the resulting pipeline.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-14-assequence"
+        "questionsCount": 5, "fiveStageLessonKey": "world-14-assequence"
       },
       {
         "id": "world-14-intermediate-operations",
@@ -1826,7 +1826,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use map, filter, take, and drop as deferred intermediate operations.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-14-intermediate-operations"
+        "questionsCount": 6, "fiveStageLessonKey": "world-14-intermediate-operations"
       },
       {
         "id": "world-14-terminal-operations",
@@ -1836,7 +1836,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use terminal operations to consume and materialize a sequence.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-14-terminal-operations"
+        "questionsCount": 7, "fiveStageLessonKey": "world-14-terminal-operations"
       },
       {
         "id": "world-14-sequence-evaluation-order",
@@ -1846,7 +1846,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Trace element-by-element sequence evaluation and operation ordering.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-14-sequence-evaluation-order"
+        "questionsCount": 5, "fiveStageLessonKey": "world-14-sequence-evaluation-order"
       },
       {
         "id": "world-14-short-circuiting",
@@ -1856,7 +1856,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use first, find, any, all, and take to stop sequence work early.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-14-short-circuiting"
+        "questionsCount": 7, "fiveStageLessonKey": "world-14-short-circuiting"
       },
       {
         "id": "world-14-sequences-vs-collections",
@@ -1866,7 +1866,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Choose between eager collections and lazy sequences based on the task.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-14-sequences-vs-collections"
+        "questionsCount": 6, "fiveStageLessonKey": "world-14-sequences-vs-collections"
       },
       {
         "id": "world-14-performance-trade-offs",
@@ -1876,17 +1876,17 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Evaluate allocation, traversal, readability, and dataset-size trade-offs.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-14-performance-trade-offs"
+        "questionsCount": 7, "fiveStageLessonKey": "world-14-performance-trade-offs"
       },
       {
-        "id": "world-14-when-sequences-should-and-should-not-be-",
+        "id": "world-14-when-sequences-should-and-should-not-be-used",
         "title": "When sequences should and should not be used",
         "worldId": "world-14",
         "skill": "sequences-lazy-processing",
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Select sequences only when their laziness and pipeline behavior improve the design.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-14-when-sequences-should-and-should-not-be-"
+        "questionsCount": 6, "fiveStageLessonKey": "world-14-when-sequences-should-and-should-not-be-used"
       },
       {
         "id": "world-14-boss",
@@ -1896,7 +1896,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 10,
         "xpReward": 50,
         "description": "Compare and implement efficient data-processing pipelines.",
-        "questionsCount": 4,
+        "questionsCount": 7,
         "isBoss": true,
         "fiveStageLessonKey": "world-14-boss"
       }
@@ -1921,7 +1921,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use try to delimit operations that may fail and define a recovery boundary.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-exceptions-try"
+        "questionsCount": 5, "fiveStageLessonKey": "world-15-exceptions-try"
       },
       {
         "id": "world-15-catch",
@@ -1931,7 +1931,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Catch specific failures and choose an intentional recovery path.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-catch"
+        "questionsCount": 5, "fiveStageLessonKey": "world-15-catch"
       },
       {
         "id": "world-15-finally",
@@ -1941,7 +1941,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Run cleanup code with finally regardless of success or failure.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-finally"
+        "questionsCount": 5, "fiveStageLessonKey": "world-15-finally"
       },
       {
         "id": "world-15-throw",
@@ -1951,7 +1951,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Create and throw meaningful failures when a precondition is not met.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-throw"
+        "questionsCount": 5, "fiveStageLessonKey": "world-15-throw"
       },
       {
         "id": "world-15-multiple-catch-blocks",
@@ -1961,7 +1961,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Order multiple catch blocks from specific failures to broader failures.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-multiple-catch-blocks"
+        "questionsCount": 6, "fiveStageLessonKey": "world-15-multiple-catch-blocks"
       },
       {
         "id": "world-15-try-as-an-expression",
@@ -1971,7 +1971,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use try as an expression to produce a value from success or recovery branches.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-try-as-an-expression"
+        "questionsCount": 5, "fiveStageLessonKey": "world-15-try-as-an-expression"
       },
       {
         "id": "world-15-custom-exceptions",
@@ -1981,7 +1981,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Model domain-specific failures with custom exception classes.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-custom-exceptions"
+        "questionsCount": 5, "fiveStageLessonKey": "world-15-custom-exceptions"
       },
       {
         "id": "world-15-checked-vs-unchecked-exception-model",
@@ -1991,7 +1991,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Understand Kotlin's unchecked exception model and its API-design implications.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-checked-vs-unchecked-exception-model"
+        "questionsCount": 5, "fiveStageLessonKey": "world-15-checked-vs-unchecked-exception-model"
       },
       {
         "id": "world-15-result",
@@ -2001,7 +2001,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Represent success or failure as a typed Result value.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-result"
+        "questionsCount": 7, "fiveStageLessonKey": "world-15-result"
       },
       {
         "id": "world-15-runcatching",
@@ -2011,7 +2011,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Capture thrown failures into Result with runCatching and handle them deliberately.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-runcatching"
+        "questionsCount": 6, "fiveStageLessonKey": "world-15-runcatching"
       },
       {
         "id": "world-15-success-failure-handling",
@@ -2021,7 +2021,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Handle Result success and failure paths without losing context.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-success-failure-handling"
+        "questionsCount": 8, "fiveStageLessonKey": "world-15-success-failure-handling"
       },
       {
         "id": "world-15-error-handling-patterns",
@@ -2031,7 +2031,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Choose between propagation, recovery, transformation, and explicit failure reporting.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-error-handling-patterns"
+        "questionsCount": 7, "fiveStageLessonKey": "world-15-error-handling-patterns"
       },
       {
         "id": "world-15-avoiding-swallowed-errors",
@@ -2041,7 +2041,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Avoid catching errors without reporting, recovering, or rethrowing them meaningfully.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-avoiding-swallowed-errors"
+        "questionsCount": 6, "fiveStageLessonKey": "world-15-avoiding-swallowed-errors"
       },
       {
         "id": "world-15-designing-meaningful-failure-paths",
@@ -2051,7 +2051,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Design failure paths that communicate actionable outcomes to callers.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-15-designing-meaningful-failure-paths"
+        "questionsCount": 7, "fiveStageLessonKey": "world-15-designing-meaningful-failure-paths"
       },
       {
         "id": "world-15-boss",
@@ -2061,7 +2061,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 10,
         "xpReward": 50,
         "description": "Build an application that handles invalid input and failures predictably.",
-        "questionsCount": 4,
+        "questionsCount": 7,
         "isBoss": true,
         "fiveStageLessonKey": "world-15-boss"
       }

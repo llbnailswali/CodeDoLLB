@@ -626,7 +626,7 @@ export const Predict: React.FC<PredictStageProps> = ({
                       </span>
                     </div>
                     <p
-                      className={`text-xs leading-relaxed font-medium ${
+                      className={`text-xs leading-relaxed whitespace-pre-line font-medium ${
                         isDark ? 'text-slate-300' : 'text-slate-600'
                       }`}
                     >

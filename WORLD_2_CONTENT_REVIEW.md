@@ -146,3 +146,72 @@ Language references consulted: official Kotlin
 [operator overloading / precedence](https://kotlinlang.org/docs/operator-overloading.html)
 and [equality](https://kotlinlang.org/docs/equality.html) docs, cross-checked
 against the actual Kotlin grammar's operator precedence table.
+
+## W2-08 — Increment & Decrement Learn prose: `--` as punctuation collided with `--` as the operator being taught
+
+Found reading Increment & Decrement's Learn stage in isolation (World 2 ->
+lesson 5 -> stage 1). Two prose strings used this codebase's plain-ASCII
+`--` house style (a stand-in for an em dash, used throughout `PITFALLS.md`
+and elsewhere in lesson prose, e.g. `"...-- see also..."`) immediately
+after -- or in the same sentence as -- the literal `--` decrement operator
+this lesson is actively introducing:
+
+- `learn.subtitle`: `"... ++ (increment) and -- (decrement). ... and both
+  only work on a mutable var -- never on a read-only val."` The punctuation
+  dash appears in the very sentence that first names `--` as an operator,
+  so a reader's eye is primed to read it as "the decrement operator" again
+  rather than as a dash.
+- `learn.keyTakeaway`: `'x++, ++x, x--, and --x are shorthand for "reassign
+  x to x + 1" or "x - 1" -- and like any reassignment, they require var.'`
+  Same collision, right after three literal `x--`/`--x` operator mentions.
+  This one also had an independent wording bug: the two quoted phrases
+  weren't parallel (`"reassign x to x + 1"` vs. bare `"x - 1"`, missing its
+  own `"reassign x to"`), and the x++/x-- -> +1/-1 pairing was only implied
+  by list order, never stated.
+
+This em-dash convention is otherwise harmless everywhere else in this
+codebase; Increment & Decrement is the one lesson in the entire curriculum
+where the convention's own punctuation character is identical to the
+operator being taught, so it is uniquely prone to this misread. Fixed by
+replacing the colliding `--` with a comma (subtitle) and rewriting the
+keyTakeaway into two parallel, semicolon-joined clauses that state the
++1/-1 pairing explicitly instead of leaving it implied:
+
+```
+subtitle: '... and both only work on a mutable var, never on a read-only val.'
+keyTakeaway: 'x++ and ++x are shorthand for "reassign x to x + 1"; x-- and --x are shorthand for "reassign x to x - 1". Like any reassignment, they require var.'
+```
+
+Verified `npx tsc --noEmit` and `npm run audit:output-quotes` (49 blocks)
+still pass. The rest of the lesson's prose (Explore/Predict/Debug text) has
+several more `--`-as-dash instances near a `++`/`--` mention (e.g. `whatChanged: 'We
+used -- to subtract 1...'`) that were not audited or changed in this pass --
+flag and fix them the same way if a future pass touches this lesson's copy.
+
+**Update, same lesson, 2026-09-21: added `\n\n` paragraph breaks + a
+rendering fix.** `learn.subtitle`, `learn.explanation`, and
+`debug.explanation` were each one dense, multi-idea paragraph with no line
+breaks -- readable, but not "clean reading" (see the standing
+[[confusion-first audits]] principle: correctness alone isn't the bar).
+Split each into 2-3 short paragraphs at natural idea boundaries (e.g.
+`learn.subtitle`: "the two operators exist" / "prefix vs postfix forms" /
+"var-only restriction", as three separate sentences instead of one
+run-on). This also happened to fully resolve W2-08's remaining flagged
+line (`... -- (decrement). ...`): once "-- (decrement)" is followed by a
+paragraph break instead of more prose, `audit:dash-collision` no longer
+finds any punctuation dash elsewhere in the same string to collide with
+it -- `npm run audit:dash-collision` now reports zero findings.
+
+Discovered in the process that these breaks would have been silently
+invisible in the real app: `Learn.tsx`'s subtitle/explanation/keyTakeaway
+and `Debug.tsx`/`DebugIde.tsx`'s explanation containers had no
+`whitespace-pre-line` class (unlike `WriteRun.tsx`'s description, which
+already had one and is why its own `\n\n`-separated numbered-steps
+convention works). Fixed all four/five containers -- see PITFALLS.md's
+"Learn's subtitle/explanation/keyTakeaway and Debug's explanation silently
+dropped every `\n` line break" entry for the full record. This is a
+component fix, not lesson-specific, so it benefits every lesson in every
+world that ever authors multi-paragraph Learn/Debug prose, not just this
+one. Verified `npx tsc --noEmit`, `npm run audit:output-quotes` (49
+blocks), `npm run audit:dash-collision` (0 findings), and `npm run build`
+all still pass.

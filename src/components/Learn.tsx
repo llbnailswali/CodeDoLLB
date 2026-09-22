@@ -107,7 +107,7 @@ export const Learn: React.FC<LearnStageProps> = ({
       {/* 1: Concept Subtitle & Brief (Revealed on tap 1 or if tapToReveal is disabled) */}
       {(!tapToRevealEnabled || revealStep >= 1) && (
         <p
-          className={`mt-1 text-[15px] leading-relaxed mb-3 px-2.5 sm:px-3.5 transition-all duration-300 animate-fadeIn ${
+          className={`mt-1 text-[15px] leading-relaxed whitespace-pre-line mb-3 px-2.5 sm:px-3.5 transition-all duration-300 animate-fadeIn ${
             isDark ? 'text-[#94a3b8]' : 'text-slate-600'
           }`}
         >
@@ -183,7 +183,7 @@ export const Learn: React.FC<LearnStageProps> = ({
             >
               info
             </span>
-            <span>{data.explanation}</span>
+            <span className="whitespace-pre-line">{data.explanation}</span>
           </div>
         </section>
       )}
@@ -233,7 +233,7 @@ export const Learn: React.FC<LearnStageProps> = ({
                       {idea.title}
                     </h3>
                     <p
-                      className={`text-xs mt-0.5 leading-normal ${
+                      className={`text-xs mt-0.5 leading-normal whitespace-pre-line ${
                         isDark ? 'text-slate-400' : 'text-slate-500'
                       }`}
                     >
@@ -274,7 +274,7 @@ export const Learn: React.FC<LearnStageProps> = ({
               KEY TAKEAWAY
             </span>
             <p
-              className={`text-xs font-semibold leading-snug ${
+              className={`text-xs font-semibold leading-snug whitespace-pre-line ${
                 isDark ? 'text-slate-200' : 'text-slate-800'
               }`}
             >
