@@ -2096,7 +2096,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Compare launch and async for fire-and-forget work versus deferred results.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-16-launch-async"
+        "questionsCount": 5, "fiveStageLessonKey": "world-16-launch-async"
       },
       {
         "id": "world-16-await-suspending-functions",
@@ -2106,7 +2106,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Await deferred results and define suspending functions correctly.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-16-await-suspending-functions"
+        "questionsCount": 6, "fiveStageLessonKey": "world-16-await-suspending-functions"
       },
       {
         "id": "world-16-suspend-coroutine-context",
@@ -2116,7 +2116,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Understand suspend boundaries and coroutine context propagation.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-16-suspend-coroutine-context"
+        "questionsCount": 5, "fiveStageLessonKey": "world-16-suspend-coroutine-context"
       },
       {
         "id": "world-16-dispatchers-jobs",
@@ -2126,7 +2126,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use dispatchers and Jobs to control execution and lifecycle.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-16-dispatchers-jobs"
+        "questionsCount": 5, "fiveStageLessonKey": "world-16-dispatchers-jobs"
       },
       {
         "id": "world-16-cancellation-cooperative-cancellation",
@@ -2136,7 +2136,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Cancel coroutine work cooperatively and respond to cancellation safely.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-16-cancellation-cooperative-cancellation"
+        "questionsCount": 6, "fiveStageLessonKey": "world-16-cancellation-cooperative-cancellation"
       },
       {
         "id": "world-16-structured-concurrency",
@@ -2146,7 +2146,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Keep child work structured under a parent coroutine scope.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-16-structured-concurrency"
+        "questionsCount": 5, "fiveStageLessonKey": "world-16-structured-concurrency"
       },
       {
         "id": "world-16-coroutinescope",
@@ -2156,7 +2156,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use coroutineScope to group child work and propagate completion and failure.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-16-coroutinescope"
+        "questionsCount": 5, "fiveStageLessonKey": "world-16-coroutinescope"
       },
       {
         "id": "world-16-supervisorscope",
@@ -2166,7 +2166,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Use supervisorScope when sibling failures should remain independent.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-16-supervisorscope"
+        "questionsCount": 5, "fiveStageLessonKey": "world-16-supervisorscope"
       },
       {
         "id": "world-16-exception-handling-in-coroutines",
@@ -2176,7 +2176,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Handle coroutine exceptions at the appropriate boundary.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-16-exception-handling-in-coroutines"
+        "questionsCount": 5, "fiveStageLessonKey": "world-16-exception-handling-in-coroutines"
       },
       {
         "id": "world-16-coroutine-best-practices",
@@ -2196,7 +2196,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 10,
         "xpReward": 50,
         "description": "Build a concurrent application with cancellation and structured concurrency.",
-        "questionsCount": 4,
+        "questionsCount": 7,
         "isBoss": true,
         "fiveStageLessonKey": "world-16-boss"
       }

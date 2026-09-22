@@ -3,10 +3,22 @@ import { KotlinList, KotlinPair, KotlinSequence } from './kotlinCollections';
 import { lowerKotlinFunctions, KotlinFunctionError } from './kotlinFunctions';
 import {
   kotlinAsync,
+  KotlinCoroutineStart,
   kotlinDelay,
+  kotlinEnsureActive,
+  kotlinYield,
+  kotlinWithContext,
+  kotlinCoroutineContext,
+  kotlinCoroutineName,
+  kotlinCoroutineExceptionHandler,
+  kotlinCoroutineScope,
+  kotlinSupervisorScope,
+  KotlinCoroutineNameKey,
+  KotlinDispatchers,
+  KotlinJobKey,
   kotlinLaunch,
   kotlinRunBlocking,
-  prepareLessonOneCoroutineSource,
+  prepareCoroutineSource,
 } from './kotlinCoroutines';
 import {
   Throwable, Exception, RuntimeException, IllegalStateException, IllegalArgumentException,
@@ -108,6 +120,33 @@ function staticValidateKotlin(code: string): KotlinDiagnostic | null {
     }
   }
   if (stack.length) return { message: 'Syntax error: unclosed delimiter', line: stack.at(-1)!.line, type: 'syntax_error' };
+
+  // World 16 Lesson 3: a suspend function may only be called from another
+  // suspend function or a recognized coroutine builder body. This narrow
+  // source-level check covers ordinary block-bodied functions, including the
+  // lesson's canonical invalid `fun main() { println(load()) }`, before the
+  // suspend modifier is intentionally erased for JavaScript lowering.
+  const suspendNames = [...code.matchAll(/\bsuspend\s+fun\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/g)].map(match => match[1]);
+  if (suspendNames.length) {
+    const ordinaryFunctions = /\bfun\s+([A-Za-z_][A-Za-z0-9_]*)\s*\([^)]*\)[^{=]*\{/g;
+    for (const fn of code.matchAll(ordinaryFunctions)) {
+      if (/suspend\s+$/.test(code.slice(0, fn.index ?? 0))) continue;
+      const open = (fn.index ?? 0) + fn[0].lastIndexOf('{');
+      let depth = 1, end = open + 1;
+      while (end < code.length && depth) {
+        if (code[end] === '{') depth++;
+        else if (code[end] === '}') depth--;
+        end++;
+      }
+      const body = code.slice(open + 1, Math.max(open + 1, end - 1));
+      const illegal = suspendNames.find(name => new RegExp(`\\b${name}\\s*\\(`).test(body));
+      if (illegal) return {
+        message: `Suspend function '${illegal}' can be called only from a coroutine or another suspend function`,
+        line: code.slice(0, open).split('\n').length,
+        type: 'compiler_error',
+      };
+    }
+  }
 
   const abstractContracts = [...code.matchAll(/abstract\s+class\s+([A-Za-z_][A-Za-z0-9_]*)[^\{]*\{([\s\S]*?)\n?\}/g)]
     .map((match) => ({ base: match[1], methods: [...match[2].matchAll(/abstract\s+fun\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/g)].map((method) => method[1]) }));
@@ -1986,30 +2025,6 @@ function protectSequenceBuilders(code: string): { code: string; blocks: string[]
   return { code: result + code.slice(cursor), blocks };
 }
 
-function protectLazyBlocks(code: string): { code: string; blocks: string[] } {
-  const blocks: string[] = [];
-  const re = /\bby\s+lazy\s*\{/g;
-  let result = '';
-  let cursor = 0;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(code)) !== null) {
-    const openIdx = match.index + match[0].length - 1;
-    let depth = 1;
-    let end = openIdx + 1;
-    for (; end < code.length && depth > 0; end++) {
-      if (code[end] === '{') depth++;
-      else if (code[end] === '}') depth--;
-    }
-    if (depth !== 0) continue;
-    const marker = `__KT_LAZYBLOCK_${blocks.length}__`;
-    blocks.push(code.slice(match.index, end));
-    result += code.slice(cursor, match.index) + marker;
-    cursor = end;
-    re.lastIndex = end;
-  }
-  return { code: result + code.slice(cursor), blocks };
-}
-
 /**
  * Supported top-level/local subset of property delegation: `val name[:
  * Type] by lazy { ... }` outside any class body (a class-member lazy
@@ -2212,6 +2227,30 @@ function transpileExtensionProperties(code: string): string {
   return code;
 }
 
+function protectLazyBlocks(code: string): { code: string; blocks: string[] } {
+  const blocks: string[] = [];
+  const re = /\bby\s+lazy\s*\{/g;
+  let result = '';
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(code)) !== null) {
+    const openIdx = match.index + match[0].length - 1;
+    let depth = 1;
+    let end = openIdx + 1;
+    for (; end < code.length && depth > 0; end++) {
+      if (code[end] === '{') depth++;
+      else if (code[end] === '}') depth--;
+    }
+    if (depth !== 0) continue;
+    const marker = `__KT_LAZYBLOCK_${blocks.length}__`;
+    blocks.push(code.slice(match.index, end));
+    result += code.slice(cursor, match.index) + marker;
+    cursor = end;
+    re.lastIndex = end;
+  }
+  return { code: result + code.slice(cursor), blocks };
+}
+
 /**
  * Transpiles Kotlin code into an isolated JavaScript execution function.
  */
@@ -2220,7 +2259,7 @@ export function transpileKotlinToJS(kotlinCode: string): string {
   // imports are not executable in the new-Function sandbox, and `suspend`
   // is modifier metadata for this deliberately synchronous teaching subset.
   // The helper's lexical scan preserves matching text in strings/comments.
-  kotlinCode = prepareLessonOneCoroutineSource(kotlinCode);
+  kotlinCode = prepareCoroutineSource(kotlinCode);
   // A custom property-delegate's `getValue`/`setValue` signature takes a
   // `KProperty<*>` parameter (real reflection metadata this simulator does
   // not model) -- the star-projected generic `<*>` breaks
@@ -2231,6 +2270,19 @@ export function transpileKotlinToJS(kotlinCode: string): string {
   // so it never lingers as stray leftover text in front of the generated
   // `function getValue(...)`.
   kotlinCode = kotlinCode.replace(/KProperty<[^>]*>/g, 'KProperty').replace(/\boperator\s+(?=fun\b)/g, '');
+  // World 16: `async<Int> { ... }` (an explicit type argument on a
+  // coroutine builder call whose block is a trailing LAMBDA, not a call
+  // with parens) is real, common Kotlin used to pin a Deferred's result
+  // type -- but `eraseGenericConstructorArguments` (below) only strips a
+  // `<...>` immediately before `(`, never before `{`. Left alone, the
+  // literal `<Int>` survives all the way into the generated JS as
+  // `__kt_async<Int> { ... }`, which is not valid JavaScript at all
+  // (confirmed directly: `new Function(...)` rejects it with `Unexpected
+  // token 'new'`, a confusing error with no visible connection to the
+  // real cause). Scoped to `async`/`launch` specifically -- the only
+  // coroutine builders any lesson gives an explicit type argument -- so
+  // this can never misfire on an unrelated `x < Type > y` comparison chain.
+  kotlinCode = kotlinCode.replace(/\b(async|launch)\s*<\s*[A-Za-z_][A-Za-z0-9_]*\s*>\s*(?=[({])/g, '$1 ');
   // World 15: `e::class.simpleName` (a caught exception's runtime type
   // name, e.g. printed as "NumberFormatException") -> `e.constructor.name`.
   // Every built-in and user-declared exception class is named exactly like
@@ -2506,8 +2558,6 @@ export function transpileKotlinToJS(kotlinCode: string): string {
 
 
 
-
-
 /**
  * Compiles and runs a Kotlin program in-browser with sandboxing,
  * output streaming, diagnostic generation, and optional test case execution.
@@ -2527,6 +2577,21 @@ export async function compileAndRunKotlin(
   catch (err) {
     return { success: false, output: '', logs: [], error: { message: `Syntax error: ${(err as Error).message}`, line: err instanceof KotlinSourceError ? err.line : 1, type: 'syntax_error' }, executionTimeMs: 0, exitCode: 1 };
   }
+
+  // World 16: `Job`/`CoroutineName`/`CoroutineExceptionHandler`/`Dispatchers`
+  // are bare top-level identifiers a coroutine lesson's code needs in
+  // scope (`coroutineContext[Job]`, `Dispatchers.Default`, etc.), but
+  // they are also completely ordinary, plausible NAMES a non-coroutine
+  // lesson's own Kotlin might declare for unrelated domain types --
+  // World 13's own `data class Job(var state: String = "")` is exactly
+  // this collision, confirmed directly: unconditionally injecting
+  // `const Job = ...` into every generated script's top-level scope
+  // broke that lesson with `Identifier 'Job' has already been declared`.
+  // Real Kotlin never has this problem (these names are only in scope
+  // where a file actually imports kotlinx.coroutines); this flat-scope
+  // simulator reproduces that by only injecting the coroutine prelude
+  // when the ORIGINAL source actually references coroutines.
+  const usesCoroutines = /\bkotlinx\.coroutines\b|\brunBlocking\b|\blaunch\s*\(|\basync\s*\(|\bcoroutineScope\s*\{|\bsupervisorScope\s*\{|\bwithContext\s*\(|\bcoroutineContext\b|\bCoroutineStart\b|\bCoroutineName\s*\(|\bDispatchers\./.test(code);
 
   // 1. Static Validation (Lexical, Syntax, Immutability, Type Constraints)
   const validationError = staticValidateKotlin(code);
@@ -2993,9 +3058,23 @@ export async function compileAndRunKotlin(
       // World 16 Lesson 1 uses a deterministic single-threaded child queue.
       // These helpers do not imply real scheduling; see kotlinCoroutines.ts.
       const __kt_runBlocking = (block) => kotlinRunBlocking(block);
-      const __kt_launch = (block) => kotlinLaunch(block);
-      const __kt_async = (block) => kotlinAsync(block);
+      const __kt_coroutineScope = (block) => kotlinCoroutineScope(block);
+      const __kt_supervisorScope = (block) => kotlinSupervisorScope(block);
+      const __kt_CoroutineExceptionHandler = (handler) => kotlinCoroutineExceptionHandler(handler);
+      const __kt_launch = (contextOrBlock, maybeBlock) => kotlinLaunch(contextOrBlock, maybeBlock);
+      const __kt_async = (startOrBlock, maybeBlock) => kotlinAsync(startOrBlock, maybeBlock);
       const __kt_delay = (milliseconds) => kotlinDelay(milliseconds);
+      const __kt_ensureActive = () => kotlinEnsureActive();
+      const __kt_yield = () => kotlinYield();
+      const __kt_withContext = (context, block) => kotlinWithContext(context, block);
+      ${usesCoroutines ? `
+      const CoroutineStart = kotlinCoroutineStart;
+      const coroutineContext = kotlinCoroutineContext;
+      const Job = kotlinJobKey;
+      const CoroutineName = Object.assign((name) => kotlinCoroutineName(name), { toString: () => kotlinCoroutineNameKey });
+      const CoroutineExceptionHandler = __kt_CoroutineExceptionHandler;
+      const Dispatchers = kotlinDispatchers;
+      ` : ''}
 
       ${transpiledJS}
 
@@ -3033,9 +3112,21 @@ export async function compileAndRunKotlin(
       '__kt_equals',
       '__kt_isReifiedType',
       'kotlinRunBlocking',
+      'kotlinCoroutineScope',
+      'kotlinSupervisorScope',
       'kotlinLaunch',
       'kotlinAsync',
+      'kotlinCoroutineStart',
       'kotlinDelay',
+      'kotlinEnsureActive',
+      'kotlinYield',
+      'kotlinWithContext',
+      'kotlinCoroutineContext',
+      'kotlinCoroutineName',
+      'kotlinCoroutineExceptionHandler',
+      'kotlinCoroutineNameKey',
+      'kotlinDispatchers',
+      'kotlinJobKey',
       'Pair',
       '__kt_format',
       runnerScript
@@ -3059,9 +3150,21 @@ export async function compileAndRunKotlin(
           __kt_equals,
           __kt_isReifiedType,
           kotlinRunBlocking,
+          kotlinCoroutineScope,
+          kotlinSupervisorScope,
           kotlinLaunch,
           kotlinAsync,
+          KotlinCoroutineStart,
           kotlinDelay,
+          kotlinEnsureActive,
+          kotlinYield,
+          kotlinWithContext,
+          kotlinCoroutineContext,
+          kotlinCoroutineName,
+          kotlinCoroutineExceptionHandler,
+          KotlinCoroutineNameKey,
+          KotlinDispatchers,
+          KotlinJobKey,
           (a: any, b: any) => new KotlinPair(a, b),
           formatKotlinValue
         );

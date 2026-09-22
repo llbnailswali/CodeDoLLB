@@ -165,9 +165,9 @@ export function lowerKotlinFunctions(source: string): string {
       // `genericTypeParamNames` set, the same way `compatible()` already
       // treated the literal names "T"/"R" as always-compatible wildcards.
       // That hardcoding only worked by coincidence for lessons whose
-      // generic functions happened to use "T"/"R" -- a function declared
-      // with different names (`fun <A, B> transform(...)`) had its
-      // parameter type ("A") compared against a real argument type
+      // generic functions happened to use the literal name "T" -- a
+      // function declared with different names (`fun <A, B> transform(...)`)
+      // had its parameter type ("A") compared against a real argument type
       // ("Int") and always failed as a false "Type mismatch", since this
       // engine has no real generic substitution at a call site.
       let depth = 1; let j = p + 1; let segStart = j;
@@ -352,9 +352,24 @@ export function lowerKotlinFunctions(source: string): string {
     // lambda fallback from inventing an `it` parameter and renames calls to
     // the sandbox's __kt_-prefixed runtime functions.
     ['runBlocking', { inline: false, params: [{ name: 'block', type: { name: 'Function', params: [], result: unknown } }], result: unknown }],
-    ['launch', { inline: false, params: [{ name: 'block', type: { name: 'Function', params: [], result: unknown } }], result: { name: 'Job' } }],
-    ['async', { inline: false, params: [{ name: 'block', type: { name: 'Function', params: [], result: unknown } }], result: { name: 'Deferred' } }],
+    ['coroutineScope', { inline: false, params: [{ name: 'block', type: { name: 'Function', params: [], result: unknown } }], result: unknown }],
+    ['supervisorScope', { inline: false, params: [{ name: 'block', type: { name: 'Function', params: [], result: unknown } }], result: unknown }],
+    ['CoroutineExceptionHandler', { inline: false, params: [{ name: 'handler', type: { name: 'Function', params: [{ name: 'CoroutineContext' }, { name: 'Throwable' }], result: unit } }], result: { name: 'CoroutineContext' } }],
+    ['launch', { inline: false, params: [
+      { name: 'context', type: { name: 'CoroutineContext' }, defaultCode: 'undefined' },
+      { name: 'block', type: { name: 'Function', params: [], result: unknown } },
+    ], result: { name: 'Job' } }],
+    ['async', { inline: false, params: [
+      { name: 'start', type: unknown, defaultCode: 'undefined' },
+      { name: 'block', type: { name: 'Function', params: [], result: unknown } },
+    ], result: { name: 'Deferred' } }],
     ['delay', { inline: false, params: [{ name: 'milliseconds', type: { name: 'Int' } }], result: unit }],
+    ['yield', { inline: false, params: [], result: unit }],
+    ['ensureActive', { inline: false, params: [], result: unit }],
+    ['withContext', { inline: false, params: [
+      { name: 'context', type: { name: 'CoroutineContext' } },
+      { name: 'block', type: { name: 'Function', params: [], result: unknown } },
+    ], result: unknown }],
     ['run', { inline: true, params: [{ name: 'block', type: { name: 'Function', params: [], result: unknown } }], result: unknown }],
     ['repeat', { inline: true, params: [{ name: 'times', type: { name: 'Int' } }, { name: 'action', type: { name: 'Function', params: [{ name: 'Int' }], result: unit } }], result: unit }],
     // `with(receiver) { block }` (World 13) is a plain top-level call, not a
@@ -1052,7 +1067,18 @@ export function lowerKotlinFunctions(source: string): string {
         if (trailing) {
           const last = info.signature?.params.at(-1);
           const end = pairs.get(trailingStart)!;
-          rendered.push(lambda(trailingStart, end, ctx, last?.type, trailingStart === close + 1 ? info.name : at(close + 1), info.inline && !last?.mode));
+          const renderedLambda = lambda(trailingStart, end, ctx, last?.type, trailingStart === close + 1 ? info.name : at(close + 1), info.inline && !last?.mode);
+          // A named argument plus a trailing lambda (for example
+          // `async(start = CoroutineStart.LAZY) { ... }`) has already been
+          // expanded above into the signature's full positional array,
+          // including an `undefined` placeholder for the final block. Fill
+          // that slot instead of appending a third argument after it -- an
+          // earlier version appended unconditionally, producing THREE
+          // JavaScript arguments for a two-parameter helper the moment a
+          // call combined a named argument with a trailing lambda (see
+          // PITFALLS.md, World 16 Lesson 2).
+          if (info.signature && rendered.length === info.signature.params.length && rendered.at(-1) === 'undefined') rendered[rendered.length - 1] = renderedLambda;
+          else rendered.push(renderedLambda);
           emit(i, end + 1, `(${rendered.join(', ')})`); i = end;
         } else {
           const isExtensionCall = receiverCall && functions.get(info.name)?.receiver && !ctx.vars.has(info.name);

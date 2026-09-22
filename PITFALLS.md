@@ -1900,3 +1900,256 @@ broken Deferred example prints the object rather than `13`.
 **Standing rule:** A simulator implementation must preserve the observable
 difference between broken and fixed lesson code, not merely reproduce the
 fixed example's expected output.
+
+## World 16 Lesson 2 — named arguments plus a trailing lambda created an extra argument
+
+`async(start = CoroutineStart.LAZY) { ... }` exposed a collision in the
+generic function lowerer. Named-argument reordering first expanded the call to
+the signature's full positional array, leaving `undefined` in the final block
+slot. The trailing-lambda branch then appended the lambda instead of filling
+that slot, producing three JavaScript arguments for a two-parameter helper.
+
+The lowerer now replaces a final `undefined` signature slot with the rendered
+trailing lambda; it appends only when no such slot exists. This is a general
+call-lowering correction, not coroutine-specific syntax rewriting.
+
+**Standing rule:** whenever a built-in supports both named arguments and a
+trailing lambda, trace the final positional argument array. Correct argument
+count before reordering does not prove correct emitted argument count after
+placeholder expansion.
+
+## World 16 Lesson 3 — erasing `suspend` also erased its caller restriction
+
+The JavaScript runtime does not need a `suspend` modifier, so the coroutine
+pre-pass intentionally removes it. That made an illegal Kotlin program such as
+`fun main() { load() }` run successfully when `load` was declared suspend.
+Lesson 3 now performs a narrow source-level validation before transpilation:
+calls from ordinary block-bodied functions are rejected, while suspend
+functions and recognized coroutine-builder bodies remain legal.
+
+**Standing rule:** when compile-time-only syntax is erased for execution,
+validate any learner-visible restriction that syntax enforces before erasure.
+
+## World 16 Lesson 4 — accepting context syntax is not context semantics
+
+Merely stripping `import kotlin.coroutines.coroutineContext` and defining
+`withContext` as `block()` makes simple examples parse, but it cannot prove
+Job lookup, CoroutineName inheritance, nested override, or restoration. It can
+also accidentally suggest that dispatcher tokens perform real thread switches.
+
+Lesson 4 therefore uses a scoped context stack. `runBlocking` installs Job and
+default-dispatcher elements; `launch` and `async` capture the active elements
+and replace Job with their own lifecycle object; `withContext` overlays one
+element for the duration of its block and restores the prior context in a
+`finally` path. `Dispatchers.Default/IO/Main` remain named metadata only.
+
+**Standing rule:** when teaching context, test both the value inside an override
+and the restored value afterward. Keep dispatcher scheduling/thread behavior
+outside the acceptance claim unless the runtime actually implements it.
+
+## World 16 Lesson 5 — dispatcher syntax without a builder overload
+
+Defining `Dispatchers.Default` in the sandbox was not sufficient for
+`launch(Dispatchers.Default) { ... }`. The function lowerer still described
+launch as a one-parameter block function, and the runtime accepted only a block.
+Lesson 5 adds an optional context parameter to both layers. The runtime overlays
+the supplied element on the inherited context before assigning the child Job.
+
+The original Write starter also printed the literal expected word `completed`
+whether or not the learner added `join()`, so output-only grading could not
+observe the required repair. It now reads a flag written by the queued child:
+the starter prints false and the joined solution prints true.
+
+**Standing rule:** adding a global API value is not capability until every
+intended call shape is lowered and executed. A lifecycle exercise must make the
+missing wait observably different from the correct solution.
+
+## World 16 Lesson 6 — an infinite cooperative loop needs a scheduler
+
+The original lesson repeatedly used `while (isActive) { yield() }`, followed by
+cancellation from the parent. In a synchronous teaching runtime, starting that
+child enters the loop and prevents the parent from ever reaching cancel;
+leaving the child queued means cancellation happens before its body and proves
+nothing about a running loop. Treating yield as a simple no-op would hang.
+
+Lesson 6 instead uses deterministic self-cancellation: the running child marks
+its own Job cancelled, then reaches ensureActive, yield, or delay. Each helper
+checks the active context Job and exits through normal cancellation semantics;
+finally still runs. This proves cooperative control flow without inventing
+interleaving. Arbitrary blocking interruption remains unsupported.
+
+**Standing rule:** do not teach parent/child interleaving with a runtime that
+cannot suspend and resume continuations. Use deterministic checkpoint traces,
+and state the missing preemption/scheduler boundary explicitly.
+
+## World 16 Lesson 7 — waiting at runBlocking end is too late for an inner read
+
+runBlocking already drains children before it returns, but that does not make a
+read inside its block automatically occur after those children. A program that
+launches a child, immediately prints shared state, and only then reaches the
+runBlocking boundary still observes the pre-child value in this deterministic
+runtime. Treating runBlocking's eventual drain as equivalent to an earlier
+structured boundary would make broken and fixed tasks indistinguishable.
+
+`coroutineScope` now owns an inner child list and drains it before returning.
+Children created by children are registered with that same active scope. A
+child failure cancels later owned children and propagates outward. Registration
+order is deterministic simulation, not a real scheduler guarantee.
+
+**Standing rule:** place the ownership/completion boundary before the dependent
+read. Eventual parent completion does not establish ordering for earlier code.
+
+## World 16 Lesson 8 — scope completion is not result retrieval
+
+coroutineScope waits for its children, but merely creating an async child does
+not make that child's value the scope result. The block's own final expression
+still determines what the suspending function returns. A broken example that
+creates `async { "ready" }` and then ends with `"pending"` correctly returns
+pending even though the Deferred is structurally completed.
+
+**Standing rule:** test structured ownership and value flow separately. Waiting
+for a Deferred to complete does not implicitly call await or replace the
+enclosing block's final expression.
+
+## World 16 Lesson 9 — eager async must store failure, not throw from the builder
+
+The deterministic runtime starts default async work immediately. Its original
+`start()` called join directly, so a failing block threw from `async { ... }`
+before the program could reach `await`. That contradicts Deferred's core
+contract and made supervisorScope examples impossible to express honestly.
+
+Start now executes work while retaining any failure on the Deferred. Await
+rethrows it. supervisorScope drains all children without cancelling siblings
+for a child-level error, while ordinary coroutineScope still propagates child
+failure as a unit. Failure of the supervisor block itself remains fatal to its
+children.
+
+**Standing rule:** eager execution timing must not change which API exposes a
+result or failure. For Deferred, that boundary is await, not the async call.
+
+## World 16 Lesson 10 — an exception handler is not universal catch logic
+
+The original lesson reused one failed-Deferred example under launch, child,
+CancellationException, handler, supervision, and finally labels. That made the
+stage appear broad while exercising almost none of those distinct boundaries.
+It also risked suggesting that `CoroutineExceptionHandler` handles `async`
+results or overrides ordinary structured propagation.
+
+Lesson 10 now assigns each mechanism its own trace. Failed Deferred values are
+handled at `await`; an ordinary launch failure reaches its owning scope; normal
+cancellation is not reported as an ordinary failure; finally performs cleanup;
+and the handler example is limited to an eligible supervised launch case. The
+runtime intentionally does not claim complete root-handler or suppressed-error
+aggregation semantics.
+
+**Standing rule:** identify the builder and ownership boundary before choosing
+error handling. Use await/catch for Deferred results, owner-level handling for
+ordinary structured child failure, and CoroutineExceptionHandler only where
+uncaught launch-style exceptions are actually eligible for it.
+
+## World 16 Lesson 12 — dispatcher-aware launch support does not imply async support
+
+The runner already accepted `launch(Dispatchers.Default)`, but the boss Write
+solution used `async(Dispatchers.Default)`. Reusing the launch assumption would
+leave the authored solution unsupported: async's first argument had previously
+been interpreted only as CoroutineStart.
+
+The async runtime now distinguishes a start-mode string from a context element,
+overlays supported context metadata, and keeps Deferred result behavior intact.
+The boss scenarios then assemble named results explicitly instead of inferring
+output order from delay values or simulated scheduling.
+
+**Standing rule:** verify every builder overload used by learner code. Context
+support for launch is not automatically context support for async, and neither
+overload proves real dispatcher threads or concurrent timing.
+
+## World 16 Lessons 2–12 handoff: three claims that were false, found only by actually running the delivered code
+
+A second AI-assisted handoff delivered engine changes and content for World 16
+Lessons 2–12 in one batch, with every lesson's own write-up claiming its
+program cases were verified. None of that verification had actually been run
+against this repository -- every write-up said so explicitly ("pending actual
+repository harness and regression runs"). Running the delivered code for real
+(the same `compileAndRunKotlin`/`audit-world16-quality.ts`/real-JVM-probe
+process every other entry on this page insists on) surfaced three defects the
+write-ups did not mention:
+
+1. **A global-scope identifier collision that broke unrelated, already-shipped
+   content.** The coroutine sandbox prelude unconditionally injected
+   `const Job = kotlinJobKey;` into *every* generated script, coroutine lesson
+   or not. World 13's own `data class Job(var state: String = "")` --
+   completely unrelated content, untouched by this handoff -- collided with
+   it: `Identifier 'Job' has already been declared`. Real Kotlin never hits
+   this (these names are only in scope where a file actually imports
+   `kotlinx.coroutines`); this flat-scope simulator has no such namespacing.
+   Fixed by detecting whether the source actually references coroutines
+   (import, `runBlocking`, `launch(`, `async(`, `coroutineScope{`, etc.)
+   before injecting the coroutine prelude's bare-named bindings (`Job`,
+   `CoroutineName`, `CoroutineExceptionHandler`, `Dispatchers`,
+   `CoroutineStart`, `coroutineContext`) at all.
+
+2. **A real, previously-unexercised syntax gap.** `async<Int> { ... }` (an
+   explicit type argument on a coroutine builder call whose block is a
+   trailing LAMBDA, not a call with parens) was never stripped by any
+   transform -- `eraseGenericConstructorArguments` only strips a `<...>`
+   immediately before `(`. The literal `<Int>` survived into the generated
+   JS as `__kt_async<Int> { ... }`, not valid JavaScript at all, and broke
+   Lessons 9, 10, and 12 outright with a confusing `Unexpected token 'new'`
+   error (the actual cause, a parse failure, was nowhere near what the error
+   pointed at). Fixed by stripping `async<Type>`/`launch<Type>` immediately
+   before `{` or `(`, scoped to those two builder names specifically so it
+   can never misfire on an unrelated `x < Type > y` comparison chain.
+
+3. **`Job.join()` was rethrowing a stored completion exception -- real
+   Kotlin's `Job.join()` never does that.** Confirmed directly against
+   Kotlin 2.0.21 + kotlinx-coroutines 1.8.1: `async<Int> { throw ... };
+   job.join(); println("done")` inside `supervisorScope` prints `done` and
+   exits 0 -- `join()` waits for completion and returns, full stop; only
+   `Deferred.await()` retrieves and rethrows a failure. The delivered
+   `KotlinJob.join()` unconditionally rethrew any stored error for BOTH
+   `Job` and `Deferred`, which is why Lesson 10's own Debug `brokenCode`
+   (`d.join(); println("done")`, deliberately meant to demonstrate a
+   silently-swallowed exception) instead crashed outright with no output at
+   all -- the exact "plausible-looking wrong answer becomes a loud crash
+   instead" near-miss this file has warned about before, just inverted.
+   Fixed by splitting the class: `join()` now only ever runs the action and
+   swallows any error (matching real Kotlin); a new internal
+   `__drainComplete()` (used exclusively by the owning scope's own
+   structural drain, `drainScope`/`drainSupervisorScope`) is what actually
+   propagates a child's failure to its parent, matching real Kotlin's
+   automatic Job-hierarchy propagation -- independent of whether or when
+   user code ever calls `join()`/`await()` on that child at all. This one
+   fix, with zero further content changes, resolved every remaining
+   reference-task failure across Lessons 2-9 and 12 simultaneously; before
+   it, several of those lessons' own `debug.fixedCode`/`writeRun.solutionCode`
+   were failing for reasons the delivered write-ups never surfaced.
+
+**A fourth issue was content, not an engine defect, and needed a real redesign
+rather than a one-line fix:** Lesson 10's entire premise -- that catching a
+failed Deferred's exception at `await()` is sufficient -- is false. Verified
+directly on the JVM: `async<Int> { throw IllegalStateException("bad") };
+try { d.await() } catch (...) { println("caught") }` inside a plain
+(non-supervised) `runBlocking` prints `caught`, then the program **still
+crashes** with the same uncaught exception, because the child's failure had
+already propagated structurally to `runBlocking` the moment it threw --
+independent of whether the caller later catches it via `await()`. This is the
+*exact same nuance* Lesson 2's own E6 example was already redesigned around
+(see that entry above) -- Lesson 10 reintroduced the identical mistake across
+its Learn, Explore, Predict, Write & Run, and Debug stages. Fixed by
+redesigning rather than patching around it: Learn/Explore-1/Predict-1 now keep
+the crash and teach it directly and honestly (a legitimate, testable "what
+actually happens" outcome), while Write & Run and Debug's `fixedCode` were
+changed to wrap the example in `supervisorScope` -- framed explicitly as *why*
+supervision exists, not an arbitrary requirement.
+
+**Standing rule, reinforced hard by this handoff specifically:** a delivered
+write-up that repeatedly states its own verification is "pending" is telling
+you, in its own words, that nothing in it has been checked yet -- treat every
+one of its claims with exactly the same suspicion as an unverified claim with
+no disclaimer at all, and re-run the SAME full process this file has insisted
+on since World 1: actually execute every reference/negative case through
+`compileAndRunKotlin`, re-run the full prior-world regression suite (a fix
+motivated by one lesson broke a different, already-shipped world here, exactly
+as it did for World 13's own constructor-parameter leak), and verify any
+disputed real-Kotlin behavior against an actual compiler rather than trusting
+either side's prose description of what Kotlin "should" do.

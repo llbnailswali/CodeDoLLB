@@ -16,6 +16,7 @@
     "test:world13-content": "tsx scripts/test-world13-content.ts",
     "test:world14-content": "tsx scripts/test-world14-content.ts",
     "test:world15-content": "tsx scripts/test-world15-content.ts",
+    "test:world16-coroutines": "tsx scripts/test-world16-coroutines.ts",
     "test:lambda-kotlin": "tsx scripts/test-lambda-kotlin.ts",
     "test:lambda-runner": "tsx scripts/test-lambda-runner.ts",
     "update-progress": "node scripts/update-data-gathering-progress.mjs",

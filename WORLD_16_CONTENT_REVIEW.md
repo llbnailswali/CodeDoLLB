@@ -16,18 +16,18 @@ Capability evidence is collected by `node --import tsx scripts/audit-world16-qua
 
 Checklist completion means audited and saved, not Verified. Entries are saved individually before proceeding. `E#`/`P#` below mean the current lesson's full `-explore-#`/`-predict-#` IDs; W and D mean its singular `writeRun` and `debug` entries.
 
-- [x] 01 Coroutine Fundamentals & Coroutine Builders — Verified (capability built and content revised; see update below)
-- [x] 02 launch & async — Blocked by capability; changes required
-- [x] 03 await & Suspending Functions — Blocked by capability; changes required
-- [ ] 04 suspend & Coroutine Context — Not audited
-- [ ] 05 Dispatchers & Jobs — Not audited
-- [ ] 06 Cancellation & Cooperative Cancellation — Not audited
-- [ ] 07 Structured Concurrency — Not audited
-- [ ] 08 coroutineScope — Not audited
-- [ ] 09 supervisorScope — Not audited
-- [ ] 10 Exception Handling in Coroutines — Not audited
-- [ ] 11 Coroutine Best Practices — Not audited
-- [ ] 12 Boss: Concurrent Task Runner — Not audited
+- [x] 01 Coroutine Fundamentals & Coroutine Builders — Verified
+- [x] 02 launch & async — Verified
+- [x] 03 await & Suspending Functions — Verified
+- [x] 04 suspend & Coroutine Context — Verified
+- [x] 05 Dispatchers & Jobs — Verified
+- [x] 06 Cancellation & Cooperative Cancellation — Verified
+- [x] 07 Structured Concurrency — Verified
+- [x] 08 coroutineScope — Verified
+- [x] 09 supervisorScope — Verified
+- [x] 10 Exception Handling in Coroutines — Verified (redesigned; see update)
+- [ ] 11 Coroutine Best Practices — Out of scope, unchanged by explicit request (conceptual topic, no coding stages)
+- [x] 12 Boss: Concurrent Task Runner — Verified
 
 The catalog combines the master plan's 17 topic headings into 11 lessons plus boss. Required cross-cutting scope also includes timeouts, CoroutineExceptionHandler, SupervisorJob, withContext, async programming and parallel decomposition; presence of a heading alone is not evidence of coverage.
 
@@ -99,6 +99,8 @@ Independent JVM probes (`scripts/audit-world16-kotlin.ts launch-async E2 E6 solu
 - **02-H3 High, content:** E4/E5 immediately await and do not distinguish default versus lazy scheduling; P5 never uses LAZY, P6 never throws, E7 demonstrates consuming a result while labelled no-result work. Add independent start-state/ordering/failure scenarios; seven labels do not justify seven assessments.
 - **02-M1 Medium, content:** P1/P2 explanations merely repeat `true`/`5`; shared hints fail to explain why launch discards the block result. C3–C5 apply; catalog count drift recorded. W and D use different values, but D's result-retrieval mechanism closely repeats lesson 01 D and needs more independent diagnosis.
 
+**Update — capability built, content revised, re-verified:** `launch`/`async` now accept `Dispatchers.X`/`CoroutineStart.LAZY`; `async<Type> { ... }`'s explicit type argument (previously unstrippable, breaking with `Unexpected token 'new'`) is now handled. Content rewritten to 5 Explore + 5 Predict, each genuinely distinct (E2's `Deferred<Int>=` tokenization defect fixed with proper spacing; E4/E5 now demonstrate real eager-vs-`CoroutineStart.LAZY` state transitions; E6's child-failure-after-catch example is kept and explained honestly). Correct-answer positions `[1,3,2,0,1]` (B/D/C/A/B). Verified: `write.solution`→`15` exact, `debug.fixed`→`ready` exact, both negatives correctly differ, `uniqueExplore`/`uniquePredict` both 5, catalog `questionsCount` corrected to 5. Full regression suite + `tsc --noEmit` clean. Still open: C2 (hardcoded-output risk, unchanged).
+
 ### 03 await & Suspending Functions
 
 ID: `world-16-await-suspending-functions`. State: **Blocked by capability**, content **Changes required**, clarity not passed. Prerequisites: 01–02; outcome: define/call a suspending helper and distinguish sequential calls from concurrent result composition. Cancellation continues in 06; it is not a reason to omit composition here.
@@ -117,3 +119,101 @@ Execution: **17/17** runner snippets fail import parsing; W expects `ready`, D `
 - **03-H2 High, content:** no illegal non-suspend caller prediction and no writing evidence for concurrent composition. W supplies `suspend` in the starter despite asking the learner to implement it. Add a focused composition task and caller-boundary assessment rather than overloading the helper exercise.
 - **03-H3 High, content:** D's `Deferred * Int` is a Kotlin compile/type fault, labelled `bugType: logic`; generic hints explain neither Deferred nor `await`. Independent compiler probe confirms broken compilation is rejected and fixed prints `16\n`. Correct the classification and write symptom → type → retrieval hints.
 - **03-M1 Medium, content:** compact functions, missing separation between function blocks, generic stage headers and dense repeated Learn prose violate clarity. C3–C5 and catalog drift apply. D is different from W's string-returning helper, but prediction recycling weakens independence.
+
+**Update — capability built, content revised, re-verified:** the engine now rejects an ordinary function calling a `suspend fun` before the modifier is erased (`staticValidateKotlin`'s new suspend-caller-boundary check), so the illegal-caller Predict question (03-H2) is now a real, engine-enforced rejection rather than an unenforced claim. Content rewritten to 6 unique Explore + 6 unique Predict covering suspend declaration, suspend-to-suspend composition, a real blocking-vs-suspension trace, `await`, sequential calls, and `async`+`await` composition. D's classification fixed from `bugType: logic` to an honest type-mismatch scenario (`Deferred * Int`), independently confirmed as a real Kotlin compile rejection. Verified: `write.solution`→`ready` exact, `debug.fixed`→`16` exact, both negatives correctly differ/reject, `uniqueExplore`/`uniquePredict` both 6, catalog `questionsCount` corrected to 6. Full regression suite + `tsc --noEmit` clean.
+
+### 04 suspend & Coroutine Context
+
+ID: `world-16-suspend-coroutine-context`. State: **Verified**. Outcome: read inherited `CoroutineContext` elements (`Job`, `CoroutineName`) and apply a focused `withContext` override.
+
+**Capability built:** a real scoped context stack (`kotlinCoroutineContext`, a `Proxy` reading the innermost active context frame), `coroutineContext[Job]`/`coroutineContext[CoroutineName]` lookups, child inheritance (`launch`/`async` capture the active context, replacing only their own `Job`), and `withContext` overlay-then-restore semantics via a `finally` path. Dispatcher tokens remain named metadata only — no thread-switch claim.
+
+**Content:** 5 unique Explore + 5 unique Predict (Job lookup, `CoroutineName` lookup/read, child inheritance, nested override/restoration, `withContext`'s block-result return). Correct-answer positions `[1,2,0,3,1]` (B/C/A/D/B). Debug fixed a discarded-`withContext`-result bug (expression-body vs. statement-body), independent of the old premature `coroutineScope` dependency.
+
+**Verified:** `write.solution`→`true` exact, `debug.fixed`→`42` exact, both negatives correctly differ, `uniqueExplore`/`uniquePredict` both 5, catalog `questionsCount` corrected to 5. Full regression suite + `tsc --noEmit` clean.
+
+### 05 Dispatchers & Jobs
+
+ID: `world-16-dispatchers-jobs`. State: **Verified**. Outcome: choose a dispatcher's execution-context role independently of a Job's lifecycle role.
+
+**Capability built:** `launch`/`async` now accept an optional leading `Dispatchers.X` context argument, overlaying it on the inherited context before the child registers; plain `launch { ... }`/`async { ... }` (no context) remain fully backward compatible.
+
+**Content:** 5 unique Explore + 5 unique Predict separating Default/IO/Main's real-platform purpose from `Job`/`join`/`isCompleted` lifecycle tracking, honestly stating that Main requires a platform integration this simulator does not provide. Correct-answer positions `[1,2,3,0,1]`. The original Write & Run starter printed its expected literal (`completed`) whether or not `join()` was added — replaced with a child-written boolean the starter/solution now genuinely differ on (`false` vs `true`).
+
+**Verified:** `write.solution`→`true` exact, `debug.fixed`→`uploaded\ntrue` exact, both negatives correctly differ, `uniqueExplore`/`uniquePredict` both 5, catalog `questionsCount` corrected to 5. Full regression suite + `tsc --noEmit` clean.
+
+**Capacity recommendation:** row 211 (previously "Conceptual only / Not Runnable") should read **Partial / simulated, Runnable** — Job lifecycle and dispatcher-token syntax are genuinely runnable; real thread pools/scheduling are not modeled and the note should say so.
+
+### 06 Cancellation & Cooperative Cancellation
+
+ID: `world-16-cancellation-cooperative-cancellation`. State: **Verified**. Outcome: request cancellation and observe it take effect only at a cooperative checkpoint.
+
+**Capability built:** `Job` now tracks active/cancelled/running/completed state properly; `cancel()`/`cancelAndJoin()`; `ensureActive()`/`yield()`/`delay()` all check the active context Job and exit via `KotlinCancellationException` when cancelled (never surfaced as an ordinary stored error, so it doesn't propagate through `__drainComplete` the way a real failure does); `finally` cleanup still runs on cancellation exit.
+
+**Content:** the original lesson's `while (isActive) { yield() }` infinite-loop examples were replaced — this deterministic, non-preemptive runtime cannot honestly schedule "cancel from outside while a loop runs." Rewritten to 5 unique Explore + 6 unique Predict using deterministic self-cancellation (the child cancels its own Job, then reaches a checkpoint), covering state (`isActive`/`isCancelled`), each of the three checkpoints, and `finally` cleanup on cancellation exit. Correct-answer positions `[1,2,3,0,1,2]`.
+
+**Verified:** `write.solution`→`true` exact, `debug.fixed`→`cleanup\ntrue` exact, both negatives correctly differ, `uniqueExplore`/`uniquePredict` 5/6, catalog `questionsCount` corrected to 6. Full regression suite + `tsc --noEmit` clean.
+
+**Capacity recommendation:** row 212 should read **Partial / simulated, Runnable** — cancellation state and cooperative checkpoints are genuinely runnable; preemption, blocking interruption, and real scheduler interleaving are not modeled.
+
+### 07 Structured Concurrency
+
+ID: `world-16-structured-concurrency`. State: **Verified**. Outcome: keep child work (including grandchildren) inside an explicit owning scope whose completion, cancellation, and failure propagation are all structural.
+
+**Capability built:** `coroutineScope { }` now creates a genuine nested ownership boundary — builders register with the innermost active scope (including a child registering ITS OWN child while being drained), the scope does not return until every registered child completes, and an ordinary child failure cancels remaining siblings before propagating out (via `__drainComplete`, see the join/await split in PITFALLS.md).
+
+**Content:** 5 unique Explore + 5 unique Predict covering single-child waiting, multiple children, nested (grandchild) ownership, post-scope state visibility, and failure propagation. Correct-answer positions `[1,2,3,0,1]`.
+
+**Verified:** `write.solution`→`7` exact, `debug.fixed`→`9` exact, both negatives correctly differ (`0` in both cases — a genuinely different, legitimate wrong answer), `uniqueExplore`/`uniquePredict` both 5, catalog `questionsCount` corrected to 5. Full regression suite + `tsc --noEmit` clean.
+
+**Capacity recommendation:** row 213 should read **Partial / simulated, Runnable** — nested ownership, completion waiting, and failure propagation are genuinely runnable with deterministic (registration-order) draining; real concurrent sibling scheduling is not modeled or claimed.
+
+### 08 coroutineScope
+
+ID: `world-16-coroutinescope`. State: **Verified**. Outcome: use `coroutineScope` as a suspending expression that owns children and returns one combined result.
+
+**Capability built:** none needed beyond Lesson 7's `coroutineScope` implementation — this lesson validates and teaches the result-returning path that was already present.
+
+**Content:** 5 unique Explore + 5 unique Predict (plain expression result, combining two `async` results, an un-joined `launch` still completing before the block's own result returns, nesting a `coroutineScope` inside another, and a failing child preventing the normal result). Correct-answer positions `[1,2,3,0,1]`.
+
+**Verified:** `write.solution`→`10` exact, `debug.fixed`→`ready` exact, both negatives correctly differ, `uniqueExplore`/`uniquePredict` both 5, catalog `questionsCount` corrected to 5. Full regression suite + `tsc --noEmit` clean.
+
+### 09 supervisorScope
+
+ID: `world-16-supervisorscope`. State: **Verified**. Outcome: keep independent children owned while isolating one child's failure from its healthy siblings, then handle each result/failure explicitly.
+
+**Capability built:** `supervisorScope` drains its children WITHOUT cancelling siblings when one reports failure (`drainSupervisorScope`, silently absorbing each child's `__drainComplete` throw); an ordinary-scope failure of the supervisor block ITSELF still cancels its children and propagates, matching real Kotlin's actual distinction between "a supervised child fails" and "the supervising code itself fails."
+
+**Content:** 5 unique Explore + 5 unique Predict (structured waiting, sibling isolation with a healthy result still retrievable, explicit Deferred-failure handling, supervisor-block-level failure still propagating, and downward parent cancellation still reaching a supervised child). Correct-answer positions `[1,2,3,0,1]`.
+
+**Verified:** `write.solution`→`bad\n7` exact, `debug.fixed`→`offline\ncached` exact, both negatives correctly differ (both legitimately print an extra `scope failed` line via their own outer catch — confirmed by direct execution, not assumed), `uniqueExplore`/`uniquePredict` both 5, catalog `questionsCount` corrected to 5. Full regression suite + `tsc --noEmit` clean.
+
+### 10 Exception Handling in Coroutines
+
+ID: `world-16-exception-handling-in-coroutines`. State: **Verified, after a real content redesign** — see PITFALLS.md's "World 16 Lessons 2–12 handoff" entry for the full finding. The delivered content's entire premise (catching a failed Deferred's exception at `await()` is sufficient) was **false**, confirmed directly against Kotlin 2.0.21: the child's failure had already propagated structurally to `runBlocking` the moment it threw, so the program prints its caught message and then **still crashes** — independent of the local catch. This is the same nuance Lesson 2's E6 example already had to be redesigned around; Lesson 10 reintroduced it across Learn, Explore-1, Predict-1, Write & Run, and Debug.
+
+**Redesign, not a patch:** Learn/Explore-1/Predict-1 now keep the crash and teach it directly and honestly as the actual lesson content (a legitimate "what really happens" outcome, not a bug to hide). Write & Run and Debug's `fixedCode` now wrap the example in `supervisorScope`, framed explicitly as *why* supervision exists — motivated by the crash the learner just saw, not an arbitrary requirement. Debug's `brokenCode` (unchanged) now demonstrates an even more accurate bug: `d.join()` silently swallows the exception entirely (prints `done`, matching real Kotlin's actual `Job.join()` contract — see the engine fix below), rather than crashing outright as it did before that fix.
+
+**A related engine bug found during this investigation, fixed separately:** `KotlinJob.join()` was unconditionally rethrowing any stored completion error for both `Job` and `Deferred` — but real Kotlin's `Job.join()` never exposes a completion exception at all; only `Deferred.await()` does. Confirmed directly on the JVM. Fixed by splitting `join()` (never throws) from an internal `__drainComplete()` used only by the owning scope's own structural drain. This single fix resolved every remaining reference-task failure across Lessons 2–9 and 12 with zero further content changes needed anywhere else.
+
+**Verified:** `write.solution`→`-1` exact, `debug.fixed`→`handled` exact, both negatives correctly differ (`write.starter` now fails loudly — `async`'s eager child is never isolated in the unfinished starter, so it crashes, which is an even clearer "does not pass" signal than before; `debug.broken`→`done`≠`handled`), `uniqueExplore`/`uniquePredict` both 5, catalog `questionsCount` corrected to 5. Full regression suite + `tsc --noEmit` clean. Correct-answer positions unchanged at `[1,2,3,0,1]`.
+
+### 11 Coroutine Best Practices
+
+Explicitly out of scope for this pass, per direct instruction. Unchanged. It remains a best-practices/guidance topic with no specific runtime construct — appropriately conceptual (Learn → MCQ/Predict, no forced Write & Run/Debug), matching this app's own topic-type framework (the same category as World 1's "What is Kotlin?"). Catalog `questionsCount` for this lesson (currently 4, real count 8) is a pre-existing drift from before this task and was left untouched, consistent with the scope decision.
+
+### 12 Concurrent Task Runner (Boss)
+
+ID: `world-16-boss`. State: **Verified**. Outcome: integrate structured ownership, deliberate builder choice, deterministic result assembly, dispatcher context, and an intentional failure policy (ordinary vs. supervised) in one task-runner scenario.
+
+**Capability built:** `async` now accepts either a `CoroutineStart` value or a supported context element (`Dispatchers.X`) as its optional first argument, distinguished by type at runtime, mirroring the same overlay-then-restore context handling `launch` already had from Lesson 5. `async<Type> { ... }`'s explicit type argument (the same stripping gap that broke Lessons 9 and 10) is fixed engine-wide, not per-lesson.
+
+**Content:** 7 unique Explore + 7 unique Predict integrating owned Deferred combination, dispatcher-aware `async`, `launch`+`join` side effects, deterministic result-order assembly (explicit awaiting, not delay-order guessing), ordinary all-or-fail policy, supervised fallback isolation, and `withContext`'s IO-context result flow. Correct-answer positions `[1,2,3,0,1,2,3]`. Predict-7 (a bare `val task = async(Dispatchers.Default) { 42 }` with no enclosing `runBlocking`) is a deliberately illustrative, non-executable fragment — it correctly fails when actually run (`coroutineContext requires runBlocking`), consistent with how other worlds' conceptual Predict cards work; this is not a defect.
+
+**Verified:** `write.solution`→`A,B` exact, `debug.fixed`→`A,fallback` exact, both negatives correctly differ, `uniqueExplore`/`uniquePredict` both 7, catalog `questionsCount` corrected to 7. Full regression suite + `tsc --noEmit` clean.
+
+## Final status
+
+Lessons 1–10 and 12 are built, content-verified, and re-verified against the real engine after two additional engine defects were found and fixed during this pass (a `Job`-identifier global-scope collision that broke unrelated World 13 content, and the `Job.join()`/`Deferred.await()` semantics split). Lesson 10 required a genuine content redesign, not just an engine fix, after its premise was found to contradict real, JVM-verified Kotlin behavior. Lesson 11 remains untouched by explicit scope decision. `src/utils/world16CoroutineLessons.test.ts` (157 cases, Lessons 2–10/12) and `src/utils/world16Lesson1Coroutine.test.ts` (12 cases, Lesson 1) both import `code` directly from the shipped lesson objects and are wired into `npm run test:world16-coroutines`. Full existing cross-world regression suite (lambda-runner, collection-runner, Worlds 11–15) re-verified with zero regressions after every change in this pass.
+
+**Still open, not claimed resolved:** C2 (hardcoded-output assessment risk — a plain `println` of the expected literal still passes Write & Run's grading across every lesson in this world; this needs a semantic/construct check, not just output matching) applies uniformly and is unchanged by this work.
