@@ -370,3 +370,25 @@ export function prepareCoroutineSource(source: string): string {
 /** Backward-compatible alias for Lesson 1 callers; new code uses the
  * capability-wide name above. */
 export const prepareLessonOneCoroutineSource = prepareCoroutineSource;
+
+/**
+ * World 16 Lesson 11 (Coroutine Best Practices): `GlobalScope.launch { ... }`
+ * is the well-known anti-pattern this lesson teaches learners to AVOID --
+ * work detached from any structured scope, whose completion no caller can
+ * observe or wait for. Real Kotlin's `GlobalScope` is a real, always-active
+ * top-level scope tied to the process; this simulator has no background
+ * event loop or process lifetime to run detached work on at all, so the
+ * most honest reproduction of "detached from structured concurrency" is
+ * literal: the returned Job is a real `KotlinJob` (so `is Job`,
+ * `.isCompleted`, etc. all still behave normally if inspected), but it is
+ * deliberately never registered with any scope's children -- nothing in
+ * this deterministic runtime will ever call join()/await()/__drainComplete
+ * on it, so its action never runs during synchronous execution. This
+ * reproduces the exact bug World 16 Lesson 11's Debug exercise teaches:
+ * code that reads state a `GlobalScope.launch` block was supposed to set
+ * observes the OLD value, because the detached work was never awaited (or,
+ * in this simulator, never run at all).
+ */
+export function kotlinGlobalScopeLaunch(block: () => unknown): KotlinJob {
+  return new KotlinJob(block);
+}

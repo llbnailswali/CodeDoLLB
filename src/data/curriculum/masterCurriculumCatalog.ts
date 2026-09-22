@@ -2186,7 +2186,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Apply coroutine best practices for ownership, cancellation, and testability.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-16-coroutine-best-practices"
+        "questionsCount": 5, "fiveStageLessonKey": "world-16-coroutine-best-practices"
       },
       {
         "id": "world-16-boss",

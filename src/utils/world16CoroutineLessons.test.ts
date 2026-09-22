@@ -9,6 +9,7 @@ import {
   COROUTINE_SCOPE_LESSON,
   SUPERVISOR_SCOPE_LESSON,
   EXCEPTION_HANDLING_IN_COROUTINES_LESSON,
+  COROUTINE_BEST_PRACTICES_LESSON,
   CONCURRENT_TASK_RUNNER_BOSS_LESSON,
 } from '../data/curriculum/world16LessonsData';
 import { compileAndRunKotlin, transpileKotlinToJS } from './kotlinRunner';
@@ -23,6 +24,7 @@ const lesson7 = STRUCTURED_CONCURRENCY_LESSON;
 const lesson8 = COROUTINE_SCOPE_LESSON;
 const lesson9 = SUPERVISOR_SCOPE_LESSON;
 const lesson10 = EXCEPTION_HANDLING_IN_COROUTINES_LESSON;
+const lesson11 = COROUTINE_BEST_PRACTICES_LESSON;
 const lesson12 = CONCURRENT_TASK_RUNNER_BOSS_LESSON;
 
 // Lesson 2 was missing from this file entirely in the delivered handoff --
@@ -127,6 +129,24 @@ const lesson10Cases: ProgramCase[] = [
   { id: 'lesson-10.debug.broken', code: lesson10.debug!.brokenCode, expected: 'done', success: true },
 ];
 
+// Lesson 11 was originally left "conceptual only" per the delivered
+// handoff's own claim, but its own data already shipped a real Write & Run
+// and Debug pair using GlobalScope/withContext -- a genuine inconsistency
+// (see PITFALLS.md's "World 16 Lesson 11" entry). Brought into scope,
+// engine support added for GlobalScope.launch (deliberately never run --
+// see kotlinGlobalScopeLaunch's doc comment), and content de-duplicated
+// from 8 reused-template Explore/Predict cards (only 4 unique) down to a
+// coverage-driven 4/5, all verified.
+const lesson11Cases: ProgramCase[] = [
+  { id: 'lesson-11.learn', code: lesson11.learn.codeSnippet.join('\n'), expected: '12', success: true },
+  ...lesson11.explore.cards.map((card, index) => ({ id: `lesson-11.${card.id}`, code: card.code.join('\n'), expected: ['12', '0', '81', '12'][index], success: true })),
+  ...lesson11.predict.questions.map((question, index) => ({ id: `lesson-11.${question.id}`, code: (question.code ?? []).join('\n'), expected: ['12', '0', '12', '', ''][index], success: true })),
+  { id: 'lesson-11.write.solution', code: lesson11.writeRun!.solutionCode, expected: '12', success: true },
+  { id: 'lesson-11.write.starter', code: lesson11.writeRun!.initialCode, expected: '0', success: true },
+  { id: 'lesson-11.debug.fixed', code: lesson11.debug!.fixedCode, expected: '12', success: true },
+  { id: 'lesson-11.debug.broken', code: lesson11.debug!.brokenCode, expected: '0', success: true },
+];
+
 const lesson12Cases: ProgramCase[] = [
   { id: 'lesson-12.learn', code: lesson12.learn.codeSnippet.join('\n'), expected: '42', success: true },
   ...lesson12.explore.cards.map((card, index) => ({ id: `lesson-12.${card.id}`, code: card.code.join('\n'), expected: ['42', 'cpu', 'true', 'A,B', 'failed', 'A,fallback', 'loaded'][index], success: true })),
@@ -171,6 +191,7 @@ export async function verifyWorld16CoroutineLessons(): Promise<void> {
   assertLessonStructure(lesson8, 5, 5, [1, 2, 3, 0, 1]);
   assertLessonStructure(lesson9, 5, 5, [1, 2, 3, 0, 1]);
   assertLessonStructure(lesson10, 5, 5, [1, 2, 3, 0, 1]);
+  assertLessonStructure(lesson11, 4, 5, [0, 2, 3, 1, 2]);
   assertLessonStructure(lesson12, 7, 7, [1, 2, 3, 0, 1, 2, 3]);
   await verifyCases(lesson2Cases);
   await verifyCases(lesson3Cases);
@@ -181,6 +202,7 @@ export async function verifyWorld16CoroutineLessons(): Promise<void> {
   await verifyCases(lesson8Cases);
   await verifyCases(lesson9Cases);
   await verifyCases(lesson10Cases);
+  await verifyCases(lesson11Cases);
   await verifyCases(lesson12Cases);
   assert.notEqual('NaN', lesson3.debug!.expectedOutput);
   assert.notEqual('false', lesson4.writeRun!.expectedOutput);
@@ -201,4 +223,4 @@ export async function verifyWorld16CoroutineLessons(): Promise<void> {
   assert.notEqual('A,fallback\nscope failed', lesson12.debug!.expectedOutput);
 }
 
-export const world16CoroutineCaseCount = lesson2Cases.length + lesson3Cases.length + lesson4Cases.length + lesson5Cases.length + lesson6Cases.length + lesson7Cases.length + lesson8Cases.length + lesson9Cases.length + lesson10Cases.length + lesson12Cases.length;
+export const world16CoroutineCaseCount = lesson2Cases.length + lesson3Cases.length + lesson4Cases.length + lesson5Cases.length + lesson6Cases.length + lesson7Cases.length + lesson8Cases.length + lesson9Cases.length + lesson10Cases.length + lesson11Cases.length + lesson12Cases.length;

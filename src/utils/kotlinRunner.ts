@@ -18,6 +18,7 @@ import {
   KotlinJobKey,
   kotlinLaunch,
   kotlinRunBlocking,
+  kotlinGlobalScopeLaunch,
   prepareCoroutineSource,
 } from './kotlinCoroutines';
 import {
@@ -2822,6 +2823,15 @@ export async function compileAndRunKotlin(
       for (let i = a; i <= b; i++) out.push(i);
       return out;
     };
+  }
+  // World 16 Lesson 11: `GlobalScope.launch { ... }` is the anti-pattern
+  // the lesson teaches learners to avoid -- see `kotlinGlobalScopeLaunch`'s
+  // doc comment in kotlinCoroutines.ts for exactly what this does and does
+  // not simulate. Exposed as a real global the same way Exception/Sequence/
+  // StringBuilder already are, so generated code can reference the literal
+  // Kotlin name with no separate call-site renaming pass.
+  if (!(globalThis as any).GlobalScope) {
+    (globalThis as any).GlobalScope = { launch: kotlinGlobalScopeLaunch };
   }
   if (!(String.prototype as any).trimIndent) Object.defineProperty(String.prototype, 'trimIndent', { value: function () {
     const lines = String(this).split(/\r?\n/);

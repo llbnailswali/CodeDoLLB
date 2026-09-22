@@ -3,4 +3,4 @@ import { verifyWorld16Lesson1, lessonOneCases } from '../src/utils/world16Lesson
 
 await verifyWorld16Lesson1();
 await verifyWorld16CoroutineLessons();
-console.log(`World 16 coroutine audit passed: Lesson 1 (${lessonOneCases.length} cases) + Lessons 2-10/12 (${world16CoroutineCaseCount} cases).`);
+console.log(`World 16 coroutine audit passed: Lesson 1 (${lessonOneCases.length} cases) + Lessons 2-12 (${world16CoroutineCaseCount} cases).`);

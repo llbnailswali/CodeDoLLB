@@ -2153,3 +2153,55 @@ motivated by one lesson broke a different, already-shipped world here, exactly
 as it did for World 13's own constructor-parameter leak), and verify any
 disputed real-Kotlin behavior against an actual compiler rather than trusting
 either side's prose description of what Kotlin "should" do.
+
+## World 16 Lesson 11 (Coroutine Best Practices) was wrongly marked conceptual-only, and `GlobalScope` had zero engine support
+
+The capacity tracker and this world's own review file both classified Lesson
+11 as "Conceptual only -- program not needed, text and code examples are
+sufficient," and it was left out of the Lessons 2-12 engine/content
+verification pass entirely on that basis. That classification was false: the
+lesson's actual shipped data (`world16LessonsData.ts`) has always had real
+`writeRun` and `debug` stages, using `GlobalScope.launch`, `withContext`, and
+`CoroutineDispatcher` -- an ordinary practical topic, not a conceptual one.
+This was only caught because the user directly checked the lesson's rendered
+stages against the tracker, not because any audit step here had verified it --
+every other lesson's audit explicitly re-derives its stage list from the real
+data file first; this one skipped that step and trusted a pre-existing label
+instead.
+
+Running the existing `writeRun.solutionCode`/`debug.fixedCode` immediately
+failed with `GlobalScope is not defined` -- `kotlinRunner.ts`/
+`kotlinCoroutines.ts` had no `GlobalScope` support at all despite every other
+World 16 coroutine builder (`launch`, `async`, `runBlocking`, `coroutineScope`,
+`supervisorScope`) already existing. Fixed with `kotlinGlobalScopeLaunch` in
+`kotlinCoroutines.ts` -- a plain `KotlinJob` that is deliberately never
+registered with any scope's child set, so (matching real Kotlin's own
+`GlobalScope` anti-pattern) its action never runs during the program's
+synchronous execution window, and wired as a real `GlobalScope` global object
+(`{ launch: kotlinGlobalScopeLaunch }`) in `kotlinRunner.ts` alongside the
+other coroutine builtins.
+
+Once runnable, auditing the lesson's content surfaced the exact same
+reused-template duplication bug already found and fixed across every other
+lesson in this world: 8 Explore cards with only 4 unique scenarios, 8 Predict
+questions with only 4 unique scenarios, and a correct-answer-position pattern
+clustered on one option. Fixed the same way as every other lesson -- reduced
+to 4 distinct Explore cards and 5 distinct Predict questions covering
+GlobalScope's actual failure mode (detached, unowned work whose result is
+silently lost), an unrelated CPU-bound example to avoid a duplicate scenario,
+and the structured-concurrency fix via `coroutineScope`, with reshuffled
+answer positions. One bug was introduced and caught during this rewrite: a
+new Predict question's correct option was authored as a full explanatory
+sentence rather than the bare literal output value, which the
+`topicMeta: 'output'` convention requires for its exact-match grading (see
+that convention's own audit rule) -- caught by running the quality audit
+script and seeing `exact: false` despite the program itself running
+correctly, not by reading the content.
+
+**Rule, reinforced specifically for this case:** a lesson's own capacity-
+tracker/review-file classification is a claim about the data, not a
+substitute for reading the data -- before accepting "conceptual only, no
+program needed" (or any other stage-scope claim) for a lesson already in the
+catalog, open its actual `writeRun`/`debug` fields and confirm they are
+genuinely absent, the same way every numeric/behavioral claim on this page
+is checked by running code rather than trusting a label.
