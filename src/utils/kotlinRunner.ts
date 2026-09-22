@@ -2,6 +2,13 @@ import { prepareKotlinSource, scanKotlin, KotlinSourceError } from './kotlinSour
 import { KotlinList, KotlinPair, KotlinSequence } from './kotlinCollections';
 import { lowerKotlinFunctions, KotlinFunctionError } from './kotlinFunctions';
 import {
+  kotlinAsync,
+  kotlinDelay,
+  kotlinLaunch,
+  kotlinRunBlocking,
+  prepareLessonOneCoroutineSource,
+} from './kotlinCoroutines';
+import {
   Throwable, Exception, RuntimeException, IllegalStateException, IllegalArgumentException,
   NumberFormatException, IndexOutOfBoundsException, ArithmeticException, NoSuchElementException,
   UnsupportedOperationException, KotlinResult, kotlinRunCatching,
@@ -2209,6 +2216,11 @@ function transpileExtensionProperties(code: string): string {
  * Transpiles Kotlin code into an isolated JavaScript execution function.
  */
 export function transpileKotlinToJS(kotlinCode: string): string {
+  // World 16 Lesson 1 normalization must run before lowerKotlinFunctions:
+  // imports are not executable in the new-Function sandbox, and `suspend`
+  // is modifier metadata for this deliberately synchronous teaching subset.
+  // The helper's lexical scan preserves matching text in strings/comments.
+  kotlinCode = prepareLessonOneCoroutineSource(kotlinCode);
   // A custom property-delegate's `getValue`/`setValue` signature takes a
   // `KProperty<*>` parameter (real reflection metadata this simulator does
   // not model) -- the star-projected generic `<*>` breaks
@@ -2978,6 +2990,12 @@ export async function compileAndRunKotlin(
       // (kotlinRunner.ts exposes it on globalThis) rather than duplicating
       // its Result-wrapping logic here.
       const __kt_runCatching = (block) => runCatching(block);
+      // World 16 Lesson 1 uses a deterministic single-threaded child queue.
+      // These helpers do not imply real scheduling; see kotlinCoroutines.ts.
+      const __kt_runBlocking = (block) => kotlinRunBlocking(block);
+      const __kt_launch = (block) => kotlinLaunch(block);
+      const __kt_async = (block) => kotlinAsync(block);
+      const __kt_delay = (milliseconds) => kotlinDelay(milliseconds);
 
       ${transpiledJS}
 
@@ -3014,6 +3032,10 @@ export async function compileAndRunKotlin(
       '__kt_notNull',
       '__kt_equals',
       '__kt_isReifiedType',
+      'kotlinRunBlocking',
+      'kotlinLaunch',
+      'kotlinAsync',
+      'kotlinDelay',
       'Pair',
       '__kt_format',
       runnerScript
@@ -3036,6 +3058,10 @@ export async function compileAndRunKotlin(
           __kt_notNull,
           __kt_equals,
           __kt_isReifiedType,
+          kotlinRunBlocking,
+          kotlinLaunch,
+          kotlinAsync,
+          kotlinDelay,
           (a: any, b: any) => new KotlinPair(a, b),
           formatKotlinValue
         );

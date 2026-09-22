@@ -347,6 +347,14 @@ export function lowerKotlinFunctions(source: string): string {
     }
   }
   const builtins = new Map<string, Signature>([
+    // World 16 Lesson 1 only: synchronous/eager coroutine teaching helpers.
+    // Registering their zero-parameter blocks prevents the generic trailing-
+    // lambda fallback from inventing an `it` parameter and renames calls to
+    // the sandbox's __kt_-prefixed runtime functions.
+    ['runBlocking', { inline: false, params: [{ name: 'block', type: { name: 'Function', params: [], result: unknown } }], result: unknown }],
+    ['launch', { inline: false, params: [{ name: 'block', type: { name: 'Function', params: [], result: unknown } }], result: { name: 'Job' } }],
+    ['async', { inline: false, params: [{ name: 'block', type: { name: 'Function', params: [], result: unknown } }], result: { name: 'Deferred' } }],
+    ['delay', { inline: false, params: [{ name: 'milliseconds', type: { name: 'Int' } }], result: unit }],
     ['run', { inline: true, params: [{ name: 'block', type: { name: 'Function', params: [], result: unknown } }], result: unknown }],
     ['repeat', { inline: true, params: [{ name: 'times', type: { name: 'Int' } }, { name: 'action', type: { name: 'Function', params: [{ name: 'Int' }], result: unit } }], result: unit }],
     // `with(receiver) { block }` (World 13) is a plain top-level call, not a

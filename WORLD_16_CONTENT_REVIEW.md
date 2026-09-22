@@ -16,7 +16,7 @@ Capability evidence is collected by `node --import tsx scripts/audit-world16-qua
 
 Checklist completion means audited and saved, not Verified. Entries are saved individually before proceeding. `E#`/`P#` below mean the current lesson's full `-explore-#`/`-predict-#` IDs; W and D mean its singular `writeRun` and `debug` entries.
 
-- [x] 01 Coroutine Fundamentals & Coroutine Builders — Blocked by capability; changes required
+- [x] 01 Coroutine Fundamentals & Coroutine Builders — Verified (capability built and content revised; see update below)
 - [x] 02 launch & async — Blocked by capability; changes required
 - [x] 03 await & Suspending Functions — Blocked by capability; changes required
 - [ ] 04 suspend & Coroutine Context — Not audited
@@ -66,6 +66,17 @@ Execution: all **19** authored snippets attempted (Learn + 7E + 7P + solution/st
 - **01-M1 Medium, content:** Learn and all executable cards cram statements; long Learn explanation mixes objective/dependency/engine caveat in one paragraph; stage headers expose authoring process. Apply C4 and topic-specific paragraphs. Catalog count drift remains recorded for repair.
 
 Acceptance: C1/C2/C5 plus 01-H1–H3 prevent verification. No specialist exemption removes the required builder/suspension teaching.
+
+**Update — capability built, content revised, re-verified:** `src/utils/kotlinCoroutines.ts` now provides a documented, single-threaded coroutine simulation (`runBlocking`/`launch`/`Job.join()`/`Job.isCompleted`/`delay`), wired into `kotlinRunner.ts`/`kotlinFunctions.ts` (see the `WORLD_16_LESSON_1_COROUTINE_ENGINE_REPORT.md` and the new PITFALLS.md entry for the pass-ordering/scope decisions). Lesson content was then rewritten against that real capability:
+
+- Explore cut from 7 (3 unique) to 4, each genuinely distinct: joined ordering (`child\ndone`), un-joined ordering showing runBlocking still drains the scope (`done\nchild`), `Job.isCompleted` state before/after `join()` (`false\ntrue`), and `runBlocking` as the bridge into suspending code. Resolves 01-H1.
+- Predict cut from 7 (3 unique, all noun-phrase/generic answers, all correct-answer position "A") to 5: three exact-output questions tied 1:1 to the three executable Explore traces (with the "opposite ordering" as a genuine, motivated distractor rather than a generic "opposite behavior" filler), plus two conceptual/behavior questions (suspension-vs-blocking; why `runBlocking` is required for `launch`/`delay` to be legal at all). Correct-answer positions now vary (A/C/B/D/B) instead of uniformly A. Resolves 01-H2.
+- Debug rewritten to a `Job.join()`-ordering bug (reading a `status` var the child writes, without first calling `join()`) instead of the premature `async`/`Deferred` dependency — `async`/`await` are not taught until Lessons 2–3. Different domain/values from the Write & Run task per `LESSON_QUALITY_STANDARD.md` section 2. Resolves 01-H3.
+- Learn's key ideas rewritten from generic reused labels ("Purpose"/"Dependency"/"Ownership"/"Correctness boundary") to lesson-specific claims tied to the actual example, and the catalog's `questionsCount` (was 4, hardcoded, ignoring the real 7) corrected to match the real 5. Resolves 01-M1.
+
+Verification performed: `node --import tsx scripts/audit-world16-quality.ts world-16-coroutine-fundamentals-coroutine-builder` — 0 reference tasks blocked (`write.solution`→`7` exact, `debug.fixed`→`ready` exact), both negative/starter cases correctly still fail (`write.starter`→`0`≠`7`, `debug.broken`→`pending`≠`ready`), `uniqueExplore`/`uniquePredict` both 4 (no duplicate scenarios), correct-answer positions `[0,2,1,3,1]` (no longer all "A"). `src/utils/world16Lesson1Coroutine.test.ts` was refactored to import `code` directly from the shipped lesson object (was previously hand-copied, silently drifting from real content) — 12/12 cases pass. Full existing regression suite re-run with zero failures: `test:lambda-runner` (80 cases), `test:collection-runner`, `test:world11-content` through `test:world15-content`, `test:world12-runner`, `tsc --noEmit`.
+
+**Still open, not claimed resolved:** C2 (hardcoded-output assessment risk — a plain `println("7")` still passes Write & Run's grading; this needs a semantic/construct check, not just output matching, and is unchanged by this update) and C6 (capacity workbook still needs correcting for this lesson's row). Lessons 02–12 remain at their prior recorded states below; this update applies to Lesson 01 only.
 
 ### 02 launch & async
 

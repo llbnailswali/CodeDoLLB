@@ -1877,3 +1877,26 @@ catching by executing content rather than reading it. Nine separate
 snippets across World 15 had this; fixed by prepending a minimal, real
 definition to each (matching the specific exception TYPE its surrounding
 catch clause(s) actually expect, not just making it parse).
+
+## World 16 Lesson 1 — eager `launch` made a missing `join` pass
+
+**Symptom:** A first synchronous coroutine approximation invoked every
+`launch` block immediately. The Write & Run starter, which intentionally omits
+`job.join()`, therefore printed `7` -- the same output as the correct solution.
+The engine appeared to support the lesson while making its required operation
+unobservable.
+
+**Cause:** Treating `launch` as an ordinary immediate function call preserves
+the happy-path solution output but destroys the semantic distinction the task
+is designed to teach.
+
+**Fix:** Lesson 1 uses a deterministic, single-threaded child queue.
+`launch`/`async` register pending jobs in the current `runBlocking` scope;
+`join`/`await` execute the requested job; `runBlocking` drains unwaited children
+before returning. `delay` remains an explicit no-op. This is not real coroutine
+scheduling, but the starter prints `0`, the joined solution prints `7`, and the
+broken Deferred example prints the object rather than `13`.
+
+**Standing rule:** A simulator implementation must preserve the observable
+difference between broken and fixed lesson code, not merely reproduce the
+fixed example's expected output.

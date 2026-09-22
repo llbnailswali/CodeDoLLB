@@ -2086,7 +2086,7 @@ export const CODEDO_MASTER_WORLDS: MasterWorldEntry[] = [
         "durationMinutes": 3,
         "xpReward": 20,
         "description": "Start and reason about coroutine builders and their owned work.",
-        "questionsCount": 4, "fiveStageLessonKey": "world-16-coroutine-fundamentals-coroutine-builder"
+        "questionsCount": 5, "fiveStageLessonKey": "world-16-coroutine-fundamentals-coroutine-builder"
       },
       {
         "id": "world-16-launch-async",
