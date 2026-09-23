@@ -62,7 +62,12 @@ interface VarDeclaration {
   isVal: boolean;
   type?: string;
   line: number;
+  /** True for `val xs = mutableListOf(...)` (or MutableSet/MutableMap/etc.) -- `xs += x` there is legal Kotlin (resolves to the collection's own `plusAssign`, not a reassignment of `xs` itself), unlike every other `val`. */
+  isMutableCollectionRef?: boolean;
 }
+
+const MUTABLE_COLLECTION_INITIALIZER = /^(?:mutableListOf|mutableSetOf|mutableMapOf|ArrayList|HashSet|HashMap|LinkedHashSet|LinkedHashMap)\s*[(<]/;
+const MUTABLE_COLLECTION_TYPE = /^Mutable(?:List|Set|Map)\s*</;
 
 /**
  * World 15: Kotlin classes are final (non-inheritable) by default -- only
@@ -237,22 +242,42 @@ function staticValidateKotlin(code: string): KotlinDiagnostic | null {
         }
       }
 
+      const isMutableCollectionRef =
+        (!!type && MUTABLE_COLLECTION_TYPE.test(type)) || (!!initialExpr && MUTABLE_COLLECTION_INITIALIZER.test(initialExpr));
       declaredVars.set(varName, {
         name: varName,
         isVal,
         type,
         line: i + 1,
+        isMutableCollectionRef,
       });
       continue;
     }
 
-    // Check reassignments to val: e.g. player = "Bob" or coins += 15
-    const assignMatch = trimmed.match(/^([a-zA-Z0-9_]+)\s*(\+=|-=|\*=|(?:\/=)|=|\+\+|--)/);
+    // Check reassignments to val: e.g. player = "Bob" or coins += 15.
+    // `=(?!=)` (not `=`) is required: a bare `=` alternative also matches the
+    // FIRST `=` of a `==` comparison, so a line starting with a comparison
+    // like `x == 3` was wrongly read as an assignment attempt `x = ...` and
+    // rejected as a val-reassignment error -- confirmed as a real, previously
+    // dormant bug: `with(receiver) { x == 3 && y == 4 }` runs fine when the
+    // comparison stays on the SAME line as `with(...) {`, but throws this
+    // false positive the moment it's reformatted onto its own line, which is
+    // exactly what happens for a multi-statement/multi-line block body.
+    const assignMatch = trimmed.match(/^([a-zA-Z0-9_]+)\s*(\+=|-=|\*=|(?:\/=)|=(?!=)|\+\+|--)/);
     if (assignMatch) {
       const varName = assignMatch[1];
       const op = assignMatch[2];
       const decl = declaredVars.get(varName);
-      if (decl && decl.isVal) {
+      // `xs += x` on `val xs = mutableListOf(...)` is legal Kotlin: `+=`/`-=`
+      // resolve to the collection's own `plusAssign`/`minusAssign` operator,
+      // which mutates the collection in place rather than reassigning `xs`
+      // itself -- only `=`/`++`/`--` (or `+=`/`-=` on anything else) really
+      // reassign the val reference. Confirmed as a real, previously dormant
+      // false positive the same way as the `==` case above: `xs += x` buried
+      // mid-line (`fun add(x: String) { xs += x }`) was invisible to this
+      // line-start-anchored check until reformatted onto its own line.
+      const isLegalCompoundOnMutableCollection = decl?.isMutableCollectionRef && (op === '+=' || op === '-=');
+      if (decl && decl.isVal && !isLegalCompoundOnMutableCollection) {
         return {
           message: `Val cannot be reassigned: '${varName}' is declared with 'val'`,
           line: i + 1,

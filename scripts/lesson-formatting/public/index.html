@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>CodeDo — Lesson Formatting Tool</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #f4f5f7; color: #1a1a1a; }
+  header { background: #1e2530; color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header input { padding: 8px 10px; border-radius: 6px; border: 1px solid #444; font-size: 14px; width: 140px; text-transform: uppercase; }
+  header button { padding: 8px 16px; border-radius: 6px; border: none; background: #3b82f6; color: #fff; font-size: 14px; cursor: pointer; }
+  header button:disabled { background: #6b7280; cursor: not-allowed; }
+  header .status { font-size: 13px; color: #cbd5e1; }
+  main { padding: 20px 24px 100px; max-width: 1200px; margin: 0 auto; }
+  .error { background: #fee2e2; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; white-space: pre-wrap; }
+  .field { background: #fff; border-radius: 10px; padding: 16px 20px; margin-bottom: 18px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+  .field h3 { margin: 0 0 4px; font-size: 15px; }
+  .field .key { color: #6b7280; font-size: 12px; margin-bottom: 12px; }
+  .mode-col { border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
+  .mode-col .mode-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-size: 13px; font-weight: 600; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .badge.ok { background: #dcfce7; color: #166534; }
+  .badge.no-change { background: #e5e7eb; color: #4b5563; }
+  .badge.mismatch { background: #fee2e2; color: #991b1b; }
+  .badge.skipped { background: #fef3c7; color: #92400e; }
+  .diff { display: grid; grid-template-columns: 1fr 1fr; font-family: ui-monospace, "SF Mono", monospace; font-size: 12.5px; }
+  .diff pre { margin: 0; padding: 10px 12px; white-space: pre-wrap; word-break: break-word; overflow-x: auto; max-height: 340px; }
+  .diff .before { background: #fff7f7; border-right: 1px solid #e5e7eb; }
+  .diff .after { background: #f7fff9; }
+  .diff .same { background: #fafafa; grid-column: 1 / -1; color: #6b7280; font-style: italic; padding: 10px 12px; }
+  .diff-labels { display: grid; grid-template-columns: 1fr 1fr; font-size: 11px; color: #6b7280; padding: 6px 12px 0; }
+  .choice { display: flex; gap: 16px; padding: 10px 12px; font-size: 13px; }
+  .choice label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  .choice input:disabled + span { color: #9ca3af; }
+  .save-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #1e2530; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 -2px 8px rgba(0,0,0,0.15); }
+  .save-bar button { padding: 10px 22px; border-radius: 6px; border: none; background: #16a34a; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .save-bar button:disabled { background: #6b7280; cursor: not-allowed; }
+  .save-bar .summary { color: #cbd5e1; font-size: 13px; }
+  .empty { color: #6b7280; text-align: center; padding: 60px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>CodeDo Lesson Formatting Tool</h1>
+  <input id="lessonCode" placeholder="W16L01" maxlength="6" />
+  <button id="previewBtn">Preview</button>
+  <span class="status" id="status"></span>
+</header>
+<main id="main">
+  <div class="empty">Enter a lesson code (e.g. <strong>W16L01</strong>) and click Preview.</div>
+</main>
+<div class="save-bar" style="display:none" id="saveBar">
+  <span class="summary" id="saveSummary">0 fields selected</span>
+  <button id="saveBtn" disabled>Save Selected</button>
+</div>
+<script>
+let currentRef = null;
+let currentFields = [];
+
+const main = document.getElementById('main');
+const status = document.getElementById('status');
+const saveBar = document.getElementById('saveBar');
+const saveBtn = document.getElementById('saveBtn');
+const saveSummary = document.getElementById('saveSummary');
+
+function badge(cls, text) { return `<span class="badge ${cls}">${text}</span>`; }
+
+function verifyBadge(verify) {
+  if (verify.skipped) return badge('skipped', 'not standalone-runnable — verification skipped');
+  return verify.matches ? badge('ok', 'output verified identical') : badge('mismatch', 'OUTPUT MISMATCH — do not save');
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+}
+
+function canUse(result) {
+  return result.changed && (!result.verify || result.verify.matches);
+}
+
+function renderField(f) {
+  const r = f.result;
+  const changeBadge = r.changed ? badge('ok', 'reformatted') : badge('no-change', 'no change');
+  const vBadge = r.changed ? verifyBadge(r.verify) : '';
+  const body = r.changed
+    ? `<div class="diff-labels"><span>Before</span><span>After</span></div>
+       <div class="diff">
+         <div class="before"><pre>${escapeHtml(r.before)}</pre></div>
+         <div class="after"><pre>${escapeHtml(r.after)}</pre></div>
+       </div>`
+    : `<div class="diff"><div class="same">Already properly formatted — nothing to change.</div></div>`;
+  const usable = canUse(r);
+  return `<div class="field" data-key="${f.key}">
+    <h3>${f.screenName}</h3>
+    <div class="key">${f.key}</div>
+    <div class="mode-col">
+      <div class="mode-head"><span>Formatting</span><span>${changeBadge} ${vBadge}</span></div>
+      ${body}
+    </div>
+    <div class="choice">
+      <label><input type="radio" name="choice-${f.key}" value="keep" checked> <span>Keep original</span></label>
+      <label><input type="radio" name="choice-${f.key}" value="use" ${usable ? '' : 'disabled'}> <span>Use formatted</span></label>
+    </div>
+  </div>`;
+}
+
+function render() {
+  if (!currentFields.length) {
+    main.innerHTML = '<div class="empty">No formattable code fields found on this lesson.</div>';
+    return;
+  }
+  main.innerHTML = currentFields.map(renderField).join('');
+  main.querySelectorAll('input[type=radio]').forEach(el => el.addEventListener('change', updateSaveBar));
+  updateSaveBar();
+}
+
+function currentSelections() {
+  return currentFields
+    .map(f => {
+      const checked = document.querySelector(`input[name="choice-${f.key}"]:checked`);
+      return checked && checked.value === 'use' ? f.key : null;
+    })
+    .filter(Boolean);
+}
+
+function updateSaveBar() {
+  const selections = currentSelections();
+  saveBar.style.display = currentFields.length ? 'flex' : 'none';
+  saveSummary.textContent = `${selections.length} field(s) selected for save`;
+  saveBtn.disabled = selections.length === 0;
+}
+
+document.getElementById('previewBtn').addEventListener('click', async () => {
+  const code = document.getElementById('lessonCode').value.trim().toUpperCase();
+  if (!code) return;
+  status.textContent = 'Running formatter + verifying against the real engine…';
+  main.innerHTML = '';
+  saveBar.style.display = 'none';
+  try {
+    const res = await fetch(`/api/preview?lesson=${encodeURIComponent(code)}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Preview failed');
+    currentRef = data.ref;
+    currentFields = data.fields;
+    status.textContent = `Loaded ${currentRef.code} (${currentRef.id}) — ${currentFields.length} field(s)`;
+    render();
+  } catch (err) {
+    main.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+    status.textContent = '';
+  }
+});
+
+saveBtn.addEventListener('click', async () => {
+  const keys = currentSelections();
+  if (!keys.length || !currentRef) return;
+  saveBtn.disabled = true;
+  status.textContent = 'Saving…';
+  try {
+    const res = await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lesson: currentRef.code, keys }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Save failed');
+    status.textContent = `Saved ${data.savedFields} field(s) to ${currentRef.id}. Reloading…`;
+    document.getElementById('previewBtn').click();
+  } catch (err) {
+    main.insertAdjacentHTML('afterbegin', `<div class="error">${escapeHtml(err.message)}</div>`);
+    status.textContent = '';
+    saveBtn.disabled = false;
+  }
+});
+
+document.getElementById('lessonCode').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('previewBtn').click();
+});
+</script>
+</body>
+</html>

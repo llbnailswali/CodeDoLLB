@@ -2205,3 +2205,139 @@ program needed" (or any other stage-scope claim) for a lesson already in the
 catalog, open its actual `writeRun`/`debug` fields and confirm they are
 genuinely absent, the same way every numeric/behavioral claim on this page
 is checked by running code rather than trusting a label.
+
+## A genuinely blank line in a `codeSnippet`/`code` array silently collapsed to zero height, invisible in the rendered app
+
+Found via the new lesson-formatting dashboard (`scripts/lesson-formatting/`,
+built to structurally reformat lesson code, including inserting a blank line
+after a leading `import` block): after saving a formatted `learn.codeSnippet`
+containing a real blank array entry (`""`) between the imports and the rest
+of the code, the data file was confirmed correct (`git diff` showed the `""`
+entry present), but the app's Learn stage rendered NO visible gap at all --
+imports and the following code appeared glued together with no blank line,
+even though the underlying data was exactly right.
+
+Root cause in `src/utils/codeHighlighter.tsx`: `renderCodeFragment('')`
+(called for every line's non-comment segment) has an early return,
+`if (fragment === '') return [];` -- for a genuinely empty line, this
+produces ZERO React child nodes. `renderKotlinCodeLines`'s per-line
+`<React.Fragment>` for that line therefore has no children at all, and every
+call site wraps each line in `<div className="whitespace-pre">{node}</div>`
+(`Learn.tsx`, `Explore.tsx`, `Predict.tsx`, etc.) -- a `<div>` with truly no
+content, not even an empty text node, collapses to zero height in the
+browser, since there's nothing to establish a line box. The blank line was
+present in the DOM's array of rendered lines (the `.map()` still iterated
+over it, so `key`s/ordering were unaffected) but occupied no visible space.
+
+This is the exact same failure class as every "character with no matching
+tokenizer alternative silently vanishes" entry already on this page (the
+Char-literal, triple-quote-string, and numeric-literal-suffix bugs above) --
+just one level up, at the per-LINE rendering step instead of the per-
+CHARACTER tokenizing step, and undiscovered until now because apparently no
+lesson content before this had ever put a blank `""` entry inside a `Learn`
+stage's `codeSnippet` specifically (Explore/Predict/Debug prose fields
+already had a separate, already-fixed version of this exact issue -- see the
+"Learn's subtitle/explanation/keyTakeaway... silently dropped every `\n`"
+entry above, which is the PROSE-field version of the same root problem: a
+blank line/paragraph break existing in the data but not visibly rendering).
+
+Fixed by special-casing a genuinely empty `line` at the top of
+`renderKotlinCodeLines`'s `.map()`, before any comment/token processing:
+render a single non-breaking space (`' '`) instead of delegating to the
+normal (empty-returning) path. A non-breaking space is invisible but still
+establishes the line's height, so the wrapping `<div>` no longer collapses.
+`renderKotlinCodeLine` (singular) delegates to `renderKotlinCodeLines`
+internally, so it was fixed by the same change with no separate edit needed.
+
+**Rule, reinforced:** verifying that a saved value is CORRECT IN THE DATA
+FILE is not the same as verifying it RENDERS CORRECTLY IN THE APP -- this
+bug would have been invisible to `compileAndRunKotlin`-based
+execution/output verification (blank lines don't affect Kotlin program
+output) and invisible to a `git diff` review of the saved file (the data was
+exactly right). It was only caught by someone actually looking at the
+rendered Learn stage in the running app and noticing the visual gap was
+missing. Any future change that adds or preserves blank lines in lesson
+content -- including a tool like the formatting dashboard -- needs a render
+check, not just a data-correctness check, before being trusted.
+
+## Batch-formatting every lesson across all 17 worlds surfaced two dormant `staticValidateKotlin` false positives -- both invisible until code got reformatted onto more lines
+
+The lesson-formatting dashboard's non-interactive batch mode
+(`scripts/lesson-formatting/batchFormatAll.ts --apply`) was run across every
+world's lesson data to apply the same structural reformatting (indentation,
+crammed-line splitting, import spacing) the dashboard does interactively.
+Before trusting the result, every changed field was re-verified two ways:
+(1) an exact token-sequence comparison (before vs. after, `;` excluded since
+dropping it for a real line break is the tool's own intended behavior) to
+catch ANY content alteration, even one invisible to program output (this is
+what caught the block-comment/raw-string corruption bug documented in the
+"multi-line block comments" fix within `kotlinFormatter.ts` itself, fixed
+during this same effort -- see that file's own comments for the full
+per-mode design); and (2) real execution via `compileAndRunKotlin`, with
+every fragment wrapped in `fun main() { ... }` the same way every existing
+`scripts/test-world*-content.ts` audit does (an earlier version of the
+batch script's verification skipped this wrapping for any field without its
+own explicit `fun main()` -- i.e. most Explore/Predict content -- which let
+a real regression through undetected on the first `--apply` attempt).
+
+Both false positives share the exact same shape: `staticValidateKotlin`'s
+reassignment/comparison checks are regexes anchored to the START of each
+TRIMMED LINE, so code that happens to be buried mid-line was invisible to
+them -- until this batch reformatting (or any future hand-authored edit)
+moved that same code onto its own line, at which point the checks fired
+incorrectly. Neither is a bug IN the reformatting tool itself (confirmed:
+the token-sequence check passed for both cases -- the content was correctly
+preserved); both are pre-existing gaps in the engine's own static validator
+that this reformatting was simply the first thing to ever exercise.
+
+1. **A bare `=` alternative in the reassignment regex also matches the
+   FIRST `=` of a `==` comparison.** `with(Point(3, 4)) { x == 3 && y == 4
+   }` ran correctly on one line, but the moment the comparison moved onto
+   its own line (`x == 3 && y == 4`), `^([a-zA-Z0-9_]+)\s*(...|=|...)`
+   matched `x =` as an attempted reassignment of the receiver-scoped `x`,
+   and rejected valid code with `Val cannot be reassigned: 'x' is declared
+   with 'val'`. Fixed by requiring `=(?!=)` instead of a bare `=` in that
+   alternation, so a comparison's `==` is never mistaken for assignment's
+   `=`.
+
+2. **`xs += x` on a `val`-declared `MutableList` (or `MutableSet`/
+   `MutableMap`) is legal Kotlin -- `+=`/`-=` there resolve to the
+   collection's own `plusAssign`/`minusAssign` operator, which mutates the
+   collection in place rather than reassigning the `val` reference --
+   but the validator had no concept of this distinction at all.**
+   `fun add(x: String) { xs += x }` (one line) ran fine; splitting that
+   block's body onto multiple lines put `xs += x` at a line's start for the
+   first time, and the SAME reassignment check flagged it as illegal.
+   Fixed by tracking, alongside each declared variable, whether its
+   initializer matches a known mutable-collection factory
+   (`mutableListOf`/`mutableSetOf`/`mutableMapOf`/`ArrayList`/`HashSet`/
+   `HashMap`/etc.) or an explicit `MutableList<...>`/`MutableSet<...>`/
+   `MutableMap<...>` type annotation, and exempting only `+=`/`-=` (never
+   bare `=`/`++`/`--`, which still always illegally reassign the val
+   reference regardless of the value's own type) on such a variable.
+
+**Rule, reinforced specifically for line-anchored regex validators:** a
+check anchored to "the start of a trimmed line" is only ever exercised by
+however code HAPPENS to be laid out today -- it is not a reliable proxy for
+"the start of a statement." Any future change that reflows code onto
+different lines (a formatter, a refactor, or simply a different author's
+style) can silently move previously-untested code into or out of such a
+check's blind spot. The fix in both cases was to make the check understand
+the actual Kotlin semantics involved (operator disambiguation, operator-
+overload-on-mutable-value semantics) rather than to special-case the
+specific snippets that happened to surface the gap.
+
+**Final state:** every one of the 852 fields actually changed and saved by
+the batch run (out of 2,937 fields scanned across 196 lessons in 17 worlds)
+was re-verified against these two fixes with zero remaining mismatches on
+both the token-sequence and execution-equivalence checks. 220 changed
+fields across Worlds 4 (2), 9 (11), and 10 (9) were left completely
+untouched, on purpose: World 4's two are `writeRun.initialCode` values
+authored as backtick template-literal strings rather than plain string
+literals, and Worlds 9 and 10 build every lesson through a local factory
+function (the same pattern as World 5's `makeLesson`, documented in this
+tool's own `batchFormatAll.ts` header) with no object literal in the source
+matching a lesson's `id` directly -- the AST-based save step correctly
+fails closed (a clear error, not a corrupted file) for shapes it doesn't
+recognize, rather than guessing. Worlds 1, 2, 3, 5, 6, 7 needed zero
+changes: their content was already in the shape this formatter produces.

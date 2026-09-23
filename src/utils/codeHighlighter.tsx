@@ -296,6 +296,15 @@ export function renderKotlinCodeLines(lines: string[], options: RenderKotlinCode
   let insideBlockComment = false;
 
   return lines.map((line, lineIdx) => {
+    // A genuinely blank line renders zero React nodes below (renderCodeFragment('')
+    // returns []), which leaves the caller's wrapping <div> with no content at
+    // all -- browsers collapse an empty block to zero height, so the intended
+    // blank line silently disappears instead of showing as visible whitespace.
+    // A non-breaking space keeps the line's height without being visible text.
+    if (line === '') {
+      return <React.Fragment key={lineIdx}>{' '}</React.Fragment>;
+    }
+
     // Preserve the existing whole-line `//` comment behavior (renders the
     // full original line, including its leading whitespace, in one span)
     // when we're not already inside a block comment.
