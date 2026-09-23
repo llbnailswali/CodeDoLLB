@@ -9,6 +9,10 @@ interface DetailedTutorialViewProps {
   isDark: boolean;
   onBack: () => void;
   onToggleTheme?: () => void;
+  /** TEMP (old-vs-new content comparison): remove these three once a final version is chosen. */
+  oldVersionAvailable?: boolean;
+  isShowingOldVersion?: boolean;
+  onToggleOldVersion?: () => void;
 }
 
 /**
@@ -51,6 +55,9 @@ export const DetailedTutorialView: React.FC<DetailedTutorialViewProps> = ({
   isDark,
   onBack,
   onToggleTheme,
+  oldVersionAvailable,
+  isShowingOldVersion,
+  onToggleOldVersion,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState<number>(0);
@@ -128,6 +135,30 @@ export const DetailedTutorialView: React.FC<DetailedTutorialViewProps> = ({
 
       {/* Floating Controls Bar at Top Right */}
       <div className="fixed top-3 right-3 z-50 flex items-center gap-2">
+        {/* TEMP: Old vs New content comparison toggle -- remove once a final version is chosen */}
+        {oldVersionAvailable && onToggleOldVersion && (
+          <button
+            type="button"
+            id="detailed-tutorial-old-version-btn"
+            onClick={() => {
+              soundFX.playClick();
+              onToggleOldVersion();
+            }}
+            className={`h-9 px-3 rounded-full flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-lg backdrop-blur-md font-outfit text-xs font-bold border ${
+              isShowingOldVersion
+                ? 'bg-amber-500 text-white border-amber-300 shadow-amber-500/30'
+                : isDark
+                ? 'bg-slate-900/85 hover:bg-slate-800 text-amber-400 border-amber-500/40 shadow-black/40'
+                : 'bg-white/95 hover:bg-slate-100 text-amber-600 border-amber-400/60 shadow-slate-400/20'
+            }`}
+            title={isShowingOldVersion ? 'Viewing the old version -- click to show the new version' : 'Temp: view the old version of this tutorial for comparison'}
+            aria-label="Toggle old tutorial version"
+          >
+            <span className="material-symbols-outlined text-[16px]">history</span>
+            <span className="text-[11px] tracking-tight">{isShowingOldVersion ? 'Old Version' : 'View Old'}</span>
+          </button>
+        )}
+
         {/* Font Size Reading Toggle (Comfortable vs Standard) */}
         <button
           type="button"

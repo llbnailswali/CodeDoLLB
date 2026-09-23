@@ -99,224 +99,232 @@ export const DETAILED_TUTORIALS: Record<string, DetailedTutorialData> = {
     worldNumber: 1,
     lessonNumber: 1,
     title: 'What is Kotlin?',
-    subtitle: 'The Modern, Safe & Multiplatform Language for Android, Backend, and Beyond',
-    badge: 'WORLD 1 · LESSON 1 DEEP DIVE',
-    readTime: '4 min read',
+    subtitle: 'Meet Kotlin, discover what it can build, and understand how your first program runs.',
+    badge: 'BEGINNER',
+    readTime: '6 min',
     overviewSummary:
-      'Kotlin is a concise, expressive, and type-safe programming language developed by JetBrains. Google named it an official Android language in 2017 and announced "Kotlin-First" in 2019. It runs on the Java Virtual Machine (JVM), compiles to native code via Kotlin Multiplatform (KMP), and delivers 100% interoperability with Java.',
+      'Kotlin is a modern, general-purpose programming language used for Android apps, server applications, and multiplatform development. Discover its design goals, basic program structure, supported platforms, and how Kotlin code becomes a running program.',
+
     toc: [
-      { id: 'origin', label: 'Origins & Vision' },
-      { id: 'core-pillars', label: 'Four Pillars' },
-      { id: 'how-it-runs', label: 'Compilation & JVM' },
-      { id: 'kotlin-vs-java', label: 'Kotlin vs Java' },
-      { id: 'ecosystem', label: 'Where It Runs' },
-      { id: 'gotchas', label: 'Common Myths' },
-      { id: 'cheatsheet', label: 'Quick Reference' },
-      { id: 'quiz', label: 'Knowledge Check' }
+      { id: 'kotlin-and-its-uses', label: 'Kotlin and Its Uses' },
+      { id: 'kotlin-design-goals', label: 'Kotlin Design Goals' },
+      { id: 'source-files-and-first-program', label: 'Source Files and First Program' },
+      { id: 'platforms-and-java-interop', label: 'Platforms and Java Interop (Intermediate)' },
+      { id: 'expressions-vs-statements', label: 'Expressions vs Statements (Intermediate)' },
+      { id: 'gotchas', label: 'Gotchas' },
+      { id: 'cheatsheet', label: 'Cheatsheet' },
+      { id: 'quiz', label: 'Quiz' }
     ],
+
     sections: [
       {
-        id: 'origin',
-        title: 'The Origin Story & Why JetBrains Built Kotlin',
-        icon: 'history_edu',
-        badge: 'BACKGROUND',
+        id: 'kotlin-and-its-uses',
+        title: 'Kotlin and Its Uses',
+        icon: 'code',
+        badge: 'GETTING STARTED',
         paragraphs: [
-          'In 2010, JetBrains (the Prague-based developer tools company behind IntelliJ IDEA, WebStorm, and Android Studio) hit a major productivity wall with Java. Java was rock-solid and mature, but required staggering amounts of repetitive boilerplate code. Modern language features like type inference, lambdas, and null-safety were either absent or clumsy.',
-          'JetBrains surveyed existing JVM alternatives like Scala and Groovy, but found Scala\'s compilation times too slow and Groovy lacked the strict compile-time type safety required for massive enterprise codebases. So in 2011, they unveiled Project Kotlin — named after Kotlin Island near Saint Petersburg.',
-          'Their core goal was pragmatic: create an industrial-strength, general-purpose language with lightning-fast compilation, uncompromising type safety, and seamless 100% two-way interoperability with Java.'
+          'Kotlin is a modern, general-purpose programming language developed by JetBrains. You use it to write instructions that a computer or mobile device can execute. Kotlin is statically typed, meaning that the compiler checks the types of values used in your program.',
+          'Kotlin is widely used for Android application development. It is also suitable for backend services, shared multiplatform code, and scripting. You can use the same language for several kinds of software rather than learning a completely different language for every platform.',
+          'For example, a shopping application might use Kotlin for its Android interface and Kotlin on a server to process orders. Kotlin Multiplatform can also share suitable application logic across Android, iOS, and other supported targets.'
+        ],
+        bulletPoints: [
+          { title: 'Android', desc: 'Build native Android applications, including their interfaces and application logic.' },
+          { title: 'Backend', desc: 'Create server-side applications, APIs, and services.' },
+          { title: 'Multiplatform', desc: 'Share suitable code across supported platforms.' },
+          { title: 'Scripting', desc: 'Automate tasks using Kotlin scripts and supported tooling.' }
         ],
         callout: {
           type: 'key',
-          title: 'Google\'s Historic Milestone',
-          message:
-            'At Google I/O in May 2017, Google made Kotlin an officially supported language on Android. In 2019, Google went further, announcing that Android development is Kotlin-First. Today, over 95% of the top 1,000 Android apps use Kotlin code.'
+          title: 'Remember',
+          message: 'Kotlin is a programming language, not just an Android development tool.'
         }
       },
+
       {
-        id: 'core-pillars',
-        title: 'The Four Core Pillars of Kotlin',
-        icon: 'diamond',
-        badge: 'LANGUAGE DESIGN',
+        id: 'kotlin-design-goals',
+        title: 'Kotlin Design Goals',
+        icon: 'verified',
+        badge: 'CORE CONCEPT',
         paragraphs: [
-          'Kotlin was engineered around four guiding philosophical tenets that distinguish it from legacy languages:'
+          'Kotlin was designed to make everyday programming concise, safer, interoperable, and practical. These goals influence how Kotlin programs are written.',
+          'Conciseness means expressing an idea without unnecessary code. Safety means the language helps detect certain mistakes before a program runs. Interoperability means Kotlin can work with existing software, particularly Java on the JVM. Pragmatism means providing features that solve real development problems.'
         ],
-        bulletPoints: [
-          {
-            title: '1. Conciseness & Signal-to-Noise',
-            desc: 'Kotlin dramatically cuts boilerplate. No ceremonial public class wrappers for simple scripts, no manual getters/setters, and smart type inference lets the compiler figure out types so your code stays lean and readable.'
-          },
-          {
-            title: '2. Safe by Default (Solving the Billion-Dollar Mistake)',
-            desc: 'Sir Tony Hoare called the invention of the null pointer his "billion-dollar mistake". Kotlin eliminates NullPointerExceptions at compile time: variables cannot hold null unless you explicitly declare them with a ? (e.g. String vs String?).'
-          },
-          {
-            title: '3. 100% Java Interoperability',
-            desc: 'Kotlin and Java live in perfect harmony. You can call existing Java libraries (like Guava, Spring, Jackson, Android SDK) directly from Kotlin, and call Kotlin code from Java without wrappers or bridges.'
-          },
-          {
-            title: '4. Tool-Friendly & Pragmatic',
-            desc: 'Because JetBrains builds IDEs, Kotlin was co-designed alongside world-class refactoring tools, auto-complete, instant linting, and interactive scratchpads.'
-          }
-        ]
-      },
-      {
-        id: 'how-it-runs',
-        title: 'How Kotlin Code Runs Under the Hood',
-        icon: 'memory',
-        badge: 'COMPILATION PIPELINE',
-        paragraphs: [
-          'When you write Kotlin code in a .kt file, you are not interpreting plain text. The Kotlin Compiler (kotlinc) compiles your source code into Java bytecode (.class files) — the exact same format generated by javac!',
-          'This means Kotlin applications run on any standard Java Virtual Machine (JVM 8, 11, 17, 21+), whether in server environments (Linux/Docker) or Android\'s ART (Android Runtime).'
-        ],
-        codeSnippet: {
-          title: 'A Minimal Kotlin Program',
-          language: 'Kotlin',
-          code: [
-            'fun main() {',
-            '    val language = "Kotlin"',
-            '    println("Welcome to $language!")',
+        comparison: {
+          leftTitle: 'Java',
+          leftCode: [
+            'public class Main {',
+            '    public static void main(String[] args) {',
+            '        System.out.println("Hello!");',
+            '    }',
             '}'
           ],
-          output: 'Welcome to Kotlin!',
-          explanation: 'This entire program is valid top-level Kotlin. No class definition is required!'
+          leftTag: 'MORE BOILERPLATE',
+          rightTitle: 'Kotlin',
+          rightCode: [
+            'fun main() {',
+            '    println("Hello!")',
+            '}'
+          ],
+          rightTag: 'CONCISE',
+          verdict: 'Both programs print the same message. Kotlin requires less ceremony for this simple example.'
         },
         callout: {
           type: 'info',
-          title: 'Did you know? Kotlin Multiplatform (KMP)',
-          message:
-            'Kotlin isn\'t limited to the JVM! Through Kotlin/Native, it compiles via LLVM to standalone native binaries for iOS, macOS, Windows, and Linux. Through Kotlin/Wasm and Kotlin/JS, it runs directly in modern web browsers.'
+          title: 'Safety Is Not Automatic',
+          message: 'Kotlin helps prevent certain errors, but developers must still write and test their programs carefully.'
         }
       },
+
       {
-        id: 'kotlin-vs-java',
-        title: 'Kotlin vs. Java: The Boilerplate Reduction',
-        icon: 'compare_arrows',
-        badge: 'SIDE-BY-SIDE',
+        id: 'source-files-and-first-program',
+        title: 'Source Files and First Program',
+        icon: 'terminal',
+        badge: 'FIRST PROGRAM',
         paragraphs: [
-          'Here is a direct real-world demonstration of how Kotlin reduces ceremonial code while retaining 100% runtime performance:'
+          'Kotlin source code is normally stored in files ending with .kt. For example, Main.kt can contain the starting point of a simple application.',
+          'The function fun main() is the entry point of a basic Kotlin program. When the program starts, the instructions inside its braces are executed. The println() function displays a value in the console and moves to the next line.',
+          'Your source code does not run directly. The Kotlin compiler translates a .kt file into a form the target platform can execute — for example, JVM bytecode on Kotlin/JVM — and that translated form is what actually runs.',
+          'Kotlin programs can use the Kotlin standard library without any special setup. It provides ready-made functionality such as println() for output, common String and collection operations, and basic math functions, so you do not have to write these yourself.',
+          'A few vocabulary words are useful when reading Kotlin code: a keyword is a reserved word with special meaning (like fun or val), an identifier is a name you choose (like main or greet), a literal is a fixed value written directly in code (like "Hello" or 42), and a function call is an instruction that runs a function by writing its name followed by parentheses (like println("Hello")).'
         ],
-        comparison: {
-          leftTitle: 'Java (45+ lines for a simple data model)',
-          leftTag: 'JAVA',
-          leftCode: [
-            'public final class User {',
-            '    private final int id;',
-            '    private final String name;',
-            '    public User(int id, String name) {',
-            '        this.id = id;',
-            '        this.name = name;',
-            '    }',
-            '    public int getId() { return id; }',
-            '    public String getName() { return name; }',
-            '    @Override public boolean equals(Object o) { ... }',
-            '    @Override public int hashCode() { ... }',
-            '    @Override public String toString() { ... }',
+        codeSnippet: {
+          title: 'Main.kt',
+          language: 'Kotlin',
+          code: [
+            'fun main() {',
+            '    println("Hello, Kotlin!")',
             '}'
           ],
-          rightTitle: 'Kotlin (1 single line with all methods generated)',
-          rightTag: 'KOTLIN',
-          rightCode: [
-            '// Generates constructor, getters, equals,',
-            '// hashCode, toString, and copy() automatically!',
-            'data class User(val id: Int, val name: String)'
-          ],
-          verdict: 'Kotlin provides equal safety and feature parity with 95% less boilerplate code.'
+          explanation: 'Execution begins inside main(). The println() call writes the greeting to standard output.',
+          output: 'Hello, Kotlin!'
+        },
+        bulletPoints: [
+          { title: 'fun', desc: 'A Kotlin keyword used to declare a function.' },
+          { title: 'main', desc: 'The identifier naming the program entry-point function.' },
+          { title: '"Hello, Kotlin!"', desc: 'A string literal containing text.' },
+          { title: 'println()', desc: 'A function call that prints a value followed by a line break.' }
+        ],
+        callout: {
+          type: 'tip',
+          title: 'Keep This Vocabulary Handy',
+          message: 'Keyword, identifier, literal, and function call are terms you will see again throughout this course — recognizing them makes later explanations easier to follow.'
         }
       },
+
       {
-        id: 'ecosystem',
-        title: 'Where Is Kotlin Used in 2026?',
+        id: 'platforms-and-java-interop',
+        title: 'Platforms and Java Interop (Intermediate)',
         icon: 'devices',
-        badge: 'INDUSTRY USE',
+        badge: 'INTERMEDIATE',
         paragraphs: [
-          'Kotlin has evolved far beyond an Android-only language. It is actively deployed across three major engineering sectors:'
+          'Kotlin can target different execution environments. Kotlin/JVM compiles code into JVM bytecode, which runs on a Java Virtual Machine. Kotlin/JS produces JavaScript, while Kotlin/Native compiles supported Kotlin code into native binaries.',
+          'Kotlin Multiplatform allows developers to share suitable code between different targets while retaining platform-specific implementations where needed. It is an approach to sharing code, rather than a separate programming language.',
+          'On the JVM, Kotlin has strong interoperability with Java. Kotlin code can call existing Java libraries, and Java code can call appropriately exposed Kotlin declarations. This makes it possible to introduce Kotlin gradually into many existing Java projects.'
         ],
         bulletPoints: [
-          {
-            title: 'Mobile Development (Android & iOS)',
-            desc: 'Google Jetpack Compose (modern declarative UI for Android) is 100% Kotlin. Kotlin Multiplatform allows sharing core data and business logic between Android and iOS apps (used by Netflix, Cash App, McDonald\'s).'
-          },
-          {
-            title: 'Server-Side & Backend APIs',
-            desc: 'Supported as a 1st-class citizen in Spring Boot (the world\'s most popular Java web framework) and Ktor (JetBrains\' lightweight asynchronous coroutine-powered web engine).'
-          },
-          {
-            title: 'Data Science & Scripting',
-            desc: 'Kotlin Notebooks, Jupyter support, and Kotlin DataFrame bring type-safe interactive analysis to developers without giving up static type checking.'
-          }
-        ]
+          { title: 'Kotlin/JVM', desc: 'Targets the Java Virtual Machine, commonly used for Android and backend development.' },
+          { title: 'Kotlin/JS', desc: 'Compiles Kotlin code to JavaScript.' },
+          { title: 'Kotlin/Native', desc: 'Compiles supported code into native binaries.' },
+          { title: 'Kotlin Multiplatform', desc: 'Shares common code across supported targets.' }
+        ],
+        callout: {
+          type: 'info',
+          title: 'Go Deeper',
+          message: 'You do not need to master these targets yet. Understand their basic differences and Kotlin’s ability to work with Java.'
+        }
+      },
+
+      {
+        id: 'expressions-vs-statements',
+        title: 'Expressions vs Statements (Intermediate)',
+        icon: 'functions',
+        badge: 'INTERMEDIATE',
+        paragraphs: [
+          'An expression is a piece of code that produces a value. For example, 2 + 3 is an expression whose value is 5.',
+          'A statement performs an action or establishes a declaration. A variable declaration, for example, introduces a name that can be used later. Kotlin is expression-oriented: several constructs that are statements in some languages can produce values in Kotlin.',
+          'For now, the useful distinction is simple: an expression produces a value, while a declaration introduces something into your program.'
+        ],
+        codeSnippet: {
+          title: 'Expression and declaration',
+          language: 'Kotlin',
+          code: [
+            'fun main() {',
+            '    val result = 2 + 3',
+            '    println(result)',
+            '}'
+          ],
+          explanation: '2 + 3 is an expression. The val declaration introduces result, and println() displays its value.',
+          output: '5'
+        }
       }
     ],
+
     gotchas: [
       {
-        mistake: 'Assuming Kotlin is just "Google Android script"',
-        whyItFails: 'Kotlin was designed by JetBrains for large-scale enterprise server systems long before Google endorsed it.',
-        correction: 'Kotlin is a general-purpose language used extensively for backend APIs, microservices, desktop apps, and iOS logic.'
+        mistake: 'Thinking Kotlin is only for Android.',
+        whyItFails: 'Kotlin also supports backend, JavaScript, native, and multiplatform development.',
+        correction: 'Remember that Android is one important Kotlin use case, not the language’s only purpose.'
       },
       {
-        mistake: 'Thinking Kotlin runs slower than Java',
-        whyItFails: 'Kotlin compiles into the exact same JVM bytecode instructions as Java and runs with zero performance overhead.',
-        correction: 'Kotlin features like inline functions can actually run faster than typical Java code by eliminating lambda object allocations.'
+        mistake: 'Using a Java-style main declaration in Kotlin.',
+        whyItFails: 'Kotlin uses its own function declaration syntax.',
+        badCode: ['public static void main(String[] args) {', '    println("Hello")', '}'],
+        fixedCode: ['fun main() {', '    println("Hello")', '}'],
+        correction: 'Declare a basic Kotlin entry point with fun main().'
       },
       {
-        mistake: 'Believing you must rewrite your entire Java codebase at once',
-        whyItFails: 'Kotlin is 100% interoperable with Java. A Java class can instantiate a Kotlin object, and a Kotlin function can call Java code directly.',
-        correction: 'You can introduce Kotlin one file at a time in existing Java projects without any architectural breakage.'
+        mistake: 'Writing printLine() instead of println().',
+        whyItFails: 'printLine() is not the Kotlin standard-library function for printing a line.',
+        badCode: ['printLine("Hello")'],
+        fixedCode: ['println("Hello")'],
+        correction: 'Use println() to print a value followed by a line break.'
       }
     ],
+
     cheatsheet: [
-      {
-        term: 'JetBrains',
-        syntax: 'Creator (2011)',
-        description: 'Developer tooling company that designed Kotlin as an industrial-strength JVM language.'
-      },
-      {
-        term: 'Null Safety',
-        syntax: 'String vs String?',
-        description: 'Strict distinction between non-null values and nullable values enforced at compile time.'
-      },
-      {
-        term: 'kotlinc',
-        syntax: 'CLI Compiler',
-        description: 'Compiles Kotlin source (.kt) directly into JVM bytecode (.class).'
-      },
-      {
-        term: 'Interoperability',
-        syntax: '100% Two-Way',
-        description: 'Call Java libraries from Kotlin and Kotlin classes from Java seamlessly.'
-      },
-      {
-        term: 'KMP',
-        syntax: 'Kotlin Multiplatform',
-        description: 'Share common Kotlin logic across Android, iOS, Desktop, and Web.'
-      }
+      { term: 'Kotlin source file', syntax: 'Main.kt', description: 'A typical Kotlin source filename uses the .kt extension.' },
+      { term: 'Entry point', syntax: 'fun main() { }', description: 'Declares the entry point of a basic Kotlin program.' },
+      { term: 'Console output', syntax: 'println("Hello")', description: 'Prints a message followed by a newline.' },
+      { term: 'Value declaration', syntax: 'val result = 2 + 3', description: 'Introduces a read-only name initialized with an expression.' },
+      { term: 'Kotlin platforms', syntax: 'JVM / JS / Native', description: 'Major compilation targets; Multiplatform enables suitable code sharing.' }
     ],
+
     quiz: [
       {
-        id: 'q1',
-        question: 'Which company created the Kotlin programming language?',
-        options: ['Google', 'JetBrains', 'Oracle', 'Microsoft'],
-        correctIndex: 1,
-        explanation: 'JetBrains created Kotlin in 2011. Google later partnered with JetBrains in 2017 to make it the premier official language for Android.'
-      },
-      {
-        id: 'q2',
-        question: 'What does the standard Kotlin compiler (kotlinc) output when compiling Kotlin files for the JVM?',
-        options: ['Machine assembly (.exe / .bin)', 'Java bytecode (.class files)', 'Raw JavaScript source', 'Python bytecode'],
-        correctIndex: 1,
-        explanation: 'The Kotlin compiler outputs standard JVM bytecode (.class files) that runs on any JVM, exactly like compiled Java code.'
-      },
-      {
-        id: 'q3',
-        question: 'How does Kotlin solve the "billion-dollar mistake" of NullPointerExceptions?',
+        id: 'w1-l1-q1',
+        question: 'Which statement correctly describes Kotlin?',
         options: [
-          'By banning the use of variables altogether',
-          'By crashing the computer before execution starts',
-          'By enforcing a compile-time type system that separates nullable and non-nullable types',
-          'By converting all nulls to the string "null"'
+          'It is exclusively an Android development language.',
+          'It is a general-purpose programming language.',
+          'It is a database management system.',
+          'It only runs inside web browsers.'
+        ],
+        correctIndex: 1,
+        explanation: 'Kotlin supports Android, backend, scripting, and several other development targets.'
+      },
+      {
+        id: 'w1-l1-q2',
+        question: 'What is the purpose of main() in a basic Kotlin program?',
+        options: [
+          'It stores the program’s files.',
+          'It automatically installs dependencies.',
+          'It provides the program entry point.',
+          'It converts Kotlin into Java source code.'
         ],
         correctIndex: 2,
-        explanation: 'Kotlin forces you to explicitly declare if a variable can be null (e.g. String?). If you declare String, the compiler guarantees it can never be null!'
+        explanation: 'The main() function provides the entry point for a basic Kotlin application.'
+      },
+      {
+        id: 'w1-l1-q3',
+        question: 'What does Kotlin/JVM primarily target?',
+        options: [
+          'The Java Virtual Machine',
+          'Only native iOS applications',
+          'A database server',
+          'Only JavaScript browsers'
+        ],
+        correctIndex: 0,
+        explanation: 'Kotlin/JVM compiles Kotlin code into bytecode that runs on the Java Virtual Machine.'
       }
     ]
   },
@@ -330,239 +338,239 @@ export const DETAILED_TUTORIALS: Record<string, DetailedTutorialData> = {
     worldNumber: 1,
     lessonNumber: 2,
     title: 'Kotlin Syntax & main()',
-    subtitle: 'Anatomy of a Kotlin Program, Execution Flow, Top-Level Functions & Semicolon Rules',
-    badge: 'WORLD 1 · LESSON 2 DEEP DIVE',
-    readTime: '5 min read',
+    subtitle: 'Understand how Kotlin files, functions, blocks, and statements fit together.',
+    badge: 'BEGINNER',
+    readTime: '6 min',
     overviewSummary:
-      'Every Kotlin program begins execution inside fun main(). Unlike Java or C#, Kotlin supports top-level functions so you never have to wrap your code in a ceremonial class. Statements execute sequentially from top to bottom, and semicolons are completely optional.',
+      'Learn the structure of a Kotlin program, how main() starts execution, how functions and code blocks work, and the basic rules for naming and formatting code.',
+
     toc: [
-      { id: 'entry-point', label: 'The Entry Point' },
-      { id: 'anatomy', label: 'Anatomy of fun main()' },
-      { id: 'top-level', label: 'Top-Level Functions' },
-      { id: 'execution-flow', label: 'Sequential Execution' },
-      { id: 'semicolons', label: 'The Semicolon Rule' },
-      { id: 'gotchas', label: 'Common Pitfalls' },
-      { id: 'cheatsheet', label: 'Quick Reference' },
-      { id: 'quiz', label: 'Knowledge Check' }
+      { id: 'kotlin-files-and-main', label: 'Kotlin Files and main()' },
+      { id: 'functions-blocks-and-calls', label: 'Functions, Blocks and Calls' },
+      { id: 'statements-and-formatting', label: 'Statements and Formatting' },
+      { id: 'identifiers-and-keywords', label: 'Identifiers and Keywords' },
+      { id: 'arguments-packages-and-imports', label: 'Arguments, Packages and Imports (Intermediate)' },
+      { id: 'gotchas', label: 'Gotchas' },
+      { id: 'cheatsheet', label: 'Cheatsheet' },
+      { id: 'quiz', label: 'Quiz' }
     ],
+
     sections: [
       {
-        id: 'entry-point',
-        title: 'Why Does Every Program Need a main() Function?',
-        icon: 'start',
-        badge: 'EXECUTION LAUNCHPAD',
+        id: 'kotlin-files-and-main',
+        title: 'Kotlin Files and main()',
+        icon: 'description',
+        badge: 'PROGRAM STRUCTURE',
         paragraphs: [
-          'A computer program can contain hundreds of thousands of lines of code distributed across hundreds of files. When you click "Run" or execute a binary, the operating system and runtime need an unambiguous starting point.',
-          'In Kotlin, this designated entry point is the function named main(). When the JVM boots up your program, it searches for main(), transfers control into its opening curly brace {, and begins executing the statements inside.',
-          'When main() reaches its closing curly brace } (or returns), the program execution terminates.'
+          'A Kotlin source file contains declarations and executable code inside functions. Kotlin files normally use the .kt extension, such as Main.kt.',
+          'A basic standalone Kotlin application begins execution in a function named main. The declaration fun main() introduces that function, and the braces enclose its body. When the program starts, the instructions inside main() run in sequence.',
+          'Unlike Java, a simple Kotlin program does not require you to wrap main() inside a class. Top-level functions can be declared directly in a Kotlin source file.'
         ],
+        codeSnippet: {
+          title: 'Your first Kotlin program',
+          language: 'Kotlin',
+          code: [
+            'fun main() {',
+            '    println("Starting")',
+            '    println("Finished")',
+            '}'
+          ],
+          explanation: 'The program enters main() and executes the two function calls in order.',
+          output: 'Starting\nFinished'
+        },
         callout: {
           type: 'key',
-          title: 'The Golden Rule of Entry',
-          message:
-            'Without a main() function, a standalone Kotlin application cannot run on its own. It is the designated doorway through which the runtime enters.'
+          title: 'Entry Point',
+          message: 'The main() function is where a basic Kotlin application starts executing.'
         }
       },
+
       {
-        id: 'anatomy',
-        title: 'Anatomy of fun main() Word-by-Word',
-        icon: 'code',
-        badge: 'SYNTAX BREAKDOWN',
+        id: 'functions-blocks-and-calls',
+        title: 'Functions, Blocks and Calls',
+        icon: 'account_tree',
+        badge: 'FUNCTION SYNTAX',
         paragraphs: [
-          'Let\'s dissect the exact syntax of the Kotlin entry point line by line:'
+          'A function is a named block of code that performs a task. A basic function declaration contains the fun keyword, a function name, parentheses, and a body enclosed in braces.',
+          'The opening brace { begins a code block, and the closing brace } ends it. Instructions inside the block belong to that function. You call a function by writing its name followed by parentheses.',
+          'A function can be declared outside main() and called from inside it. Execution enters the called function, runs its instructions, and then returns to the point after the call.'
         ],
         codeSnippet: {
-          title: 'Standard Kotlin Entry Point',
+          title: 'Declaring and calling a function',
           language: 'Kotlin',
           code: [
+            'fun greet() {',
+            '    println("Welcome!")',
+            '}',
+            '',
             'fun main() {',
-            '    println("Hello, Android Developer!")',
+            '    println("Before")',
+            '    greet()',
+            '    println("After")',
             '}'
           ],
-          output: 'Hello, Android Developer!',
-          explanation: 'fun declares the function, main is the name, () is the parameter list, and { } holds the statements.'
+          explanation: 'main() prints Before, calls greet(), then resumes and prints After.',
+          output: 'Before\nWelcome!\nAfter'
         },
-        bulletPoints: [
-          {
-            title: 'fun (Function Keyword)',
-            desc: 'Short for "function". In Kotlin, all subroutines, methods, and procedures are introduced with the fun keyword (not def, fn, or function).'
-          },
-          {
-            title: 'main (Identifier)',
-            desc: 'The specific name reserved by convention for the program entry point. Note that it must be all lowercase (main, NOT Main).'
-          },
-          {
-            title: '() (Parameter List)',
-            desc: 'Parentheses hold input arguments. Since Kotlin 1.3, parameterless main() is fully supported for clean simplicity. If command-line arguments are needed, you can write fun main(args: Array<String>).'
-          },
-          {
-            title: '{ ... } (Body Block)',
-            desc: 'Curly braces enclose the statements that will run. Everything inside { and } belongs to the body of the function.'
-          }
-        ]
+        callout: {
+          type: 'info',
+          title: 'Go Deeper',
+          message: 'A function declaration defines a task; a function call executes it. Parentheses are required even when the function takes no arguments.'
+        }
       },
+
       {
-        id: 'top-level',
-        title: 'Top-Level Functions: No Ceremonial Class Required',
-        icon: 'splitscreen',
-        badge: 'KOTLIN VS JAVA',
+        id: 'statements-and-formatting',
+        title: 'Statements and Formatting',
+        icon: 'format_align_left',
+        badge: 'READABLE CODE',
         paragraphs: [
-          'If you come from Java or C#, you might remember having to declare a class before writing a single line of runnable code:',
-          'In Kotlin, functions and variables can live at the top level of a file — directly out in the open!'
+          'Kotlin programs contain statements and expressions. A statement can introduce a declaration or perform an action. An expression produces a value that another part of the program can use.',
+          'Kotlin normally uses line breaks to separate instructions. Semicolons are optional in ordinary code, although they can separate multiple statements on the same line. Writing one instruction per line is usually easier to read.',
+          'Whitespace makes code readable. The common Kotlin convention is to indent code inside a block by four spaces. Indentation is a formatting convention, not a replacement for braces.'
         ],
         comparison: {
-          leftTitle: 'Java (Heavy boilerplate class wrapper)',
-          leftTag: 'JAVA',
-          leftCode: [
-            '// Java forces every function into a class',
-            'public class MainApp {',
-            '    public static void main(String[] args) {',
-            '        System.out.println("Too much boilerplate!");',
-            '    }',
-            '}'
-          ],
-          rightTitle: 'Kotlin (Clean top-level entry point)',
-          rightTag: 'KOTLIN',
+          leftTitle: 'Harder to read',
+          leftCode: ['fun main(){println("One");println("Two")}'],
+          leftTag: 'VALID BUT CRAMPED',
+          rightTitle: 'Recommended formatting',
           rightCode: [
-            '// Kotlin needs no class wrapper at all!',
             'fun main() {',
-            '    println("Pure signal, zero noise!")',
+            '    println("One")',
+            '    println("Two")',
             '}'
           ],
-          verdict: 'Kotlin frees you from writing artificial wrapper classes for simple programs.'
+          rightTag: 'READABLE',
+          verdict: 'Both versions are valid and print the same output. The formatted version makes the block and execution order easier to see.'
+        },
+        callout: {
+          type: 'info',
+          title: 'Go Deeper',
+          message: 'Use consistent whitespace, four-space indentation, and optional semicolons only when they genuinely improve readability.'
         }
       },
+
       {
-        id: 'execution-flow',
-        title: 'Sequential Execution: Top to Bottom, Line by Line',
-        icon: 'reorder',
-        badge: 'CONTROL FLOW',
+        id: 'identifiers-and-keywords',
+        title: 'Identifiers and Keywords',
+        icon: 'label',
+        badge: 'NAMING RULES',
         paragraphs: [
-          'Statements inside main() execute in strict chronological order from top to bottom. Each line must complete before the next line begins.'
+          'An identifier is a name you give to something in your program, such as a function or variable. Names help you recognize the purpose of each part of your code.',
+          'Ordinary identifiers can contain letters, digits, and underscores, but they cannot begin with a digit. Kotlin identifiers are case-sensitive, so greet and Greet are different names.',
+          'Keywords are words with special meaning in the language. For example, fun declares a function, while val and var introduce values and variables. You cannot use a hard keyword as an ordinary identifier.',
+          'Use meaningful names such as printWelcome rather than vague names such as abc. Function and variable names normally use camelCase.'
         ],
-        codeSnippet: {
-          title: 'Sequential Execution in Action',
-          language: 'Kotlin',
-          code: [
-            'fun main() {',
-            '    println("1. Engine ignition started...")',
-            '    println("2. Fuel systems nominal...")',
-            '    println("3. Liftoff!")',
-            '}'
-          ],
-          output: '1. Engine ignition started...\n2. Fuel systems nominal...\n3. Liftoff!',
-          explanation: 'The output lines appear in the exact order in which println() statements were written.'
+        bulletPoints: [
+          { title: 'Valid names', desc: 'greet, printWelcome, user2, and _count are valid ordinary identifiers.' },
+          { title: 'Invalid names', desc: '2user starts with a digit, and fun is a keyword.' },
+          { title: 'Case sensitivity', desc: 'printMessage and PrintMessage are distinct identifiers.' },
+          { title: 'Naming convention', desc: 'Prefer descriptive camelCase names for functions and variables.' }
+        ],
+        callout: {
+          type: 'tip',
+          title: 'Naming Tip',
+          message: 'Choose names that describe what your code does. Clear names reduce the need for explanatory comments.'
         }
       },
+
       {
-        id: 'semicolons',
-        title: 'The Semicolon Rule: Clean, Noise-Free Lines',
-        icon: 'clear_all',
-        badge: 'STYLE GUIDE',
+        id: 'arguments-packages-and-imports',
+        title: 'Arguments, Packages and Imports (Intermediate)',
+        icon: 'inventory_2',
+        badge: 'INTERMEDIATE',
         paragraphs: [
-          'In Kotlin, semicolons (;) at the end of statements are completely optional. The compiler automatically understands where a statement ends based on line breaks.',
-          'Putting a semicolon at the end of a line is technically legal for Java backward compatibility, but the Kotlin style guide strongly discourages it.',
-          'The only situation where a semicolon is required is if you place two separate statements on the exact same physical line (which is generally considered poor code style).'
+          'A Kotlin main() function can optionally accept command-line arguments through a parameter such as args: Array<String>. These arguments are strings supplied when the program is launched. You do not need this parameter for programs that do not use command-line arguments.',
+          'A package declaration identifies the namespace to which a Kotlin file belongs. When present, it appears near the top of the file, before imports and ordinary declarations.',
+          'Import directives allow you to refer to declarations from other packages without repeatedly writing their fully qualified names. Kotlin also provides default imports for commonly used declarations, including println.'
         ],
         codeSnippet: {
-          title: 'Optional vs Single-Line Semicolons',
+          title: 'Package, import, and main arguments',
           language: 'Kotlin',
           code: [
-            'fun main() {',
-            '    // Recommended idiomatic Kotlin (NO semicolons):',
-            '    val hero = "Kotlin"',
-            '    println(hero)',
+            'package demo',
             '',
-            '    // Legal, but discouraged by Kotlin style linter:',
-            '    val score = 100; println(score);',
+            'import kotlin.math.abs',
+            '',
+            'fun main(args: Array<String>) {',
+            '    println(abs(-5))',
+            '    println("Arguments: ${args.size}")',
             '}'
           ],
-          output: 'Kotlin\n100',
-          explanation: 'Always prefer writing each statement on its own line without semicolons.'
+          explanation: 'The package declaration identifies the namespace, the import makes abs available by its short name, and args contains command-line arguments. This output assumes no arguments were supplied.',
+          output: '5\nArguments: 0'
+        },
+        callout: {
+          type: 'info',
+          title: 'At This Stage',
+          message: 'Recognize package, import, and command-line argument syntax. Detailed package organization and argument processing can come later.'
         }
       }
     ],
+
     gotchas: [
       {
-        mistake: 'Writing "Main" with a capital M',
-        whyItFails: 'Kotlin is strictly case-sensitive. The runtime specifically searches for lowercase main.',
-        badCode: ['fun Main() {', '    println("Hello")', '}'],
+        mistake: 'Forgetting parentheses when declaring main.',
+        whyItFails: 'A function declaration requires parentheses after its name.',
+        badCode: ['fun main {', '    println("Hello")', '}'],
         fixedCode: ['fun main() {', '    println("Hello")', '}'],
-        correction: 'Always spell the entry point in lowercase: fun main().'
+        correction: 'Write main() with parentheses, even when it has no parameters.'
       },
       {
-        mistake: 'Missing or mismatched curly braces { }',
-        whyItFails: 'The body of fun main() requires both an opening { and a closing } brace. Forgetting } causes a syntax error: "Expecting \'}\'".',
-        badCode: ['fun main() {', '    println("Oops forgotten closing brace")'],
-        fixedCode: ['fun main() {', '    println("Fixed!")', '}'],
-        correction: 'Ensure every opening brace { has a matching closing brace }.'
+        mistake: 'Forgetting the closing brace of a function.',
+        whyItFails: 'Every opening brace in a function body must have a matching closing brace.',
+        badCode: ['fun main() {', '    println("Hello")'],
+        fixedCode: ['fun main() {', '    println("Hello")', '}'],
+        correction: 'Match every opening brace with a closing brace.'
       },
       {
-        mistake: 'Using Python\'s "def" or JavaScript\'s "function"',
-        whyItFails: 'Kotlin keywords are strict. Kotlin functions must begin with "fun".',
-        badCode: ['def main():', 'function main() { }'],
-        fixedCode: ['fun main() {', '    // statements here', '}'],
-        correction: 'In Kotlin, the keyword to declare a function is always "fun".'
+        mistake: 'Using a keyword as an ordinary function name.',
+        whyItFails: 'Hard keywords have reserved meanings in Kotlin.',
+        badCode: ['fun fun() {', '    println("Hello")', '}'],
+        fixedCode: ['fun greet() {', '    println("Hello")', '}'],
+        correction: 'Choose a valid, descriptive identifier instead of a reserved keyword.'
       }
     ],
+
     cheatsheet: [
-      {
-        term: 'fun',
-        syntax: 'fun name() { }',
-        description: 'Keyword used to declare a function in Kotlin.'
-      },
-      {
-        term: 'main()',
-        syntax: 'fun main()',
-        description: 'The standard entry point where Kotlin programs begin execution.'
-      },
-      {
-        term: 'println()',
-        syntax: 'println("text")',
-        description: 'Standard library function that prints text to the console followed by a newline.'
-      },
-      {
-        term: '{ }',
-        syntax: '{ statement1; statement2 }',
-        description: 'Block delimiters enclosing executable code statements.'
-      },
-      {
-        term: 'Semicolon ;',
-        syntax: 'Optional',
-        description: 'Not required at the end of lines in idiomatic Kotlin.'
-      }
+      { term: 'Main function', syntax: 'fun main() { }', description: 'Declares the entry point of a basic Kotlin application.' },
+      { term: 'Function declaration', syntax: 'fun greet() { }', description: 'Defines a named function with a body.' },
+      { term: 'Function call', syntax: 'greet()', description: 'Invokes a function using its name and parentheses.' },
+      { term: 'Code block', syntax: '{ ... }', description: 'Groups instructions inside a function or another block.' },
+      { term: 'Package and import', syntax: 'package demo\nimport kotlin.math.abs', description: 'Declares a namespace and imports a declaration from another package.' }
     ],
+
     quiz: [
       {
-        id: 'q1',
-        question: 'What keyword does Kotlin use to define a function or program entry point?',
-        options: ['def', 'function', 'fun', 'fn'],
+        id: 'w1-l2-q1',
+        question: 'What is the role of braces in a basic Kotlin function?',
+        options: [
+          'They identify the source filename.',
+          'They enclose the function body.',
+          'They replace function-call parentheses.',
+          'They declare the function return type.'
+        ],
+        correctIndex: 1,
+        explanation: 'Braces enclose the instructions belonging to a function body.'
+      },
+      {
+        id: 'w1-l2-q2',
+        question: 'Which statement about semicolons in Kotlin is correct?',
+        options: [
+          'Every instruction must end with a semicolon.',
+          'Semicolons are forbidden.',
+          'Semicolons are normally optional.',
+          'Semicolons replace closing braces.'
+        ],
         correctIndex: 2,
-        explanation: 'Kotlin uses the "fun" keyword (short for function) to declare functions.'
+        explanation: 'Kotlin normally separates instructions with line breaks. Semicolons can be used when needed, such as between statements on the same line.'
       },
       {
-        id: 'q2',
-        question: 'Do you need to wrap fun main() inside a class in Kotlin?',
-        options: [
-          'Yes, like Java every function must be inside a public class',
-          'No, Kotlin supports top-level functions directly in the file',
-          'Only when compiling for Android',
-          'Only when using external libraries'
-        ],
-        correctIndex: 1,
-        explanation: 'In Kotlin, functions can exist at the top level of a file without an enclosing class!'
-      },
-      {
-        id: 'q3',
-        question: 'Are semicolons (;) required at the end of statements in Kotlin?',
-        options: [
-          'Yes, leaving out a semicolon results in a compilation error',
-          'No, semicolons are optional and idiomatic Kotlin omits them',
-          'They are only optional for println statements',
-          'They are only required in functions that return a value'
-        ],
-        correctIndex: 1,
-        explanation: 'Semicolons are completely optional in Kotlin. Idiomatic Kotlin relies on clean newlines.'
+        id: 'w1-l2-q3',
+        question: 'Which identifier follows ordinary Kotlin naming rules?',
+        options: ['2message', 'fun', 'printMessage', 'user-name'],
+        correctIndex: 2,
+        explanation: 'printMessage is a valid camelCase identifier. The other options either begin with a digit, use a reserved keyword, or contain a hyphen.'
       }
     ]
   },
@@ -575,271 +583,192 @@ export const DETAILED_TUTORIALS: Record<string, DetailedTutorialData> = {
     aliasKeys: ['comments', 'world-1-lesson-3'],
     worldNumber: 1,
     lessonNumber: 3,
-    title: 'Comments in Kotlin',
-    subtitle: 'Single-Line, Multi-Line, Nested Comments & KDoc Documentation',
-    badge: 'WORLD 1 · LESSON 3 DEEP DIVE',
-    readTime: '4 min read',
+    title: 'Comments',
+    subtitle: 'Explain your code clearly using Kotlin comments.',
+    badge: 'BEGINNER',
+    readTime: '4 min',
     overviewSummary:
-      'Comments allow programmers to write human-readable notes, document complex algorithms, and temporarily disable lines of code during debugging. The Kotlin compiler ignores comments completely. Uniquely, Kotlin supports nested multi-line comments — solving an infamous limitation of Java and C++.',
+      'Learn when comments are useful, how single-line and block comments work, and how Kotlin supports nested comments and introductory KDoc documentation.',
+
     toc: [
-      { id: 'why-comment', label: 'Why Comments Matter' },
-      { id: 'single-line', label: 'Single-Line Comments //' },
-      { id: 'multi-line', label: 'Multi-Line Comments /* */' },
-      { id: 'nested', label: 'Nested Comments' },
-      { id: 'kdoc', label: 'KDoc Documentation' },
-      { id: 'best-practices', label: 'Best Practices' },
-      { id: 'gotchas', label: 'Common Gotchas' },
-      { id: 'cheatsheet', label: 'Quick Reference' },
-      { id: 'quiz', label: 'Knowledge Check' }
+      { id: 'why-and-when-to-comment', label: 'Why and When to Comment' },
+      { id: 'single-line-and-block-comments', label: 'Single-Line and Block Comments' },
+      { id: 'nested-and-kdoc-comments', label: 'Nested and KDoc Comments (Intermediate)' },
+      { id: 'gotchas', label: 'Gotchas' },
+      { id: 'cheatsheet', label: 'Cheatsheet' },
+      { id: 'quiz', label: 'Quiz' }
     ],
+
     sections: [
       {
-        id: 'why-comment',
-        title: 'Why Do We Comment Code?',
-        icon: 'mode_comment',
-        badge: 'HUMAN COMMUNICATION',
+        id: 'why-and-when-to-comment',
+        title: 'Why and When to Comment',
+        icon: 'comment',
+        badge: 'PURPOSE',
         paragraphs: [
-          'Code tells the computer how to perform an action. But code often fails to explain why a decision was made, what business rule is being satisfied, or why an unusual workaround was necessary.',
-          'Comments are plain-text annotations written directly inside code files. When the Kotlin compiler (kotlinc) parses your source code, it discards every comment before generating bytecode.',
-          'Comments consume zero bytes of memory in compiled apps and have zero effect on program performance.'
+          'Comments are notes written inside source code for people reading it. The compiler ignores comments when executing your program. They help explain why a decision was made, clarify unusual behavior, or document an important assumption.',
+          'A useful comment provides information that is not obvious from the code itself. Avoid explaining every instruction or repeating what a clear function name already says. Excessive comments can make a program harder to read and maintain.',
+          'Keep comments accurate when the code changes. An outdated comment can be more misleading than having no comment at all.'
         ],
-        callout: {
-          type: 'key',
-          title: 'The Golden Philosophy of Comments',
-          message:
-            'Good code is self-documenting for "what" it is doing. Use comments to explain the "why": business logic, trade-offs, edge-case warnings, and math formulas.'
+        comparison: {
+          leftTitle: 'Obvious comment',
+          leftCode: ['// Print Hello', 'println("Hello")'],
+          leftTag: 'LOW VALUE',
+          rightTitle: 'Intent-focused comment',
+          rightCode: ['// Show a welcome message before the tutorial begins.', 'println("Hello")'],
+          rightTag: 'EXPLAINS WHY',
+          verdict: 'Prefer comments that explain intent or context instead of merely describing visible syntax.'
         },
-        flowChart: {
-          variant: 'compiler-filter',
-          title: 'Compiler Flow: Comment vs. Executable Code',
-          subtitle: 'The Kotlin lexer strips away comments during compilation before generating bytecode.',
-          conditionText: 'Is Comment?',
-          trueLabel: 'if token is comment',
-          falseLabel: 'if token is code',
-          ifBlockText: 'Discard & Skip',
-          elseBlockText: 'Emit Bytecode',
-          startLabel: 'Read Token',
-          endLabel: 'Next Token',
-          sampleCode: {
-            condition: 'token.isComment',
-            ifBody: '// Discarded: 0 bytes in .class file',
-            elseBody: 'val x = 42 // Compiled to bytecode'
-          }
+        callout: {
+          type: 'info',
+          title: 'Go Deeper',
+          message: 'Write comments for future readers. Use clear wording, consistent spacing after comment markers, and remove comments that no longer match the code.'
         }
       },
+
       {
-        id: 'single-line',
-        title: 'Single-Line Comments: //',
+        id: 'single-line-and-block-comments',
+        title: 'Single-Line and Block Comments',
         icon: 'notes',
-        badge: 'SYNTAX',
+        badge: 'COMMENT SYNTAX',
         paragraphs: [
-          'A single-line comment begins with two forward slashes: //.',
-          'Everything from the // characters to the very end of that physical line is ignored by the compiler. It can occupy its own dedicated line or be placed as an inline note after code.'
+          'A single-line comment begins with //. Everything after the marker on that line is treated as a comment. You can place it on its own line or after an instruction as an end-of-line comment.',
+          'A block comment starts with /* and ends with */. It can cover part of a line or several lines, making it useful for longer explanations.',
+          'While learning or debugging, you can temporarily comment out code to prevent it from executing. However, removing unnecessary code is generally preferable to leaving large blocks of disabled code in a finished program.'
         ],
         codeSnippet: {
-          title: 'Single-Line Comments in Action',
+          title: 'Single-line and block comments',
           language: 'Kotlin',
           code: [
             'fun main() {',
-            '    // Dedicated line comment explaining the next step',
-            '    val score = 42',
+            '    // Display the first message.',
+            '    println("Hello") // End-of-line comment',
             '',
-            '    val bonus = 10 // Inline comment at the end of a line',
-            '    println(score + bonus)',
+            '    /*',
+            '       This message is temporarily disabled.',
+            '       println("Hidden")',
+            '    */',
+            '',
+            '    println("Done")',
             '}'
           ],
-          output: '52',
-          explanation: 'Neither the dedicated line comment nor the trailing inline comment affects the computation or output.'
+          explanation: 'The compiler ignores the single-line, end-of-line, and block comments. Only the two active println() calls execute.',
+          output: 'Hello\nDone'
+        },
+        callout: {
+          type: 'info',
+          title: 'Go Deeper',
+          message: 'Commenting out code is useful for short experiments. Before finishing a program, remove disabled code that is no longer needed.'
         }
       },
+
       {
-        id: 'multi-line',
-        title: 'Multi-Line Block Comments: /* ... */',
-        icon: 'subject',
-        badge: 'BLOCK NOTES',
+        id: 'nested-and-kdoc-comments',
+        title: 'Nested and KDoc Comments (Intermediate)',
+        icon: 'article',
+        badge: 'INTERMEDIATE',
         paragraphs: [
-          'When you need to write detailed paragraphs, license notices, or algorithmic summaries that span multiple lines, use a block comment.',
-          'A multi-line comment begins with /* and terminates with */. Everything between the two tokens is skipped by the compiler.'
+          'Kotlin supports nested block comments. You can place a /* ... */ comment inside another block comment, and Kotlin correctly matches their boundaries. This is useful when temporarily disabling code that already contains block comments.',
+          'KDoc is Kotlin\u2019s documentation-comment format. It starts with /** and ends with */. KDoc comments are normally placed immediately before the declarations they describe and can be processed by documentation tools.',
+          'You do not need to document every function at this stage. Recognize the difference: ordinary comments explain code to readers, while KDoc is intended to document declarations in a structured way.'
         ],
         codeSnippet: {
-          title: 'Multi-Line Comments',
+          title: 'Nested comments and KDoc',
           language: 'Kotlin',
           code: [
+            '/** Prints a short greeting. */',
+            'fun greet() {',
+            '    println("Hello")',
+            '}',
+            '',
             'fun main() {',
             '    /*',
-            '      Multi-line comments are ideal for:',
-            '      - Documenting complex algorithms',
-            '      - Temporarily disabling large blocks of code during debugging',
-            '      - Multi-line ASCII diagrams',
+            '       Temporarily disabled:',
+            '       /* An inner block comment. */',
+            '       println("Hidden")',
             '    */',
-            '    println("Code execution proceeds normally!")',
+            '    greet()',
             '}'
           ],
-          output: 'Code execution proceeds normally!',
-          explanation: 'The block comment smoothly wraps across four lines without needing // on each line.'
+          explanation: 'The nested block is ignored. The KDoc comment documents greet(), and main() calls that function.',
+          output: 'Hello'
+        },
+        callout: {
+          type: 'key',
+          title: 'Kotlin-Specific Capability',
+          message: 'Unlike some programming languages, Kotlin allows block comments to be nested.'
         }
-      },
-      {
-        id: 'nested',
-        title: 'Kotlin Superpower: Nested Multi-Line Comments!',
-        icon: 'layers',
-        badge: 'KOTLIN EXCLUSIVE',
-        paragraphs: [
-          'In older languages like C, C++, and Java, multi-line comments cannot be nested. In Java, writing /* /* */ */ causes a syntax error because the very first */ closes the entire comment, leaving the remainder dangling as illegal code.',
-          'Kotlin fixed this! The Kotlin compiler maintains a counter of nested /* and */ tokens. This means you can safely comment out an entire block of code that already contains block comments!'
-        ],
-        codeSnippet: {
-          title: 'Nested Block Comments (Valid in Kotlin, Invalid in Java)',
-          language: 'Kotlin',
-          code: [
-            'fun main() {',
-            '    /* Outer comment start',
-            '       val a = 10',
-            '       /* Inner nested comment */',
-            '       val b = 20',
-            '       Outer comment end */',
-            '    println("Nested comments work seamlessly in Kotlin!")',
-            '}'
-          ],
-          output: 'Nested comments work seamlessly in Kotlin!',
-          explanation: 'Kotlin matches each opening /* with its corresponding closing */, allowing you to comment out code with zero friction.'
-        }
-      },
-      {
-        id: 'kdoc',
-        title: 'KDoc: Professional Documentation Comments (/** ... */)',
-        icon: 'library_books',
-        badge: 'DOCUMENTATION TOOL',
-        paragraphs: [
-          'When building public APIs, libraries, or shared team components, Kotlin uses KDoc (Kotlin\'s equivalent of JavaDoc).',
-          'KDoc comments begin with /** and end with */. Unlike JavaDoc which required messy HTML tags, KDoc natively supports clean Markdown syntax (bolding, lists, code spans) along with tags like @param, @return, and @see.'
-        ],
-        codeSnippet: {
-          title: 'KDoc Documentation Example',
-          language: 'Kotlin',
-          code: [
-            '/**',
-            ' * Calculates the final price of an item after applying discount.',
-            ' *',
-            ' * @param price The base retail price in cents',
-            ' * @param discountPercent A percentage between 0 and 100',
-            ' * @return The final discounted price',
-            ' */',
-            'fun calculateDiscount(price: Int, discountPercent: Int): Int {',
-            '    return price - (price * discountPercent / 100)',
-            '}'
-          ],
-          explanation: 'IDEs like Android Studio and IntelliJ automatically render KDoc comments in beautiful popups on hover.'
-        }
-      },
-      {
-        id: 'best-practices',
-        title: 'Comment Best Practices & Pro Tips',
-        icon: 'verified',
-        badge: 'CODE CRAFT',
-        paragraphs: [
-          'Writing good comments is an art form. Here are key guidelines followed by senior software engineers:'
-        ],
-        bulletPoints: [
-          {
-            title: 'Avoid "Stating the Obvious"',
-            desc: 'Don\'t write // increment i by 1 above i++. That adds noise without information. Write comments that explain the reasoning behind a choice.'
-          },
-          {
-            title: 'Keep Comments Up-to-Date',
-            desc: 'An outdated comment that contradicts the code is worse than no comment at all. When you refactor code, always update adjacent comments.'
-          },
-          {
-            title: 'Use TODO and FIXME tags',
-            desc: 'Write // TODO: add network retry logic to flag work that remains. Modern IDEs index TODO comments into an interactive task list.'
-          }
-        ]
       }
     ],
+
     gotchas: [
       {
-        mistake: 'Putting comments inside a string literal',
-        whyItFails: 'Anything inside quotation marks "..." is treated as literal text data, not a comment.',
-        badCode: ['println("Hello // this is not a comment!")'],
-        fixedCode: [
-          '// Real comment outside the string',
-          'println("Hello")'
-        ],
-        correction: '// inside double quotes does not comment anything out; it prints literally.'
+        mistake: 'Expecting commented-out code to execute.',
+        whyItFails: 'The compiler ignores everything inside a comment.',
+        badCode: ['fun main() {', '    // println("Hello")', '}'],
+        fixedCode: ['fun main() {', '    println("Hello")', '}'],
+        correction: 'Remove the comment marker when you want the instruction to execute.'
       },
       {
-        mistake: 'Forgetting to close a multi-line comment */',
-        whyItFails: 'An unclosed /* will swallow the remainder of your entire file, causing unexpected compiler errors.',
-        badCode: ['/*', '  val secret = 100', 'println(secret)'],
-        fixedCode: ['/*', '  val secret = 100', '*/', 'println(secret)'],
-        correction: 'Every /* must have a closing */.'
+        mistake: 'Forgetting to close a block comment.',
+        whyItFails: 'An unterminated block comment causes a compilation error.',
+        badCode: ['fun main() {', '    /* An unfinished comment', '    println("Hello")', '}'],
+        fixedCode: ['fun main() {', '    /* A completed comment */', '    println("Hello")', '}'],
+        correction: 'Close every block comment with */.'
       },
       {
-        mistake: 'Using comments to explain cryptic variable names',
-        whyItFails: 'Writing "val d = 86400 // elapsed time in seconds" makes every reader look back at the comment.',
-        badCode: ['val d = 86400 // seconds in a day'],
-        fixedCode: ['val secondsInOneDay = 86400'],
-        correction: 'Choose descriptive variable names so your code is self-documenting.'
+        mistake: 'Writing comments that contradict the code.',
+        whyItFails: 'Misleading comments can cause readers to misunderstand the program.',
+        badCode: ['// Print Goodbye', 'println("Hello")'],
+        fixedCode: ['// Display the welcome message.', 'println("Hello")'],
+        correction: 'Update or remove comments whenever the code changes.'
       }
     ],
+
     cheatsheet: [
-      {
-        term: '//',
-        syntax: '// Note here',
-        description: 'Single-line comment. Ignores everything until the end of the current line.'
-      },
-      {
-        term: '/* ... */',
-        syntax: '/* multi-line note */',
-        description: 'Block comment. Can span any number of lines.'
-      },
-      {
-        term: 'Nested Comments',
-        syntax: '/* outer /* inner */ */',
-        description: 'Kotlin feature allowing block comments to be safely nested inside other block comments.'
-      },
-      {
-        term: 'KDoc',
-        syntax: '/** markdown docs */',
-        description: 'Documentation comment supporting Markdown and @tags for IDE hover tooltips.'
-      },
-      {
-        term: 'TODO',
-        syntax: '// TODO: message',
-        description: 'Standard tag recognized by IDEs to bookmark unfinished tasks.'
-      }
+      { term: 'Single-line comment', syntax: '// Your comment', description: 'Comments out the remainder of the current line.' },
+      { term: 'End-of-line comment', syntax: 'println("Hi") // Greeting', description: 'Places a comment after an instruction on the same line.' },
+      { term: 'Block comment', syntax: '/* Your comment */', description: 'Creates a comment that can span multiple lines.' },
+      { term: 'Nested comment', syntax: '/* Outer /* Inner */ Outer */', description: 'Places one block comment inside another.' },
+      { term: 'KDoc', syntax: '/** Documents a declaration. */', description: 'Introduces a documentation comment for a Kotlin declaration.' }
     ],
+
     quiz: [
       {
-        id: 'q1',
-        question: 'Which syntax starts a single-line comment in Kotlin?',
-        options: ['#', '//', '--', '/*'],
-        correctIndex: 1,
-        explanation: 'In Kotlin, single-line comments always start with // and continue to the end of the line.'
-      },
-      {
-        id: 'q2',
-        question: 'What happens when you nest multi-line comments (/* /* ... */ */) in Kotlin?',
+        id: 'w1-l3-q1',
+        question: 'What is the primary purpose of a useful code comment?',
         options: [
-          'It fails to compile with a syntax error like in Java and C',
-          'It works cleanly because Kotlin tracks nested comment delimiters',
-          'The computer deletes the file',
-          'The inner comment is executed as live code'
-        ],
-        correctIndex: 1,
-        explanation: 'Unlike Java or C++, Kotlin fully supports nested multi-line comments by tracking opening and closing tokens!'
-      },
-      {
-        id: 'q3',
-        question: 'Do comments make your compiled Kotlin application run slower or take more storage?',
-        options: [
-          'Yes, each comment adds 10KB to the APK',
-          'Only multi-line comments increase memory usage',
-          'No, the compiler completely discards all comments during compilation',
-          'Yes, but only on older versions of Android'
+          'To make the program execute faster.',
+          'To replace function declarations.',
+          'To explain intent or important context.',
+          'To make every line of code longer.'
         ],
         correctIndex: 2,
-        explanation: 'The Kotlin compiler strips all comments during compilation. They have zero impact on APK size or runtime execution speed.'
+        explanation: 'Useful comments clarify intent, assumptions, or behavior that is not immediately obvious from the code.'
+      },
+      {
+        id: 'w1-l3-q2',
+        question: 'Which statement about Kotlin block comments is correct?',
+        options: [
+          'They can only occupy one line.',
+          'They can contain nested block comments.',
+          'They must always appear inside main().',
+          'They are executed before other instructions.'
+        ],
+        correctIndex: 1,
+        explanation: 'Kotlin supports nested block comments and correctly matches their opening and closing markers.'
+      },
+      {
+        id: 'w1-l3-q3',
+        question: 'What is KDoc primarily used for?',
+        options: [
+          'Running commented-out instructions.',
+          'Replacing Kotlin source files.',
+          'Documenting declarations for readers and documentation tools.',
+          'Printing comments in the console.'
+        ],
+        correctIndex: 2,
+        explanation: 'KDoc provides structured documentation comments for Kotlin declarations.'
       }
     ]
   }

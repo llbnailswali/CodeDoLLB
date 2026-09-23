@@ -38,6 +38,18 @@
   .save-bar button:disabled { background: #6b7280; cursor: not-allowed; }
   .save-bar .summary { color: #cbd5e1; font-size: 13px; }
   .empty { color: #6b7280; text-align: center; padding: 60px 0; }
+  header button.secondary { background: #374151; }
+  #statsPanel { background: #fff; margin: 20px 24px 0; border-radius: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); padding: 18px 22px; max-width: 1200px; margin-left: auto; margin-right: auto; }
+  #statsPanel h2 { margin: 0 0 14px; font-size: 16px; }
+  .stats-totals { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; text-align: center; }
+  .stat-card .num { font-size: 22px; font-weight: 700; color: #1e2530; }
+  .stat-card .label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .stats-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .stats-table th, .stats-table td { text-align: right; padding: 6px 10px; border-bottom: 1px solid #f0f0f0; }
+  .stats-table th:first-child, .stats-table td:first-child { text-align: left; }
+  .stats-table th { color: #6b7280; font-weight: 600; }
+  .stats-table tr.not-found td { color: #d1d5db; font-style: italic; }
 </style>
 </head>
 <body>
@@ -45,8 +57,10 @@
   <h1>CodeDo Lesson Formatting Tool</h1>
   <input id="lessonCode" placeholder="W16L01" maxlength="6" />
   <button id="previewBtn">Preview</button>
+  <button id="statsBtn" class="secondary">Stats</button>
   <span class="status" id="status"></span>
 </header>
+<section id="statsPanel" style="display:none"></section>
 <main id="main">
   <div class="empty">Enter a lesson code (e.g. <strong>W16L01</strong>) and click Preview.</div>
 </main>
@@ -175,6 +189,55 @@ saveBtn.addEventListener('click', async () => {
 
 document.getElementById('lessonCode').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('previewBtn').click();
+});
+
+const statsBtn = document.getElementById('statsBtn');
+const statsPanel = document.getElementById('statsPanel');
+let statsLoaded = false;
+
+function statCard(num, label) {
+  return `<div class="stat-card"><div class="num">${num}</div><div class="label">${label}</div></div>`;
+}
+
+function renderStats(data) {
+  const t = data.totals;
+  const rows = data.perWorld.map(w => w.found
+    ? `<tr><td>World ${w.world}</td><td>${w.lessons}</td><td>${w.exploreCards}</td><td>${w.predictQuestions}</td><td>${w.writeRunExercises}</td><td>${w.debugExercises}</td></tr>`
+    : `<tr class="not-found"><td>World ${w.world}</td><td colspan="5">not found</td></tr>`
+  ).join('');
+  statsPanel.innerHTML = `
+    <h2>Curriculum stats (computed just now)</h2>
+    <div class="stats-totals">
+      ${statCard(t.worlds, 'Worlds')}
+      ${statCard(t.lessons, 'Lessons')}
+      ${statCard(t.exploreCards, 'Explore examples')}
+      ${statCard(t.predictQuestions, 'Predictions')}
+      ${statCard(t.writeRunExercises, 'Write & Run exercises')}
+      ${statCard(t.debugExercises, 'Debug exercises')}
+    </div>
+    <table class="stats-table">
+      <thead><tr><th>World</th><th>Lessons</th><th>Explore</th><th>Predict</th><th>Write&amp;Run</th><th>Debug</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+statsBtn.addEventListener('click', async () => {
+  if (statsPanel.style.display !== 'none' && statsLoaded) {
+    statsPanel.style.display = 'none';
+    return;
+  }
+  statsPanel.style.display = 'block';
+  statsPanel.innerHTML = '<div class="empty">Calculating stats across all worlds…</div>';
+  try {
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Stats failed');
+    renderStats(data);
+    statsLoaded = true;
+  } catch (err) {
+    statsPanel.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+  }
 });
 </script>
 </body>

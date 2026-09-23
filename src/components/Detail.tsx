@@ -4,6 +4,7 @@ import { FiveStageLesson, AVAILABLE_FIVE_STAGE_LESSONS } from '../data/lessonSta
 import { soundFX } from '../utils/audio';
 import { DetailedTutorialView } from './DetailedTutorialView';
 import { getDetailedTutorial } from '../data/detailedTutorialsData';
+import { OLD_TUTORIALS_BACKUP } from '../data/detailedTutorialsData.OLD_BACKUP'; // TEMP: remove once the old-vs-new comparison is done
 
 // 6 Lesson Stage Components (1: Learn, 2: Explore, 3: Predict, 4: Write & Run, 5: Debug, 6: Mastered)
 import { Learn } from './Learn';
@@ -103,16 +104,21 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   const [showDetailedTutorial, setShowDetailedTutorial] = useState<boolean>(false);
   const [showTutorialHint, setShowTutorialHint] = useState<boolean>(true);
   const [isHoveringTutorialBtn, setIsHoveringTutorialBtn] = useState<boolean>(false);
+  const [showOldTutorialVersion, setShowOldTutorialVersion] = useState<boolean>(false); // TEMP: old-vs-new comparison toggle
   const tutorialButtonRef = useRef<HTMLButtonElement>(null);
   const tutorialHintRef = useRef<HTMLDivElement>(null);
 
-  const detailedTutorial = useMemo(() => {
+  const newDetailedTutorial = useMemo(() => {
     return (
       getDetailedTutorial(lessonData.id, lessonData) ||
       getDetailedTutorial(currentLessonKey, lessonData) ||
       getDetailedTutorial(lessonData.topicTitle, lessonData)
     );
   }, [lessonData, currentLessonKey]);
+
+  // TEMP: only lessons with a saved backup entry can show the "old version" -- remove alongside OLD_TUTORIALS_BACKUP
+  const oldDetailedTutorial = newDetailedTutorial ? OLD_TUTORIALS_BACKUP[newDetailedTutorial.lessonId] : undefined;
+  const detailedTutorial = showOldTutorialVersion && oldDetailedTutorial ? oldDetailedTutorial : newDetailedTutorial;
 
   useEffect(() => {
     // Show tutorial hint when entering a lesson with a tutorial
@@ -314,6 +320,9 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
         isDark={isDark}
         onBack={closeDetailedTutorial}
         onToggleTheme={onToggleTheme}
+        oldVersionAvailable={!!oldDetailedTutorial}
+        isShowingOldVersion={showOldTutorialVersion}
+        onToggleOldVersion={() => setShowOldTutorialVersion((v) => !v)}
       />
     );
   }

@@ -17,6 +17,7 @@ import { resolveLesson } from './lessonLocator';
 import { extractFields, fieldKey, type FieldEntry } from './extractFields';
 import { formatKotlinLines, formatJoinedKotlin } from './kotlinFormatter';
 import { applyUpdatesToFile, type FieldUpdate } from './applyFieldUpdate';
+import { KNOWN_WORLD_COUNT, loadWorldLessons } from './worldDiscovery';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -128,6 +129,53 @@ app.post('/api/save', async (req, res) => {
     res.json({ ok: true, savedFields: updates.length });
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+interface WorldStats {
+  world: number;
+  found: boolean;
+  lessons: number;
+  exploreCards: number;
+  predictQuestions: number;
+  writeRunExercises: number;
+  debugExercises: number;
+}
+
+app.get('/api/stats', async (_req, res) => {
+  try {
+    const perWorld: WorldStats[] = [];
+    for (let world = 1; world <= KNOWN_WORLD_COUNT; world++) {
+      const lessons = await loadWorldLessons(world);
+      if (!lessons) {
+        perWorld.push({ world, found: false, lessons: 0, exploreCards: 0, predictQuestions: 0, writeRunExercises: 0, debugExercises: 0 });
+        continue;
+      }
+      const stat: WorldStats = { world, found: true, lessons: lessons.length, exploreCards: 0, predictQuestions: 0, writeRunExercises: 0, debugExercises: 0 };
+      for (const lesson of lessons) {
+        stat.exploreCards += lesson?.explore?.cards?.length ?? 0;
+        stat.predictQuestions += lesson?.predict?.questions?.length ?? 0;
+        if (lesson?.writeRun) stat.writeRunExercises += 1;
+        if (lesson?.debug) stat.debugExercises += 1;
+      }
+      perWorld.push(stat);
+    }
+
+    const totals = perWorld.reduce(
+      (acc, s) => ({
+        worlds: acc.worlds + (s.found ? 1 : 0),
+        lessons: acc.lessons + s.lessons,
+        exploreCards: acc.exploreCards + s.exploreCards,
+        predictQuestions: acc.predictQuestions + s.predictQuestions,
+        writeRunExercises: acc.writeRunExercises + s.writeRunExercises,
+        debugExercises: acc.debugExercises + s.debugExercises,
+      }),
+      { worlds: 0, lessons: 0, exploreCards: 0, predictQuestions: 0, writeRunExercises: 0, debugExercises: 0 }
+    );
+
+    res.json({ totals, perWorld });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
   }
 });
 
