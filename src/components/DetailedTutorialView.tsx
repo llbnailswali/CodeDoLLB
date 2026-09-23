@@ -4,15 +4,74 @@ import { renderKotlinCodeLines } from '../utils/codeHighlighter';
 import { soundFX } from '../utils/audio';
 import { AnimatedFlowChart } from './visuals/AnimatedFlowChart';
 
+/**
+ * Custom Cubic-Bezier curve evaluator.
+ * Solves B_x(u) = t using Newton-Raphson with bisection fallback,
+ * then returns B_y(u) to provide exact CSS cubic-bezier easing.
+ */
+function createCubicBezierEasing(x1: number, y1: number, x2: number, y2: number) {
+  const cx = 3 * x1;
+  const bx = 3 * (x2 - x1) - cx;
+  const ax = 1 - cx - bx;
+
+  const cy = 3 * y1;
+  const by = 3 * (y2 - y1) - cy;
+  const ay = 1 - cy - by;
+
+  function sampleCurveX(t: number) {
+    return ((ax * t + bx) * t + cx) * t;
+  }
+
+  function sampleCurveY(t: number) {
+    return ((ay * t + by) * t + cy) * t;
+  }
+
+  function sampleCurveDerivativeX(t: number) {
+    return (3 * ax * t + 2 * bx) * t + cx;
+  }
+
+  function solveCurveX(x: number, epsilon = 1e-5) {
+    let t2 = x;
+    // Newton-Raphson iteration
+    for (let i = 0; i < 8; i++) {
+      const x2 = sampleCurveX(t2) - x;
+      if (Math.abs(x2) < epsilon) return t2;
+      const d2 = sampleCurveDerivativeX(t2);
+      if (Math.abs(d2) < 1e-6) break;
+      t2 -= x2 / d2;
+    }
+    // Fallback bisection
+    let t0 = 0.0;
+    let t1 = 1.0;
+    t2 = x;
+    if (t2 < t0) return t0;
+    if (t2 > t1) return t1;
+    while (t0 < t1) {
+      const x2 = sampleCurveX(t2);
+      if (Math.abs(x2 - x) < epsilon) return t2;
+      if (x > x2) t0 = t2;
+      else t1 = t2;
+      t2 = (t1 - t0) * 0.5 + t0;
+    }
+    return t2;
+  }
+
+  return (progress: number): number => {
+    if (progress <= 0) return 0;
+    if (progress >= 1) return 1;
+    return sampleCurveY(solveCurveX(progress));
+  };
+}
+
+// Tactile & premium easing curve: cubic-bezier(0.16, 1, 0.3, 1)
+// Responsive quick start, fluid motion, and smooth cushioned settling
+const tactileScrollEase = createCubicBezierEasing(0.16, 1.0, 0.3, 1.0);
+
 interface DetailedTutorialViewProps {
   tutorial: DetailedTutorialData;
   isDark: boolean;
   onBack: () => void;
   onToggleTheme?: () => void;
-  /** TEMP (old-vs-new content comparison): remove these three once a final version is chosen. */
-  oldVersionAvailable?: boolean;
-  isShowingOldVersion?: boolean;
-  onToggleOldVersion?: () => void;
 }
 
 /**
@@ -55,18 +114,74 @@ export const DetailedTutorialView: React.FC<DetailedTutorialViewProps> = ({
   isDark,
   onBack,
   onToggleTheme,
-  oldVersionAvailable,
-  isShowingOldVersion,
-  onToggleOldVersion,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState<number>(0);
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
   const [isComfortableSize, setIsComfortableSize] = useState<boolean>(false);
 
+  // Tab & scroll-spy state
+  const [activeTabId, setActiveTabId] = useState<string>(tutorial.toc?.[0]?.id || '');
+  const tabsScrollRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const tabBarRef = useRef<HTMLElement>(null);
+  const isProgrammaticScrollRef = useRef<boolean>(false);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollAnimRef = useRef<number | null>(null);
+
+  // Cancel active programmatic cubic-bezier scroll animation if user interacts manually
+  useEffect(() => {
+    const cancelAnim = () => {
+      if (scrollAnimRef.current !== null) {
+        cancelAnimationFrame(scrollAnimRef.current);
+        scrollAnimRef.current = null;
+        isProgrammaticScrollRef.current = false;
+      }
+    };
+
+    const rootEl = document.getElementById('root');
+    rootEl?.addEventListener('wheel', cancelAnim, { passive: true });
+    rootEl?.addEventListener('touchstart', cancelAnim, { passive: true });
+    window.addEventListener('wheel', cancelAnim, { passive: true });
+    window.addEventListener('touchstart', cancelAnim, { passive: true });
+
+    return () => {
+      rootEl?.removeEventListener('wheel', cancelAnim);
+      rootEl?.removeEventListener('touchstart', cancelAnim);
+      window.removeEventListener('wheel', cancelAnim);
+      window.removeEventListener('touchstart', cancelAnim);
+      if (scrollAnimRef.current !== null) {
+        cancelAnimationFrame(scrollAnimRef.current);
+      }
+    };
+  }, []);
+
   // Quiz state
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [showExplanations, setShowExplanations] = useState<Record<string, boolean>>({});
+
+  // Reset active tab to first section on tutorial change
+  useEffect(() => {
+    if (tutorial.toc && tutorial.toc.length > 0) {
+      setActiveTabId(tutorial.toc[0].id);
+    }
+  }, [tutorial.lessonId, tutorial.toc]);
+
+  // Keep active tab visible in the horizontal scroller
+  useEffect(() => {
+    if (!activeTabId || !tutorial.toc) return;
+    const activeIdx = tutorial.toc.findIndex((item) => item.id === activeTabId);
+    if (activeIdx >= 0) {
+      const activeTabEl = tabRefs.current[activeIdx];
+      if (activeTabEl && tabsScrollRef.current) {
+        activeTabEl.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center',
+        });
+      }
+    }
+  }, [activeTabId, tutorial.toc]);
 
   // Dynamic typography classes based on reader preference
   const proseTextSize = isComfortableSize
@@ -77,21 +192,131 @@ export const DetailedTutorialView: React.FC<DetailedTutorialViewProps> = ({
     ? 'text-[16px] sm:text-[17px] leading-[1.75]'
     : 'text-[15px] sm:text-base leading-[1.65]';
 
-  // Track scroll progress for the top bar progress line
+  // Track scroll progress for the top bar progress line and scroll-spy for tabs
   useEffect(() => {
+    const rootEl = document.getElementById('root');
+
     const handleScroll = () => {
-      const container = containerRef.current || document.documentElement;
-      const scrollTop = container.scrollTop || window.scrollY;
-      const scrollHeight = (container.scrollHeight || document.documentElement.scrollHeight) - (container.clientHeight || window.innerHeight);
-      if (scrollHeight > 0) {
-        const progress = Math.min(100, Math.max(0, (scrollTop / scrollHeight) * 100));
+      const currentScrollTop = rootEl
+        ? rootEl.scrollTop
+        : (window.scrollY || document.documentElement.scrollTop || 0);
+      const scrollHeight = rootEl
+        ? rootEl.scrollHeight
+        : document.documentElement.scrollHeight;
+      const clientHeight = rootEl ? rootEl.clientHeight : window.innerHeight;
+
+      // 1. Reading progress bar
+      const maxScroll = scrollHeight - clientHeight;
+      if (maxScroll > 0) {
+        const progress = Math.min(100, Math.max(0, (currentScrollTop / maxScroll) * 100));
         setScrollProgress(progress);
+      }
+
+      // 2. Scroll-spy for tutorial.toc tabs
+      if (isProgrammaticScrollRef.current) return;
+      if (!tutorial.toc || tutorial.toc.length === 0) return;
+
+      // If user reaches near bottom, highlight the last tab (quiz)
+      const isNearBottom = maxScroll > 0 && maxScroll - currentScrollTop < 100;
+      if (isNearBottom) {
+        const lastId = tutorial.toc[tutorial.toc.length - 1].id;
+        setActiveTabId((prev) => (prev !== lastId ? lastId : prev));
+        return;
+      }
+
+      const triggerOffset = Math.min(220, window.innerHeight * 0.35);
+
+      let currentId = tutorial.toc[0].id;
+      for (const item of tutorial.toc) {
+        const el = document.getElementById(item.id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= triggerOffset) {
+            currentId = item.id;
+          } else {
+            break;
+          }
+        }
+      }
+
+      setActiveTabId((prev) => (prev !== currentId ? currentId : prev));
+    };
+
+    rootEl?.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+
+    handleScroll();
+
+    return () => {
+      rootEl?.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', handleScroll, { capture: true });
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [tutorial.toc]);
+
+  const handleTabClick = (targetId: string) => {
+    soundFX.playClick();
+    setActiveTabId(targetId);
+
+    const el = document.getElementById(targetId);
+    if (!el) return;
+
+    const rootEl = document.getElementById('root');
+    const startRoot = rootEl ? rootEl.scrollTop : 0;
+    const startWindow = window.scrollY || document.documentElement.scrollTop || 0;
+
+    const rectTop = el.getBoundingClientRect().top;
+    const headerOffset = 58; // 52px sticky header + 6px breathing margin
+    const targetRoot = Math.max(0, startRoot + rectTop - headerOffset);
+    const targetWindow = Math.max(0, startWindow + rectTop - headerOffset);
+
+    const deltaRoot = targetRoot - startRoot;
+    const deltaWindow = targetWindow - startWindow;
+    const distance = Math.max(Math.abs(deltaRoot), Math.abs(deltaWindow));
+
+    // Dynamic duration based on travel distance for natural tactile feel:
+    // 380ms for adjacent sections, scaling gracefully up to 720ms for full-length transitions
+    const duration = Math.min(720, Math.max(380, Math.round(distance * 0.28 + 320)));
+
+    // Cancel any ongoing scroll animation
+    if (scrollAnimRef.current !== null) {
+      cancelAnimationFrame(scrollAnimRef.current);
+      scrollAnimRef.current = null;
+    }
+
+    // Suppress scroll-spy during programmatic animation
+    isProgrammaticScrollRef.current = true;
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    scrollTimeoutRef.current = setTimeout(() => {
+      isProgrammaticScrollRef.current = false;
+    }, duration + 50);
+
+    const startTime = performance.now();
+
+    const animateScroll = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const easedProgress = tactileScrollEase(progress);
+
+      if (rootEl) {
+        rootEl.scrollTop = Math.round(startRoot + deltaRoot * easedProgress);
+      }
+      window.scrollTo(0, Math.round(startWindow + deltaWindow * easedProgress));
+
+      if (progress < 1) {
+        scrollAnimRef.current = requestAnimationFrame(animateScroll);
+      } else {
+        scrollAnimRef.current = null;
+        isProgrammaticScrollRef.current = false;
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    scrollAnimRef.current = requestAnimationFrame(animateScroll);
+  };
 
   const handleCopy = (codeText: string, id: string) => {
     soundFX.playClick();
@@ -125,84 +350,125 @@ export const DetailedTutorialView: React.FC<DetailedTutorialViewProps> = ({
         isDark ? 'bg-[#0a0e17] text-slate-100' : 'bg-[#f8f9fb] text-slate-900'
       }`}
     >
-      {/* Top Reading Progress Bar (Fixed) */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-transparent z-50">
+      {/* ================= STICKY TOP HEADER WITH PROGRESS BAR ================= */}
+      <header
+        className={`sticky top-0 left-0 right-0 z-40 w-full border-b backdrop-blur-md transition-colors ${
+          isDark
+            ? 'bg-[#0a0e17]/95 border-white/10 shadow-sm shadow-black/30'
+            : 'bg-[#f8f9fb]/95 border-slate-200/90 shadow-xs'
+        }`}
+      >
+        <div className="max-w-2xl mx-auto w-full px-3 sm:px-4 h-12 flex items-center justify-between gap-3">
+          {/* Left: Back affordance + Tutorial Title */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              type="button"
+              id="detailed-tutorial-back-btn"
+              onClick={() => {
+                soundFX.playClick();
+                onBack();
+              }}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 ${
+                isDark
+                  ? 'text-slate-300 hover:text-white hover:bg-white/10'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+              }`}
+              title="Close Tutorial"
+              aria-label="Close Tutorial"
+            >
+              <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+            </button>
+
+            <h1
+              className={`text-xs sm:text-sm font-bold font-outfit truncate ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}
+            >
+              {tutorial.title}
+            </h1>
+          </div>
+
+          {/* Right: Progress % badge + Aa font size toggle + Day/Night Mode Switch */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <span
+              className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-md border tabular-nums ${
+                isDark
+                  ? 'bg-indigo-950/70 text-indigo-300 border-indigo-800/60'
+                  : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+              }`}
+            >
+              {Math.round(scrollProgress)}%
+            </span>
+
+            {/* Font Size Reading Toggle (Comfortable vs Standard) */}
+            <button
+              type="button"
+              id="detailed-tutorial-font-size-btn"
+              onClick={() => {
+                soundFX.playClick();
+                setIsComfortableSize(!isComfortableSize);
+              }}
+              className={`h-7 px-2 rounded-lg flex items-center justify-center gap-0.5 transition-all cursor-pointer active:scale-95 text-xs font-bold border ${
+                isComfortableSize
+                  ? 'bg-indigo-600 text-white border-indigo-500 shadow-xs'
+                  : isDark
+                  ? 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
+                  : 'bg-slate-100 hover:bg-slate-200/70 text-slate-700 border-slate-200'
+              }`}
+              title={isComfortableSize ? 'Switch to Standard Text' : 'Switch to Large Reading Text'}
+              aria-label="Toggle Reading Text Size"
+            >
+              <span className="text-[11px] tracking-tight">Aa</span>
+              <span className="text-[9px] opacity-75">{isComfortableSize ? 'Lg' : 'Sm'}</span>
+            </button>
+
+            {/* Day / Night Theme Switch */}
+            {onToggleTheme && (
+              <button
+                type="button"
+                id="detailed-tutorial-theme-btn"
+                aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+                title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+                onClick={() => {
+                  soundFX.playClick();
+                  onToggleTheme();
+                }}
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 border ${
+                  isDark
+                    ? 'bg-white/5 hover:bg-white/10 text-amber-400 border-white/10'
+                    : 'bg-slate-100 hover:bg-slate-200/70 text-slate-700 hover:text-indigo-600 border-slate-200'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[17px]">
+                  {isDark ? 'light_mode' : 'dark_mode'}
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Sticky Progress Bar Track along bottom edge of header */}
         <div
-          className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 transition-all duration-150"
-          style={{ width: `${scrollProgress}%` }}
-        />
-      </div>
-
-      {/* Floating Controls Bar at Top Right */}
-      <div className="fixed top-3 right-3 z-50 flex items-center gap-2">
-        {/* TEMP: Old vs New content comparison toggle -- remove once a final version is chosen */}
-        {oldVersionAvailable && onToggleOldVersion && (
-          <button
-            type="button"
-            id="detailed-tutorial-old-version-btn"
-            onClick={() => {
-              soundFX.playClick();
-              onToggleOldVersion();
-            }}
-            className={`h-9 px-3 rounded-full flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-lg backdrop-blur-md font-outfit text-xs font-bold border ${
-              isShowingOldVersion
-                ? 'bg-amber-500 text-white border-amber-300 shadow-amber-500/30'
-                : isDark
-                ? 'bg-slate-900/85 hover:bg-slate-800 text-amber-400 border-amber-500/40 shadow-black/40'
-                : 'bg-white/95 hover:bg-slate-100 text-amber-600 border-amber-400/60 shadow-slate-400/20'
-            }`}
-            title={isShowingOldVersion ? 'Viewing the old version -- click to show the new version' : 'Temp: view the old version of this tutorial for comparison'}
-            aria-label="Toggle old tutorial version"
-          >
-            <span className="material-symbols-outlined text-[16px]">history</span>
-            <span className="text-[11px] tracking-tight">{isShowingOldVersion ? 'Old Version' : 'View Old'}</span>
-          </button>
-        )}
-
-        {/* Font Size Reading Toggle (Comfortable vs Standard) */}
-        <button
-          type="button"
-          id="detailed-tutorial-font-size-btn"
-          onClick={() => {
-            soundFX.playClick();
-            setIsComfortableSize(!isComfortableSize);
-          }}
-          className={`h-9 px-2.5 rounded-full flex items-center justify-center gap-1 transition-all cursor-pointer active:scale-95 shadow-lg backdrop-blur-md font-outfit text-xs font-bold border ${
-            isComfortableSize
-              ? 'bg-indigo-600 text-white border-indigo-400 shadow-indigo-500/25'
-              : isDark
-              ? 'bg-slate-900/85 hover:bg-slate-800 text-slate-200 border-white/20 shadow-black/40'
-              : 'bg-white/95 hover:bg-slate-100 text-slate-700 border-slate-300 shadow-slate-400/20'
-          }`}
-          title={isComfortableSize ? 'Switch to Standard Text' : 'Switch to Large Reading Text'}
-          aria-label="Toggle Reading Text Size"
+          role="progressbar"
+          aria-label="Section Reading Progress"
+          aria-valuenow={Math.round(scrollProgress)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          className="w-full h-1 bg-slate-200/60 dark:bg-white/10 relative overflow-hidden"
         >
-          <span className="text-[11px] tracking-tight">Aa</span>
-          <span className="text-[10px] opacity-75">{isComfortableSize ? 'Lg' : 'Sm'}</span>
-        </button>
-
-        {/* Floating Close Button */}
-        <button
-          type="button"
-          id="detailed-tutorial-close-btn"
-          onClick={() => {
-            soundFX.playClick();
-            onBack();
-          }}
-          className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-90 shadow-lg backdrop-blur-md ${
-            isDark
-              ? 'bg-slate-900/85 hover:bg-slate-800 text-slate-200 border border-white/20 shadow-black/40'
-              : 'bg-white/95 hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-slate-400/20'
-          }`}
-          title="Close Tutorial"
-          aria-label="Close Tutorial"
-        >
-          <span className="material-symbols-outlined text-[20px]">close</span>
-        </button>
-      </div>
+          <div
+            className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 transition-all duration-150 ease-out"
+            style={{ width: `${scrollProgress}%` }}
+          />
+        </div>
+      </header>
 
       {/* Main Content Article Body - Edge-to-Edge reading with zero unnecessary wasted space */}
-      <main className="flex-1 max-w-2xl mx-auto w-full px-0 pt-0 pb-10 space-y-3 sm:space-y-4">
+      <main
+        className={`flex-1 max-w-2xl mx-auto w-full px-0 pt-0 space-y-3 sm:space-y-4 ${
+          tutorial.toc && tutorial.toc.length > 0 ? 'pb-24 sm:pb-28' : 'pb-10'
+        }`}
+      >
         {/* ================= HERO HEADER CARD ================= */}
         <section
           className={`px-4 pt-4 pb-5 sm:px-6 sm:pt-6 sm:pb-6 border-b transition-all relative overflow-hidden ${
@@ -214,7 +480,7 @@ export const DetailedTutorialView: React.FC<DetailedTutorialViewProps> = ({
           {/* Subtle Background Glow */}
           <div className="absolute -top-16 -right-16 w-44 h-44 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
 
-          <div className="flex flex-wrap items-center gap-2 mb-3 pr-24">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
             <span
               className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border ${
                 isDark
@@ -282,8 +548,8 @@ export const DetailedTutorialView: React.FC<DetailedTutorialViewProps> = ({
         {tutorial.sections.map((sec, secIdx) => (
           <article
             key={sec.id}
-            id={`tut-sec-${sec.id}`}
-            className={`px-4 py-4 sm:px-6 sm:py-5 border-y transition-all scroll-mt-6 ${
+            id={sec.id}
+            className={`px-4 py-4 sm:px-6 sm:py-5 border-y transition-all scroll-mt-16 ${
               isDark
                 ? 'bg-[#121726] border-white/10 shadow-sm'
                 : 'bg-white border-slate-200/80 shadow-xs'
@@ -556,8 +822,8 @@ export const DetailedTutorialView: React.FC<DetailedTutorialViewProps> = ({
 
         {/* ================= COMMON GOTCHAS & PITFALLS ================= */}
         <section
-          id="tut-sec-gotchas"
-          className={`px-4 py-4 sm:px-6 sm:py-5 border-y transition-all scroll-mt-6 ${
+          id="gotchas"
+          className={`px-4 py-4 sm:px-6 sm:py-5 border-y transition-all scroll-mt-16 ${
             isDark
               ? 'bg-[#121726] border-white/10 shadow-sm'
               : 'bg-white border-slate-200/80 shadow-xs'
@@ -665,8 +931,8 @@ export const DetailedTutorialView: React.FC<DetailedTutorialViewProps> = ({
 
         {/* ================= QUICK CHEATSHEET ================= */}
         <section
-          id="tut-sec-cheatsheet"
-          className={`px-4 py-4 sm:px-6 sm:py-5 border-y transition-all scroll-mt-6 ${
+          id="cheatsheet"
+          className={`px-4 py-4 sm:px-6 sm:py-5 border-y transition-all scroll-mt-16 ${
             isDark
               ? 'bg-[#121726] border-white/10 shadow-sm'
               : 'bg-white border-slate-200/80 shadow-xs'
@@ -732,8 +998,8 @@ export const DetailedTutorialView: React.FC<DetailedTutorialViewProps> = ({
 
         {/* ================= INTERACTIVE KNOWLEDGE CHECK (QUIZ) ================= */}
         <section
-          id="tut-sec-quiz"
-          className={`px-4 py-4 sm:px-6 sm:py-5 border-y transition-all scroll-mt-6 ${
+          id="quiz"
+          className={`px-4 py-4 sm:px-6 sm:py-5 border-y transition-all scroll-mt-16 ${
             isDark
               ? 'bg-[#121726] border-white/10 shadow-sm'
               : 'bg-white border-slate-200/80 shadow-xs'
@@ -890,6 +1156,66 @@ export const DetailedTutorialView: React.FC<DetailedTutorialViewProps> = ({
           </div>
         </section>
       </main>
+
+      {/* ================= FIXED BOTTOM SECTION TABS ================= */}
+      {tutorial.toc && tutorial.toc.length > 0 && (
+        <nav
+          ref={tabBarRef}
+          aria-label="Tutorial Sections"
+          className={`fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur-md transition-colors ${
+            isDark
+              ? 'bg-[#0a0e17]/95 border-white/10 shadow-lg shadow-black/50'
+              : 'bg-[#f8f9fb]/95 border-slate-200 shadow-lg shadow-slate-900/10'
+          }`}
+        >
+          <div className="max-w-2xl mx-auto w-full px-3 sm:px-4 py-2 sm:py-2.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+            <div
+              ref={tabsScrollRef}
+              className="flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {tutorial.toc.map((item, idx) => {
+                const isActive = activeTabId === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    ref={(el) => {
+                      tabRefs.current[idx] = el;
+                    }}
+                    type="button"
+                    onClick={() => handleTabClick(item.id)}
+                    className={`flex-shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-medium font-outfit transition-all cursor-pointer select-none whitespace-nowrap flex items-center gap-1.5 ${
+                      isActive
+                        ? isDark
+                          ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-500/25 ring-1 ring-indigo-400/30'
+                          : 'bg-indigo-600 text-white font-semibold shadow-xs'
+                        : isDark
+                        ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    {item.id === 'gotchas' && (
+                      <span className="material-symbols-outlined text-[13px] text-amber-500">
+                        warning
+                      </span>
+                    )}
+                    {item.id === 'cheatsheet' && (
+                      <span className="material-symbols-outlined text-[13px] text-indigo-400">
+                        bookmark
+                      </span>
+                    )}
+                    {item.id === 'quiz' && (
+                      <span className="material-symbols-outlined text-[13px] text-emerald-400">
+                        quiz
+                      </span>
+                    )}
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </nav>
+      )}
     </div>
   );
 };
