@@ -1,4 +1,6 @@
 import type { FiveStageLesson } from './lessonStagesData';
+import { WORLD_1_DETAILED_TUTORIALS } from './curriculum/world1DetailedTutorials';
+import { WORLD_2_DETAILED_TUTORIALS } from './curriculum/world2DetailedTutorials';
 
 export interface TutorialSection {
   id: string;
@@ -773,6 +775,19 @@ export const DETAILED_TUTORIALS: Record<string, DetailedTutorialData> = {
     ]
   }
 };
+
+// Regenerated tutorials (produced lesson-by-lesson from each lesson's real
+// five-stage source, checked against every other lesson in the same world for
+// duplicated scope -- see the CodeDo_Tab_Names_Review workflow) override the
+// hand-authored entries above for the lessons they cover. Only fully reviewed
+// lessons are added to a world's array; everything else keeps its existing
+// entry above until it's regenerated too.
+for (const tutorial of WORLD_1_DETAILED_TUTORIALS) {
+  DETAILED_TUTORIALS[tutorial.lessonId] = tutorial;
+}
+for (const tutorial of WORLD_2_DETAILED_TUTORIALS) {
+  DETAILED_TUTORIALS[tutorial.lessonId] = tutorial;
+}
 
 /**
  * Creates a comprehensive fallback tutorial for lessons that do not yet have a dedicated handcrafted entry.

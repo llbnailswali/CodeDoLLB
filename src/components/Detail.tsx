@@ -65,7 +65,7 @@ const STAGE_CONTINUE_LABELS: Record<StageKey, string> = {
 
 export const Detail = forwardRef<DetailHandle, DetailProps>(({
   theme,
-  initialLessonKey = 'functions',
+  initialLessonKey = '',
   initialStageKey,
   userStats,
   onExit,
@@ -90,12 +90,11 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   // Temporary developer/tester tools
   const [showSkipMenu, setShowSkipMenu] = useState<boolean>(false);
 
-  // Write & Run state
-  const lessonData: FiveStageLesson =
-    AVAILABLE_FIVE_STAGE_LESSONS[currentLessonKey] ||
-    AVAILABLE_FIVE_STAGE_LESSONS.functions ||
-    AVAILABLE_FIVE_STAGE_LESSONS.variables;
-  const [userCode, setUserCode] = useState<string>(lessonData.writeRun?.initialCode ?? '');
+  // Write & Run state. No fallback lesson: an unrecognized key renders blank
+  // (see the guard after the hooks below) rather than silently substituting
+  // unrelated content.
+  const lessonData: FiveStageLesson | undefined = AVAILABLE_FIVE_STAGE_LESSONS[currentLessonKey];
+  const [userCode, setUserCode] = useState<string>(lessonData?.writeRun?.initialCode ?? '');
   const [hasRunCode, setHasRunCode] = useState<boolean>(false);
   const [actualOutput, setActualOutput] = useState<string>('');
 
@@ -107,6 +106,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   const tutorialHintRef = useRef<HTMLDivElement>(null);
 
   const detailedTutorial = useMemo(() => {
+    if (!lessonData) return null;
     return (
       getDetailedTutorial(lessonData.id, lessonData) ||
       getDetailedTutorial(currentLessonKey, lessonData) ||
@@ -144,7 +144,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   }, [showTutorialHint]);
 
   useEffect(() => {
-    setUserCode(lessonData.writeRun?.initialCode ?? '');
+    setUserCode(lessonData?.writeRun?.initialCode ?? '');
     setHasRunCode(false);
     setActualOutput('');
   }, [currentLessonKey]);
@@ -154,10 +154,10 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   // lesson provides that stage's data (see the FiveStageLesson comment).
   const activeStages: StageKey[] = [
     'learn',
-    ...(lessonData.explore ? (['explore'] as const) : []),
-    ...(lessonData.predict ? (['predict'] as const) : []),
-    ...(lessonData.writeRun ? (['writeRun'] as const) : []),
-    ...(lessonData.debug ? (['debug'] as const) : []),
+    ...(lessonData?.explore ? (['explore'] as const) : []),
+    ...(lessonData?.predict ? (['predict'] as const) : []),
+    ...(lessonData?.writeRun ? (['writeRun'] as const) : []),
+    ...(lessonData?.debug ? (['debug'] as const) : []),
     'mastered',
   ];
   // Stage navigation is an explicit stack rather than an inferred numeric
@@ -228,7 +228,7 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
     if (currentStageIndex < activeStages.length - 1) {
       saveCurrentStageScroll();
       setStageStack((previous) => [...previous, activeStages[currentStageIndex + 1]]);
-    } else {
+    } else if (lessonData) {
       soundFX.playSuccess();
       onCompleteLesson(lessonData.mastered.xpEarned, lessonData.worldId);
     }
@@ -262,6 +262,12 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
       handlePreviousStage();
     },
   }));
+
+  // An unrecognized lesson key resolves to nothing -- render blank rather
+  // than substituting an unrelated lesson's content.
+  if (!lessonData) {
+    return null;
+  }
 
   const handleJumpToStage = (key: StageKey) => {
     soundFX.playClick();

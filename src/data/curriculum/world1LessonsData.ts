@@ -1,7 +1,411 @@
 import { FiveStageLesson } from '../lessonStagesData';
 
-// Re-export or reference existing 1 & 2
-export { WHAT_IS_KOTLIN_LESSON, KOTLIN_SYNTAX_LESSON } from '../lessonStagesData';
+// =========================================================================
+// LESSON 1: What is Kotlin? (world-1-what-is-kotlin)
+// =========================================================================
+// Pure theory topic -- per CODEDO_MASTER_PLAN.md's own "What is Kotlin?"
+// example: Learn -> MCQ (via Predict, code-less) -> Mastered. No Explore,
+// Write & Run, or Debug: those activities don't meaningfully apply to a
+// conceptual "what/why" topic, and function syntax (params, return types)
+// belongs to the Functions world (World 5), not here.
+export const WHAT_IS_KOTLIN_LESSON: FiveStageLesson = {
+  id: 'world-1-what-is-kotlin',
+  worldId: 'world-1',
+  worldName: 'Kotlin Awakening',
+  stageName: 'STAGE 1 — FOUNDATIONS',
+  topicTitle: 'What is Kotlin?',
+  learn: {
+    title: 'What is Kotlin?',
+    subtitle:
+      'Kotlin is a modern programming language created by JetBrains in 2011. In 2017, Google made it an officially supported language for Android development, and today it also powers backend services, desktop apps, and even iOS apps through Kotlin Multiplatform.',
+    exampleTag: 'GOOD TO KNOW',
+    exampleTitle: 'A taste of Kotlin',
+    language: 'Kotlin',
+    codeSnippet: [
+      'fun main() {',
+      '    println("Hello, Kotlin!")',
+      '}'
+    ],
+    explanation: 'This is roughly what a small Kotlin program looks like. Don\'t worry about the details yet -- you\'ll learn exactly how this works in the next lesson.',
+    keyIdeas: [
+      {
+        number: 1,
+        title: 'Created by JetBrains',
+        description: 'The same company behind IntelliJ IDEA and other popular developer tools, first released in 2011.'
+      },
+      {
+        number: 2,
+        title: 'Official language for Android',
+        description: 'Google declared Kotlin an officially supported Android language in 2017, and now recommends it as the preferred choice.'
+      },
+      {
+        number: 3,
+        title: 'Statically typed and null-safe',
+        description: 'Every value\'s type is checked before the program runs, and Kotlin\'s type system is designed to catch accidental null-related crashes early.'
+      },
+      {
+        number: 4,
+        title: 'Runs almost everywhere',
+        description: 'Beyond Android, Kotlin runs on the JVM for backend/server code, compiles to JavaScript, and even targets native platforms via Kotlin Multiplatform.'
+      },
+      {
+        number: 5,
+        title: 'Fully interoperable with Java',
+        description: 'Kotlin code can call Java code and vice versa, which is why so many existing Java/Android projects were able to adopt it gradually.'
+      }
+    ],
+    keyTakeaway: 'Kotlin is a modern, safe, and versatile language -- trusted for Android and increasingly used everywhere else too.'
+  },
+  predict: {
+    title: 'Check Your Understanding',
+    subtitle: 'A few quick questions based on what you just read -- no code involved yet.',
+    questions: [
+      {
+        id: 'mcq-kotlin-1',
+        questionNumber: 1,
+        totalQuestions: 3,
+        title: 'Origins',
+        topicMeta: 'What is Kotlin?',
+        language: 'Kotlin',
+        prompt: 'Who created Kotlin?',
+        options: [
+          { id: 'A', label: 'Google', isCorrect: false },
+          { id: 'B', label: 'JetBrains', isCorrect: true },
+          { id: 'C', label: 'Oracle', isCorrect: false },
+          { id: 'D', label: 'Microsoft', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'JetBrains, 2011',
+          detail: 'Kotlin was created by JetBrains, the company behind IntelliJ IDEA. Google later adopted it as an official Android language in 2017, but did not create it.'
+        }
+      },
+      {
+        id: 'mcq-kotlin-2',
+        questionNumber: 2,
+        totalQuestions: 3,
+        title: 'Platforms',
+        topicMeta: 'What is Kotlin?',
+        language: 'Kotlin',
+        prompt: 'Which of these can Kotlin be used for?',
+        options: [
+          { id: 'A', label: 'Only Android apps', isCorrect: false },
+          { id: 'B', label: 'Only backend/server code', isCorrect: false },
+          { id: 'C', label: 'Android, backend, and more via Kotlin Multiplatform', isCorrect: true },
+          { id: 'D', label: 'Only iOS apps', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'Runs almost everywhere',
+          detail: 'Kotlin targets Android, JVM backends, JavaScript, and native platforms -- it is not limited to just one type of app.'
+        }
+      },
+      {
+        id: 'mcq-kotlin-3',
+        questionNumber: 3,
+        totalQuestions: 3,
+        title: 'Type System',
+        topicMeta: 'What is Kotlin?',
+        language: 'Kotlin',
+        prompt: 'Is Kotlin statically typed or dynamically typed?',
+        options: [
+          { id: 'A', label: 'Statically typed', isCorrect: true },
+          { id: 'B', label: 'Dynamically typed', isCorrect: false },
+          { id: 'C', label: 'It has no type system', isCorrect: false },
+          { id: 'D', label: 'Only dynamically typed on Android', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'Statically typed and null-safe',
+          detail: 'Kotlin checks every value\'s type before the program runs (statically typed), which is part of what makes it safer than dynamically typed languages.'
+        }
+      }
+    ]
+  },
+  mastered: {
+    topicTitle: 'What is Kotlin?',
+    summary: 'You now know what Kotlin is, who created it, where it runs, and why it\'s considered a modern, safe language.',
+    passedCount: '3 / 3 PASSED',
+    verificationItems: [
+      {
+        title: 'Concept understood',
+        subtitle: 'What Kotlin is, its origins, and where it runs'
+      },
+      {
+        title: 'Understanding checked',
+        subtitle: '3/3 comprehension questions answered correctly'
+      }
+    ],
+    xpEarned: 20,
+    streakDays: 1,
+    accuracy: '100%'
+  }
+};
+
+// =========================================================================
+// LESSON 2: Kotlin Syntax & main() (world-1-kotlin-syntax)
+// =========================================================================
+// This is where actual code first appears: the program entry point and basic
+// syntax. Function mechanics (parameters, return types) are intentionally
+// NOT taught here -- that belongs to the Functions world (World 5). Here
+// main() is only introduced as "the place execution starts."
+export const KOTLIN_SYNTAX_LESSON: FiveStageLesson = {
+  id: 'world-1-kotlin-syntax',
+  worldId: 'world-1',
+  worldName: 'Kotlin Awakening',
+  stageName: 'STAGE 1 — FOUNDATIONS',
+  topicTitle: 'Kotlin Syntax & main()',
+  learn: {
+    title: 'Your Program\'s Entry Point',
+    subtitle:
+      'Every Kotlin program needs a starting point. That starting point is always main() -- when you run a Kotlin program, this is the first place execution begins.',
+    exampleTag: 'EXAMPLE',
+    exampleTitle: 'Your first Kotlin program',
+    language: 'Kotlin',
+    codeSnippet: [
+      'fun main() {',
+      '    println("Hello, Kotlin!")',
+      '}'
+    ],
+    explanation: 'Every Kotlin program starts execution inside main() { }. The statements inside its curly braces run one after another, from top to bottom.',
+    keyIdeas: [
+      {
+        number: 1,
+        title: 'main() is the entry point',
+        description: 'The place where every Kotlin program begins running.'
+      },
+      {
+        number: 2,
+        title: 'Statements run top to bottom',
+        description: 'Code inside main() executes sequentially, in the order it is written.'
+      },
+      {
+        number: 3,
+        title: 'Curly braces { }',
+        description: 'Mark the start and end of main()\'s body -- everything between them is what runs.'
+      }
+    ],
+    keyTakeaway: 'Every Kotlin program starts with main() { ... } -- that is where execution begins.'
+  },
+  explore: {
+    title: 'Explore the Concept',
+    subtitle: 'See how a Kotlin program is structured, from its entry point to running statements in order.',
+    cards: [
+      {
+        id: 'card-1',
+        number: '01',
+        title: 'A minimal Kotlin program',
+        language: 'Kotlin',
+        subtitle: 'The smallest program Kotlin can run.',
+        code: [
+          'fun main() {',
+          '',
+          '}'
+        ],
+        whatItMeans: [
+          { label: 'main', description: 'the special name Kotlin looks for first when a program starts' },
+          { label: '()', description: 'required syntax after every entry point name' },
+          { label: '{ }', description: 'an empty body -- this program runs and does nothing' }
+        ],
+        whatChanged: 'We defined the smallest valid Kotlin program: an empty entry point.'
+      },
+      {
+        id: 'card-2',
+        number: '02',
+        title: 'Printing output',
+        language: 'Kotlin',
+        subtitle: 'Add a statement so the program actually does something.',
+        code: [
+          'fun main() {',
+          '    println("Hello, Kotlin!")',
+          '}'
+        ],
+        whatItMeans: [
+          { label: 'println(...)', description: 'prints text to the console, followed by a new line' },
+          { label: '"Hello, Kotlin!"', description: 'a String literal -- text wrapped in double quotes' }
+        ],
+        whatChanged: 'The program now produces visible output when it runs.'
+      },
+      {
+        id: 'card-3',
+        number: '03',
+        title: 'Running statements in order',
+        language: 'Kotlin',
+        subtitle: 'Multiple statements execute top to bottom.',
+        code: [
+          'fun main() {',
+          '    println("First")',
+          '    println("Second")',
+          '    println("Third")',
+          '}'
+        ],
+        whatItMeans: [
+          { label: 'Line order', description: 'Kotlin executes each statement in the order it appears' },
+          { label: 'Three println calls', description: 'produce three separate lines of output, in sequence' }
+        ],
+        whatChanged: 'We saw that a function body can contain multiple statements, executed in order.'
+      }
+    ]
+  },
+  predict: {
+    title: 'What will this code do?',
+    subtitle: 'Read the code, predict the result, then check your answer.',
+    questions: [
+      {
+        id: 'pred-syntax-1',
+        questionNumber: 1,
+        totalQuestions: 3,
+        title: 'Basic Output',
+        topicMeta: 'main() and println()',
+        language: 'Kotlin',
+        code: [
+          'fun main() {',
+          '    println("Kotlin")',
+          '}'
+        ],
+        prompt: 'What will this code print?',
+        options: [
+          { id: 'A', label: 'main', isCorrect: false },
+          { id: 'B', label: 'Kotlin', isCorrect: true },
+          { id: 'C', label: '"Kotlin"', isCorrect: false },
+          { id: 'D', label: 'Nothing', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'println("Kotlin")',
+          detail: 'println prints the text inside the quotes without the quote marks themselves, so it outputs Kotlin.'
+        }
+      },
+      {
+        id: 'pred-syntax-2',
+        questionNumber: 2,
+        totalQuestions: 3,
+        title: 'Statement Order',
+        topicMeta: 'Sequential execution',
+        language: 'Kotlin',
+        code: [
+          'fun main() {',
+          '    println("A")',
+          '    println("B")',
+          '}'
+        ],
+        prompt: 'What is printed first?',
+        options: [
+          { id: 'A', label: 'B', isCorrect: false },
+          { id: 'B', label: 'A', isCorrect: true },
+          { id: 'C', label: 'Both at the same time', isCorrect: false },
+          { id: 'D', label: 'Neither -- this is a compile error', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'println("A")',
+          detail: 'Kotlin executes statements top to bottom, so the first println call runs before the second.'
+        }
+      },
+      {
+        id: 'pred-syntax-3',
+        questionNumber: 3,
+        totalQuestions: 3,
+        title: 'Empty Function Body',
+        topicMeta: 'main() structure',
+        language: 'Kotlin',
+        code: [
+          'fun main() {',
+          '',
+          '}'
+        ],
+        prompt: 'What does this program print when it runs?',
+        options: [
+          { id: 'A', label: 'An empty line', isCorrect: false },
+          { id: 'B', label: 'Nothing', isCorrect: true },
+          { id: 'C', label: 'main', isCorrect: false },
+          { id: 'D', label: 'It fails to compile', isCorrect: false }
+        ],
+        explanation: {
+          codeRef: 'fun main() { }',
+          detail: 'A valid Kotlin program with an empty main() body runs successfully but produces no output, since there is no println statement.'
+        }
+      }
+    ]
+  },
+  writeRun: {
+    challengeNumber: 1,
+    totalChallenges: 1,
+    xpReward: 10,
+    title: 'Print a Welcome Message',
+    description:
+      'Write your first console output program.\n\n' +
+      '1. Inside the main() function, use println() to print the exact message "Welcome to Kotlin!".',
+    requirements: {
+      name: 'main',
+      params: '(none)',
+      returns: 'Unit'
+    },
+    fileName: 'solution.kt',
+    initialCode: `fun main() {
+    // 1. Print "Welcome to Kotlin!" using println:
+}`,
+    solutionCode: 'fun main() {\n    println("Welcome to Kotlin!")\n}',
+    sampleInput: 'main()',
+    expectedOutput: 'Welcome to Kotlin!',
+    // No testCase.call here: kotlinRunner.ts already auto-invokes main() once
+    // whenever it's present. Re-calling it via testCase (as a non-main
+    // function's testCase.call would, e.g. multiply(4, 5)) would run main()
+    // a second time, doubling the printed output and permanently failing
+    // the expectedOutput match even for correct code.
+    testCase: {
+      call: '',
+      expected: 'Welcome to Kotlin!'
+    }
+  },
+  debug: {
+    title: 'Diagnose the Broken Program',
+    subtitle: 'Inspect the program, find why it fails to compile, and fix it.',
+    challengeNumber: 1,
+    totalChallenges: 1,
+    difficulty: 'easy',
+    bugType: 'syntax',
+    bugLabel: 'Syntax Error: Unterminated String',
+    brokenCode: `fun main() {
+    println("Hello, Kotlin!)
+}`,
+    fixedCode: `fun main() {
+    println("Hello, Kotlin!")
+}`,
+    expectedOutput: 'Hello, Kotlin!',
+    hints: [
+      'Something is wrong with the text being printed.',
+      'Look closely at the quotation marks around the message.',
+      'The closing double quote (") is missing after "Hello, Kotlin!" -- add it back.'
+    ],
+    explanation: 'String literals must start and end with a double quote. The broken code was missing the closing quote after "Hello, Kotlin!", so the compiler could not tell where the text ends -- causing a syntax error.'
+  },
+  mastered: {
+    topicTitle: 'Kotlin Syntax & main()',
+    summary: 'You have learned how a Kotlin program starts at main(), and how statements run one after another.',
+    passedCount: '3 / 3 PASSED',
+    verificationItems: [
+      {
+        title: 'Concept understood',
+        subtitle: 'How main() starts a program and runs top to bottom'
+      },
+      {
+        title: 'Examples explored',
+        subtitle: '3 progressive program-structure examples'
+      },
+      {
+        title: 'Predictions completed',
+        subtitle: '3/3 correct output forecasts'
+      },
+      {
+        title: 'Code written & executed',
+        subtitle: '1 practical runtime test passed'
+      },
+      {
+        title: 'Bugs diagnosed & repaired',
+        subtitle: 'Resolved unterminated string syntax error & verified execution'
+      }
+    ],
+    xpEarned: 20,
+    streakDays: 1,
+    accuracy: '100%'
+  }
+};
 
 // =========================================================================
 // LESSON 3: Comments (world-1-comments)

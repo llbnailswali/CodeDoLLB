@@ -1,5 +1,5 @@
 import { PathNode } from '../types';
-import { ALL_CURRICULUM_QUESTIONS, WORLD_1_QUESTIONS } from './curriculum';
+import { ALL_CURRICULUM_QUESTIONS, WORLD_1_QUESTIONS } from './dailyBattleQuestions';
 
 export const ROBOT_MASCOT_URL =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBQZLQVIXsNeIx3GLb4t3VuO2m6EhmcT_7eh1sjY3gvqlOTbM6NwD21dLB20YU1t4ZGKgi0a8JREJbPLQv_LJa0wTk5nzIBWw0HFwwNH1qbOlII8L3HaTzqL034Cdfbo3B8azN0tTCE-5UXzltlU8_L6P9nwM9aBhhFKVjq4NVs4emnABEx6wWgyavML97x74Gl9bQ-r0DZF4aFkqisqCCQahKWIw-RvAPB80gnJUwS0d6tOg0o9nfE';
@@ -16,7 +16,7 @@ export {
   WORLDS_CATALOG,
   LessonRepository,
   BattleRepository
-} from './curriculum';
+} from './dailyBattleQuestions';
 
 export const WORLD_01_NODES: PathNode[] = [
 
