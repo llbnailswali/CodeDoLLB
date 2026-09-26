@@ -3,6 +3,7 @@ import { AppTheme, LessonMeta, UserStats } from '../types';
 import { MasterWorldEntry } from '../data/curriculum/masterCurriculumCatalog';
 import { CODEDO_MASTER_WORLDS as WORLDS_CATALOG } from '../data/curriculum/masterCurriculumCatalog';
 import { soundFX } from '../utils/audio';
+import { StageKey } from './Detail';
 
 interface ListingProps {
   theme: AppTheme;
@@ -10,7 +11,7 @@ interface ListingProps {
   restoreScrollPosition?: boolean;
   userStats?: UserStats;
   onJumpToToday: () => void;
-  onStartLesson?: (topic?: string) => void;
+  onStartLesson?: (topic?: string, initialStage?: StageKey) => void;
 }
 
 export const Listing: React.FC<ListingProps> = ({
@@ -163,11 +164,11 @@ export const Listing: React.FC<ListingProps> = ({
     }
   };
 
-  const handleLaunchLesson = (lesson: LessonMeta) => {
+  const handleLaunchLesson = (lesson: LessonMeta, initialStage?: StageKey) => {
     soundFX.playClick();
     if (onStartLesson) {
       if (lesson.fiveStageLessonKey) {
-        onStartLesson(lesson.fiveStageLessonKey);
+        onStartLesson(lesson.fiveStageLessonKey, initialStage);
         return;
       }
       // Fallback for lessons that don't have real content authored yet --
@@ -523,6 +524,92 @@ export const Listing: React.FC<ListingProps> = ({
                   });
                 })()}
               </div>
+
+              {/* Boss Challenge -- the capstone practical exercise for this world.
+                  Locked until every ordinary lesson in the world is completed;
+                  starts the boss lesson directly at Write & Run, which then
+                  advances into Debug once solved. */}
+              {(() => {
+                const bossLesson = selectedWorld.lessons.find((l) => l.isBoss);
+                if (!bossLesson) return null;
+
+                const visibleLessons = selectedWorld.lessons.filter((l) => !l.isBoss);
+                const totalLessons = Math.max(1, visibleLessons.length);
+                // TEMPORARY: unlocked unconditionally for testing. Restore the
+                // `completedInThisWorld >= totalLessons` gate (see the lesson
+                // list above for that computation) once boss content across
+                // worlds has been reviewed.
+                const isUnlocked = true;
+
+                return (
+                  <div
+                    onClick={() => isUnlocked && handleLaunchLesson(bossLesson, 'writeRun')}
+                    role="button"
+                    tabIndex={isUnlocked ? 0 : -1}
+                    aria-disabled={!isUnlocked}
+                    onKeyDown={(e) => {
+                      if (isUnlocked && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        handleLaunchLesson(bossLesson, 'writeRun');
+                      }
+                    }}
+                    className={`relative mt-6 flex items-center gap-4 group select-none transition-all ${
+                      isUnlocked ? 'cursor-pointer active:scale-[0.99]' : 'cursor-not-allowed'
+                    }`}
+                  >
+                    <div
+                      className={`relative z-10 w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2 transition-all ${
+                        isUnlocked
+                          ? 'bg-amber-500 border-amber-300 text-white shadow-lg shadow-amber-500/35 ring-4 ring-amber-500/25 group-hover:scale-105'
+                          : isDark
+                          ? 'bg-[#0f1420] border-slate-700/80 text-slate-500'
+                          : 'bg-slate-100 border-slate-300 text-slate-400 shadow-sm'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[18px] font-bold">
+                        {isUnlocked ? 'military_tech' : 'lock_outline'}
+                      </span>
+                    </div>
+
+                    <div
+                      className={`flex-1 p-3.5 rounded-2xl border transition-all ${
+                        isUnlocked
+                          ? isDark
+                            ? 'bg-gradient-to-br from-amber-950/40 to-[#151b28] border-amber-500 ring-1 ring-amber-500/30 shadow-sm group-hover:border-amber-400'
+                            : 'bg-gradient-to-br from-amber-50 to-white border-amber-400 ring-1 ring-amber-400/20 shadow-sm group-hover:border-amber-500'
+                          : 'opacity-60 ' +
+                            (isDark
+                              ? 'bg-[#151b28] border-white/10 shadow-sm'
+                              : 'bg-white border-slate-200/80 shadow-sm')
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="material-symbols-outlined text-[14px] text-amber-500">
+                          military_tech
+                        </span>
+                        <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-amber-500">
+                          Boss Challenge
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-bold font-['Outfit'] group-hover:text-amber-500 transition-colors">
+                        {bossLesson.title}
+                      </h3>
+
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span
+                          className={`text-xs font-semibold ${
+                            isUnlocked ? 'text-amber-500' : isDark ? 'text-slate-400' : 'text-slate-500'
+                          }`}
+                        >
+                          {isUnlocked
+                            ? 'Write & Run, then Debug — Begin'
+                            : `Complete all ${totalLessons} lessons to unlock`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* World Transition Milestone */}
               <div className="relative flex justify-center pt-6 pb-4">

@@ -18,8 +18,8 @@ export const Navigation: React.FC<NavigationProps> = ({
 
   const tabs = [
     { id: 'learn' as TabType, label: 'Learn', icon: 'school' },
-    { id: 'practice' as TabType, label: 'Practice', icon: 'code' },
-    { id: 'leaderboard' as TabType, label: 'League', icon: 'leaderboard' },
+    { id: 'quiz' as TabType, label: 'Quiz', icon: 'quiz' },
+    { id: 'practice' as TabType, label: 'Practice', icon: 'terminal' },
     { id: 'profile' as TabType, label: 'Profile', icon: 'account_circle' },
   ];
 
@@ -50,7 +50,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                   : 'text-slate-600 hover:text-[#2e3040] active:neu-pressed'
               }`}
             >
-              {tab.id === 'practice' ? (
+              {tab.id === 'quiz' ? (
                 <Code size={22} strokeWidth={2} />
               ) : (
                 <span className="material-symbols-outlined text-[22px]">{tab.icon}</span>

@@ -2,7 +2,7 @@ export type AppTheme = 'light' | 'dark';
 
 export type FontSize = 'small' | 'medium' | 'large';
 
-export type TabType = 'learn' | 'practice' | 'leaderboard' | 'profile' | 'curriculum';
+export type TabType = 'learn' | 'quiz' | 'practice' | 'profile' | 'curriculum';
 
 export type ChallengeType =
   | 'multiple-choice'

@@ -6,6 +6,17 @@ const SOUND_KEY = 'codedo_sound_enabled';
 const FONT_SIZE_KEY = 'codedo_font_size';
 const MISTAKES_KEY = 'codedo_user_mistakes';
 const LAST_ACTIVE_DATE_KEY = 'codedo_last_active_date';
+const PRACTICE_PROBLEM_STATUS_KEY = 'codedo_practice_problem_status';
+const LAST_PRACTICE_ATTEMPT_KEY = 'codedo_last_practice_attempt';
+
+export type PracticeProblemMode = 'writeRun' | 'debug';
+export type PracticeProblemStatus = 'not_started' | 'in_progress' | 'completed';
+type PracticeProblemStatusMap = Record<string, Partial<Record<PracticeProblemMode, PracticeProblemStatus>>>;
+
+export interface LastPracticeAttempt {
+  lessonKey: string;
+  mode: PracticeProblemMode;
+}
 
 export const DEFAULT_USER_STATS: UserStats = {
   streak: 0,
@@ -171,8 +182,53 @@ export const StorageManager = {
       localStorage.setItem(STATS_KEY, JSON.stringify(DEFAULT_USER_STATS));
       localStorage.setItem(LAST_ACTIVE_DATE_KEY, getTodayDateString());
       localStorage.removeItem(MISTAKES_KEY);
+      localStorage.removeItem(PRACTICE_PROBLEM_STATUS_KEY);
+      localStorage.removeItem(LAST_PRACTICE_ATTEMPT_KEY);
     } catch {
       // ignore
+    }
+  },
+
+  // Tracked independently of the 5-stage lesson flow's own mastery/XP state --
+  // this only records, per lesson + mode, whether the learner has started or
+  // passed that specific Write & Run / Debug problem from the Practice tab's
+  // per-world problems list.
+  getPracticeProblemStatusMap(): PracticeProblemStatusMap {
+    try {
+      const data = localStorage.getItem(PRACTICE_PROBLEM_STATUS_KEY);
+      return data ? JSON.parse(data) : {};
+    } catch {
+      return {};
+    }
+  },
+
+  getPracticeProblemStatus(lessonKey: string, mode: PracticeProblemMode): PracticeProblemStatus {
+    const map = this.getPracticeProblemStatusMap();
+    return map[lessonKey]?.[mode] || 'not_started';
+  },
+
+  setPracticeProblemStatus(lessonKey: string, mode: PracticeProblemMode, status: PracticeProblemStatus): void {
+    try {
+      const map = this.getPracticeProblemStatusMap();
+      map[lessonKey] = { ...map[lessonKey], [mode]: status };
+      localStorage.setItem(PRACTICE_PROBLEM_STATUS_KEY, JSON.stringify(map));
+      localStorage.setItem(LAST_PRACTICE_ATTEMPT_KEY, JSON.stringify({ lessonKey, mode }));
+    } catch {
+      // ignore
+    }
+  },
+
+  // Whichever Write & Run / Debug problem the learner most recently opened
+  // (from TaskListScreen, Surprise Me, or Next Task/Next Random Task) --
+  // drives PracticeTab's "Continue Practicing" card, which shows nothing at
+  // all until this exists (see setPracticeProblemStatus, which is the only
+  // writer).
+  getLastPracticeAttempt(): LastPracticeAttempt | null {
+    try {
+      const data = localStorage.getItem(LAST_PRACTICE_ATTEMPT_KEY);
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
     }
   },
 };

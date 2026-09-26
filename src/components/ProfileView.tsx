@@ -39,13 +39,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const activeDays = [true, true, true, true, true, true, true]; // 12-day streak
 
-  const achievements = [
-    { title: 'Type Master', desc: 'Aced type deduction on first try', icon: 'verified', color: 'text-emerald-500' },
-    { title: '12 Days Fire', desc: 'Maintained 12-day uninterrupted streak', icon: 'local_fire_department', color: 'text-orange-500' },
-    { title: 'Foundations Knight', desc: 'Cleared 2 milestone gates in World 01', icon: 'military_tech', color: 'text-indigo-400' },
-    { title: 'Speed Demon', desc: 'Answered a challenge under 2 seconds', icon: 'bolt', color: 'text-amber-400' },
-  ];
-
   return (
     <div className="flex flex-col w-full max-w-md mx-auto px-4 pb-28 pt-3 select-none">
       {/* Profile Card Header */}
@@ -90,83 +83,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <span>💎</span> {userStats.stars || 120} Gems
             </span>
           </div>
-        </div>
-      </div>
-
-      {/* ================= LEARNING TRACKS (MOVED FROM HAMBURGER MENU) ================= */}
-      <div
-        className={`p-4 rounded-2xl mb-4 flex flex-col gap-3 transition-all ${
-          isDark
-            ? 'bg-[#151b28] border border-white/10 shadow-md'
-            : 'bg-white border border-slate-200/80 neu-raised'
-        }`}
-      >
-        <div className="flex items-center justify-between">
-          <span className="font-['Outfit'] text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Learning Tracks
-          </span>
-          {onOpenCurriculum && (
-            <button
-              type="button"
-              onClick={() => {
-                soundFX.playClick();
-                onOpenCurriculum();
-              }}
-              className="text-[11px] font-mono font-bold text-indigo-500 hover:underline flex items-center gap-0.5"
-            >
-              <span>Explore 16 Worlds</span>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            </button>
-          )}
-        </div>
-
-        {/* Active Track */}
-        <div
-          className={`p-3 rounded-xl flex items-center justify-between transition-all ${
-            isDark
-              ? 'bg-indigo-600/20 border border-indigo-500/40 text-indigo-300'
-              : 'bg-indigo-50 border border-indigo-200/80 text-indigo-700'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-xl">🤖</span>
-            <div className="flex flex-col">
-              <span className="font-['Outfit'] text-xs font-bold leading-tight">Kotlin Basics</span>
-              <span className="font-mono text-[10px] text-indigo-400/80">World 01 • Active Track</span>
-            </div>
-          </div>
-          <span className="material-symbols-outlined text-[20px] text-indigo-500">check_circle</span>
-        </div>
-
-        {/* Locked Tracks */}
-        <div
-          className={`p-3 rounded-xl flex items-center justify-between opacity-60 border ${
-            isDark ? 'bg-[#0f1422] border-white/5 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-xl">📱</span>
-            <div className="flex flex-col">
-              <span className="font-['Outfit'] text-xs font-semibold leading-tight">Jetpack Compose UI</span>
-              <span className="font-mono text-[10px]">World 09 • Coming Soon</span>
-            </div>
-          </div>
-          <span className="material-symbols-outlined text-[18px]">lock</span>
-        </div>
-
-        <div
-          className={`p-3 rounded-xl flex items-center justify-between opacity-60 border ${
-            isDark ? 'bg-[#0f1422] border-white/5 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-xl">⚡</span>
-            <div className="flex flex-col">
-              <span className="font-['Outfit'] text-xs font-semibold leading-tight">Coroutines &amp; Flow</span>
-              <span className="font-mono text-[10px]">World 08 • Level 5 Required</span>
-            </div>
-          </div>
-          <span className="material-symbols-outlined text-[18px]">lock</span>
         </div>
       </div>
 
@@ -391,37 +307,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   local_fire_department
                 </span>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Badges & Achievements */}
-      <div className="flex flex-col gap-3 mb-4">
-        <h3 className="font-['Outfit'] text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
-          Achievements &amp; Badges
-        </h3>
-        <div className="grid grid-cols-2 gap-3">
-          {achievements.map((item, idx) => (
-            <div
-              key={idx}
-              className={`p-3.5 rounded-2xl flex flex-col gap-2 transition-all ${
-                isDark
-                  ? 'bg-[#151b28] border border-white/10 shadow-sm'
-                  : 'bg-white border border-slate-200/80 neu-raised-sm'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className={`material-symbols-outlined text-[22px] ${item.color} icon-filled`}>
-                  {item.icon}
-                </span>
-                <h4 className="font-['Outfit'] text-xs font-bold text-inherit leading-tight">
-                  {item.title}
-                </h4>
-              </div>
-              <p className="font-['Outfit'] text-[11px] text-slate-400 leading-snug">
-                {item.desc}
-              </p>
             </div>
           ))}
         </div>

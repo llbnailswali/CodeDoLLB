@@ -5,7 +5,6 @@ import { soundFX } from '../utils/audio';
 interface HeaderProps {
   theme: AppTheme;
   activeTab: TabType;
-  onProfileClick: () => void;
   onToggleTheme: () => void;
   pathGap?: number;
   onPathGapChange?: (value: number) => void;
@@ -17,7 +16,6 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   theme,
   activeTab,
-  onProfileClick,
   onToggleTheme,
   pathGap,
   onPathGapChange,
@@ -75,10 +73,10 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-[10px] font-['Plus_Jakarta_Sans'] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
                 {activeTab === 'learn'
                   ? 'LEARN'
+                  : activeTab === 'quiz'
+                  ? 'QUIZ'
                   : activeTab === 'practice'
                   ? 'PRACTICE'
-                  : activeTab === 'leaderboard'
-                  ? 'LEAGUE'
                   : 'PROFILE'}
               </span>
             </div>
@@ -137,22 +135,6 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="material-symbols-outlined text-[17px]">
               {isDark ? 'light_mode' : 'dark_mode'}
             </span>
-          </button>
-
-          {/* Profile Avatar Button */}
-          <button
-            aria-label="User Profile"
-            onClick={() => {
-              soundFX.playClick();
-              onProfileClick();
-            }}
-            className={`w-8 h-8 rounded-xl neu-raised flex items-center justify-center active:neu-pressed transition-colors ${
-              isDark
-                ? 'bg-[#151b28] text-slate-200 hover:text-indigo-400'
-                : 'bg-[#e8eaf0] text-[#2e3040] hover:text-indigo-600'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[18px]">person</span>
           </button>
         </div>
       </div>

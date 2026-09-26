@@ -20,6 +20,12 @@ interface WriteRunStageProps {
   onContinue: () => void;
   onBack?: () => void;
   nextStageLabel?: string;
+  onProblemPassed?: () => void;
+  isPracticeMode?: boolean;
+  isRandomPractice?: boolean;
+  practicePosition?: { current: number; total: number };
+  onPracticeNextTask?: () => void;
+  onPracticeGoBack?: () => void;
 }
 
 export const WriteRun: React.FC<WriteRunStageProps> = ({
@@ -33,6 +39,13 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
   onRunCode,
   onContinue,
   onBack,
+  nextStageLabel,
+  onProblemPassed,
+  isPracticeMode = false,
+  isRandomPractice = false,
+  practicePosition,
+  onPracticeNextTask,
+  onPracticeGoBack,
 }) => {
   const [executionResult, setExecutionResult] = useState<KotlinExecutionResult | null>(null);
   const [showOutputPanel, setShowOutputPanel] = useState<boolean>(false);
@@ -265,6 +278,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
 
     if (res.success) {
       soundFX.playSuccess();
+      onProblemPassed?.();
     } else {
       soundFX.playError();
     }
@@ -370,6 +384,17 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             </svg>
           </button>
         </div>
+
+        {/* Center: Practice-mode task position, e.g. "2 / 12" */}
+        {isPracticeMode && practicePosition && (
+          <div
+            className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold tracking-wide ${
+              isDark ? 'bg-slate-800/80 text-indigo-300' : 'bg-white text-indigo-600 border border-slate-300'
+            }`}
+          >
+            {practicePosition.current} / {practicePosition.total}
+          </div>
+        )}
 
         {/* Right: Run button and Overflow Menu (Undo/Redo now live above the
             keyboard, right-aligned, within easy thumb reach while typing) */}
@@ -630,7 +655,9 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                       : 'bg-indigo-100 text-indigo-700 border-indigo-300'
                   }`}
                 >
-                  Stage 4 - Write &amp; Run Exercise
+                  {isRandomPractice
+                    ? 'Write & Run'
+                    : `Write & Run - Task ${String(isPracticeMode && practicePosition ? practicePosition.current : data.challengeNumber).padStart(2, '0')}`}
                 </span>
               </div>
               <button
@@ -658,51 +685,21 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                 </p>
               </div>
 
-              {/* Specifications Card */}
-              <div
-                className={`space-y-2 p-3.5 rounded-xl border text-xs font-mono ${
-                  isDark ? 'bg-[#090d16] border-slate-800' : 'bg-slate-50 border-slate-200'
-                }`}
-              >
-                <div className={`text-[11px] font-bold uppercase tracking-wider mb-1 font-sans ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Signature & Types
-                </div>
-                <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  <span>Function:</span>
-                  <span className={isDark ? 'text-indigo-300 font-semibold' : 'text-indigo-600 font-semibold'}>{data.requirements.name}</span>
-                </div>
-                <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  <span>Parameters:</span>
-                  <span className={isDark ? 'text-amber-300' : 'text-amber-700'}>{data.requirements.params}</span>
-                </div>
-                <div className={`flex justify-between items-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  <span>Returns:</span>
-                  <span className={isDark ? 'text-emerald-300' : 'text-emerald-700'}>{data.requirements.returns}</span>
-                </div>
-              </div>
-
-              {/* Sample Input / Output */}
-              {(data.sampleInput || data.expectedOutput) && (
-                <div
-                  className={`p-3.5 rounded-xl border text-xs font-mono ${
-                    isDark ? 'bg-[#090d16] border-slate-800' : 'bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  <div className={`text-[11px] font-bold uppercase tracking-wider mb-1.5 font-sans ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Example Case
+              {/* Expected Output -- always rendered as a dark code-editor/terminal
+                  window, independent of the app's light/dark theme */}
+              {data.expectedOutput && (
+                <div className="rounded-xl border border-slate-800 bg-[#0a0e17] overflow-hidden text-xs font-mono">
+                  <div className="flex items-center gap-1.5 px-3 py-2 border-b border-slate-800">
+                    <span className="w-2 h-2 rounded-full bg-rose-500/70" />
+                    <span className="w-2 h-2 rounded-full bg-amber-500/70" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-500/70" />
+                    <span className="ml-2 text-[10px] font-bold uppercase tracking-wider font-sans text-slate-500">
+                      Expected Output
+                    </span>
                   </div>
-                  {data.sampleInput && (
-                    <div className={`flex justify-between items-start gap-2.5 mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      <span className="shrink-0 leading-snug">Call:</span>
-                      <span className={`text-right leading-snug break-words ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>{data.sampleInput}</span>
-                    </div>
-                  )}
-                  {data.expectedOutput && (
-                    <div className={`flex justify-between items-start gap-2.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      <span className="shrink-0 leading-snug">Output:</span>
-                      <span className={`text-right leading-snug break-words whitespace-pre-line ${isDark ? 'text-emerald-400 font-bold' : 'text-emerald-700 font-bold'}`}>{data.expectedOutput}</span>
-                    </div>
-                  )}
+                  <div className="p-3.5 leading-snug break-words whitespace-pre-line text-emerald-400 font-bold">
+                    {data.expectedOutput}
+                  </div>
                 </div>
               )}
             </div>
@@ -714,7 +711,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                 onClick={handleCloseTaskModal}
                 className="w-full sm:w-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-[0_0_14px_rgba(99,102,241,0.4)] transition-all cursor-pointer"
               >
-                <span>Back to Code</span>
+                <span>Start Coding</span>
               </button>
             </div>
           </div>
@@ -722,19 +719,23 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
       )}
       {/* ================= END: Task Details Modal ================= */}
 
-      {/* ================= BEGIN: Run Result Dialog ================= */}
+      {/* ================= BEGIN: Run Result Dialog (bottom sheet) ================= */}
       {showOutputPanel && executionResult && (
         <div
-          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn"
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-end justify-center animate-fadeIn"
           onClick={() => setShowOutputPanel(false)}
         >
           <div
-            className={`w-full max-w-[372px] mx-auto rounded-2xl border shadow-2xl animate-scaleUp max-h-[85vh] flex flex-col overflow-hidden ${
+            className={`w-full sm:max-w-[420px] mx-auto rounded-t-2xl border border-b-0 shadow-2xl animate-sheetUp max-h-[85vh] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)] ${
               isDark ? 'border-slate-700/80 bg-[#121622] text-slate-100' : 'border-slate-300 bg-white text-slate-900'
             }`}
             onClick={(e) => e.stopPropagation()}
             id="run-result-modal"
           >
+            {/* Bottom sheet drag handle */}
+            <div className="flex justify-center pt-2.5 pb-1 shrink-0">
+              <span className={`h-1 w-9 rounded-full ${isDark ? 'bg-slate-700' : 'bg-slate-300'}`} />
+            </div>
             {/* Modal Header - Sticky to top */}
             <div className={`sticky top-0 z-10 flex items-center justify-between px-5 py-3.5 border-b shrink-0 ${isDark ? 'border-slate-800 bg-[#121622]' : 'border-slate-200 bg-white'}`}>
               <div className="flex items-center gap-2">
@@ -768,19 +769,6 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                   {executionResult.executionTimeMs || 12}ms
                 </span>
               </div>
-
-              <button
-                type="button"
-                aria-label="Close run result"
-                onClick={() => setShowOutputPanel(false)}
-                className={`cursor-pointer p-1 rounded-lg transition-colors ${
-                  isDark ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
             </div>
 
             {/* Modal Body */}
@@ -788,7 +776,7 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
               {executionResult.success ? (
                 <>
                   <h3 className={`font-bold text-base mb-1 flex items-center gap-1.5 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                    <span>All Tests Passed!</span>
+                    <span>Correct Output!</span>
                     <span className="text-emerald-400">🎉</span>
                   </h3>
                   <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
@@ -816,7 +804,13 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                     {data.expectedOutput && (
                       <div className={`flex justify-between items-start gap-2.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                         <span className="shrink-0 leading-snug">Expected:</span>
-                        <span className={`text-right leading-snug break-words whitespace-pre-line ${isDark ? 'text-slate-300 font-medium' : 'text-slate-700 font-medium'}`}>{data.expectedOutput}</span>
+                        <span
+                          className={`font-bold px-2 py-0.5 rounded border leading-snug break-words whitespace-pre-line text-right ${
+                            isDark ? 'text-slate-300 bg-slate-500/15 border-slate-500/30' : 'text-slate-700 bg-slate-100 border-slate-300'
+                          }`}
+                        >
+                          {data.expectedOutput}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -860,15 +854,21 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
             </div>
 
             {/* Modal Actions - Sticky to bottom */}
-            <div className={`flex items-center justify-end gap-2.5 px-5 py-3 border-t shrink-0 ${isDark ? 'border-slate-800 bg-[#121622]' : 'border-slate-200 bg-white'}`}>
+            <div className={`flex items-center ${isPracticeMode ? 'justify-between' : 'justify-end'} gap-2.5 px-5 py-3 border-t shrink-0 ${isDark ? 'border-slate-800 bg-[#121622]' : 'border-slate-200 bg-white'}`}>
               <button
                 type="button"
-                onClick={() => setShowOutputPanel(false)}
+                onClick={() => {
+                  if (executionResult.success && isPracticeMode) {
+                    onPracticeGoBack?.();
+                  } else {
+                    setShowOutputPanel(false);
+                  }
+                }}
                 className={`px-3.5 py-2 rounded-xl text-xs font-medium active:scale-95 transition-all cursor-pointer ${
                   isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                 }`}
               >
-                {executionResult.success ? 'Keep Editing' : 'Back to Code'}
+                {executionResult.success ? (isPracticeMode ? 'Go Back' : 'Keep Editing') : 'Back to Code'}
               </button>
 
               {executionResult.success ? (
@@ -878,11 +878,25 @@ export const WriteRun: React.FC<WriteRunStageProps> = ({
                   onClick={() => {
                     soundFX.playSuccess();
                     setShowOutputPanel(false);
-                    onContinue();
+                    if (isPracticeMode) {
+                      onPracticeNextTask?.();
+                    } else {
+                      onContinue();
+                    }
                   }}
                   className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-[0_0_16px_rgba(99,102,241,0.5)] transition-all cursor-pointer"
                 >
-                  <span>Continue</span>
+                  <span>
+                    {isPracticeMode
+                      ? isRandomPractice
+                        ? 'Next Random Task'
+                        : practicePosition?.current && practicePosition.current < practicePosition.total
+                        ? `Next Task ${practicePosition.current + 1}/${practicePosition.total}`
+                        : 'Next Task'
+                      : nextStageLabel
+                      ? `Continue to ${nextStageLabel}`
+                      : 'Continue'}
+                  </span>
                   <svg className="w-3.5 h-3.5 stroke-current" fill="none" strokeWidth="2.5" viewBox="0 0 24 24">
                     <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>

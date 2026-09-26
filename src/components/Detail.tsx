@@ -2,6 +2,7 @@ import React, { forwardRef, useState, useEffect, useLayoutEffect, useImperativeH
 import { AppTheme, UserStats } from '../types';
 import { FiveStageLesson, AVAILABLE_FIVE_STAGE_LESSONS } from '../data/lessonStagesData';
 import { soundFX } from '../utils/audio';
+import { StorageManager } from '../utils/storage';
 import { DetailedTutorialView } from './DetailedTutorialView';
 import { getDetailedTutorial } from '../data/detailedTutorialsData';
 
@@ -12,7 +13,9 @@ import { Predict } from './Predict';
 import { WriteRun } from './WriteRun';
 import { DebugIde } from './DebugIde';
 import { Mastered } from './Mastered';
+import { BossMasteredModal } from './BossMasteredModal';
 import { SkipStageModal } from './SkipStageModal';
+import { CODEDO_MASTER_WORLDS } from '../data/curriculum/masterCurriculumCatalog';
 
 export type StageKey = 'learn' | 'explore' | 'predict' | 'writeRun' | 'debug' | 'mastered';
 
@@ -20,6 +23,27 @@ interface DetailProps {
   theme: AppTheme;
   initialLessonKey?: string;
   initialStageKey?: StageKey;
+  // Opened as a standalone problem from the Practice tab's per-world list
+  // (TaskListScreen), not the guided 6-stage Learn flow -- passing/failing
+  // this single stage must not advance into the next stage or award lesson
+  // completion/XP the normal 5-stage flow would. Purely additive: the normal
+  // flow (isPracticeMode falsy) is completely unaffected.
+  isPracticeMode?: boolean;
+  // A "Surprise Me"-launched problem rather than one opened from
+  // TaskListScreen's ordered per-World list -- hides the list-relative task
+  // position/badge and swaps "Next Task" for "Next Random Task" (which picks
+  // another random problem instead of advancing sequentially).
+  isRandomPractice?: boolean;
+  // Practice mode only: navigate straight into the next problem (same World +
+  // mode) instead of returning to TaskListScreen. Given the next problem's
+  // lesson key; the caller (App.tsx) is responsible for actually routing to
+  // it. Absent/no next problem falls back to onExit. Not used when
+  // isRandomPractice (see onPracticeNextRandomTask instead).
+  onPracticeNextTask?: (nextLessonKey: string) => void;
+  // Random-practice only: pick and open a brand new random problem instead
+  // of a specific next one -- the caller (App.tsx) owns the actual
+  // selection/routing.
+  onPracticeNextRandomTask?: () => void;
   userStats: UserStats;
   onExit: () => void;
   onCompleteLesson: (earnedXP: number, worldId?: string) => void;
@@ -67,6 +91,10 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   theme,
   initialLessonKey = '',
   initialStageKey,
+  isPracticeMode = false,
+  isRandomPractice = false,
+  onPracticeNextTask,
+  onPracticeNextRandomTask,
   userStats,
   onExit,
   onCompleteLesson,
@@ -89,6 +117,10 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
 
   // Temporary developer/tester tools
   const [showSkipMenu, setShowSkipMenu] = useState<boolean>(false);
+
+  // Whether the World Boss celebration overlay is showing on top of the
+  // final stage the learner just completed (see handleNextStage below).
+  const [showBossCelebration, setShowBossCelebration] = useState<boolean>(false);
 
   // Write & Run state. No fallback lesson: an unrecognized key renders blank
   // (see the guard after the hooks below) rather than silently substituting
@@ -160,6 +192,84 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
     ...(lessonData?.debug ? (['debug'] as const) : []),
     'mastered',
   ];
+
+  // A World Boss's Mastered stage shows a distinct celebration overlay
+  // (BossMasteredModal) instead of the ordinary inline Mastered page. Every
+  // boss lesson's id ends in "boss" (e.g. "world-8-boss",
+  // "world-12-generic-data-toolkit-boss") regardless of which factory
+  // authored it -- see PITFALLS.md/world lesson data for the convention.
+  const isBossLesson = Boolean(lessonData?.id.endsWith('boss'));
+  const bossWorldEntry = lessonData
+    ? CODEDO_MASTER_WORLDS.find((w) => w.id === lessonData.worldId)
+    : undefined;
+  const bossMasteredTopics = bossWorldEntry
+    ? bossWorldEntry.lessons.filter((l) => !l.isBoss).map((l) => l.title)
+    : [];
+  const totalWorldsCount = CODEDO_MASTER_WORLDS.length;
+
+  // Practice-list mode only (not random -- a random pick has no fixed
+  // "position" in any one World's list): find the next problem in the same
+  // World + mode list TaskListScreen shows, so "Next Task" can jump straight
+  // there instead of returning to that list first. Mirrors TaskListScreen's
+  // own filter (a visible, non-boss lesson whose resolved FiveStageLesson has
+  // this mode's stage authored) so the two stay in the same order.
+  const practiceMode: 'writeRun' | 'debug' | undefined =
+    isPracticeMode && !isRandomPractice && (initialStageKey === 'writeRun' || initialStageKey === 'debug')
+      ? initialStageKey
+      : undefined;
+  const practicePosition = useMemo(() => {
+    if (!practiceMode || !lessonData) return undefined;
+    const world = CODEDO_MASTER_WORLDS.find((w) => w.id === lessonData.worldId);
+    if (!world) return undefined;
+    const withStage = world.lessons
+      .filter((l) => !l.isBoss && l.fiveStageLessonKey)
+      .filter((l) => Boolean(AVAILABLE_FIVE_STAGE_LESSONS[l.fiveStageLessonKey!]?.[practiceMode]));
+    const currentIndex = withStage.findIndex(
+      (l) => AVAILABLE_FIVE_STAGE_LESSONS[l.fiveStageLessonKey!]?.id === lessonData.id
+    );
+    if (currentIndex === -1) return undefined;
+    const hasNext = currentIndex + 1 < withStage.length;
+    return {
+      current: currentIndex + 1,
+      total: withStage.length,
+      nextLessonKey: hasNext ? withStage[currentIndex + 1].fiveStageLessonKey : undefined,
+    };
+  }, [practiceMode, lessonData]);
+  const nextPracticeLessonKey = practicePosition?.nextLessonKey;
+
+  const handlePracticeNextTask = () => {
+    if (isRandomPractice) {
+      if (onPracticeNextRandomTask) {
+        onPracticeNextRandomTask();
+      } else {
+        onExit();
+      }
+      return;
+    }
+    if (nextPracticeLessonKey && onPracticeNextTask) {
+      // Match TaskListScreen's own Start/Continue click, which marks a
+      // problem in_progress the moment the learner opens it -- otherwise a
+      // task reached via "Next Task" would stay "not_started" until passed.
+      if (practiceMode) {
+        const nextFive = AVAILABLE_FIVE_STAGE_LESSONS[nextPracticeLessonKey];
+        if (nextFive) {
+          StorageManager.setPracticeProblemStatus(nextFive.id, practiceMode, 'in_progress');
+        }
+      }
+      onPracticeNextTask(nextPracticeLessonKey);
+    } else {
+      onExit();
+    }
+  };
+  // The just-cleared world's completion hasn't been persisted to userStats
+  // yet at the moment this stage first renders (that happens on
+  // onCompleteLesson, fired by Continue/Close below) -- so the displayed
+  // "worlds mastered" count must account for this world too, not just what's
+  // already saved.
+  const projectedCompletedWorlds = Math.max(
+    userStats.completedWorlds ?? 0,
+    bossWorldEntry?.order ?? 0
+  );
   // Stage navigation is an explicit stack rather than an inferred numeric
   // position. Advancing pushes the next stage; Back pops it. This preserves a
   // real visit trail when a learner jumps between stages from the stage rail.
@@ -226,8 +336,18 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
   const handleNextStage = () => {
     soundFX.playClick();
     if (currentStageIndex < activeStages.length - 1) {
+      const upcomingStage = activeStages[currentStageIndex + 1];
+      // A World Boss's celebration is an overlay shown on top of the stage
+      // the learner just finished (dimmed behind it), not a separate
+      // Mastered page -- so intercept the transition here instead of ever
+      // pushing 'mastered' onto the stack for a boss lesson.
+      if (upcomingStage === 'mastered' && isBossLesson) {
+        soundFX.playSuccess();
+        setShowBossCelebration(true);
+        return;
+      }
       saveCurrentStageScroll();
-      setStageStack((previous) => [...previous, activeStages[currentStageIndex + 1]]);
+      setStageStack((previous) => [...previous, upcomingStage]);
     } else if (lessonData) {
       soundFX.playSuccess();
       onCompleteLesson(lessonData.mastered.xpEarned, lessonData.worldId);
@@ -312,6 +432,25 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
 
   const isDark = theme === 'dark';
 
+  // The World Boss celebration overlay -- shown on top of whichever stage
+  // (writeRun/debug/the shared stage container) was active when the boss's
+  // final stage was completed. Each of those has its own early-return JSX
+  // tree below, so this is rendered as a sibling inside every one of them
+  // rather than in a single shared location.
+  const bossCelebrationOverlay = showBossCelebration && (
+    <BossMasteredModal
+      theme={theme}
+      worldTitle={bossWorldEntry?.title ?? lessonData.worldName}
+      masteredTopics={bossMasteredTopics}
+      completedWorlds={projectedCompletedWorlds}
+      totalWorlds={totalWorldsCount}
+      onContinue={() => {
+        setShowBossCelebration(false);
+        onCompleteLesson(lessonData.mastered.xpEarned, lessonData.worldId);
+      }}
+    />
+  );
+
   // If detailed tutorial is requested, show full tutorial screen
   if (showDetailedTutorial && detailedTutorial) {
     return (
@@ -347,7 +486,15 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
           onContinue={handleNextStage}
           onBack={handlePreviousStage}
           nextStageLabel={nextStageLabel}
+          isPracticeMode={isPracticeMode}
+          isRandomPractice={isRandomPractice}
+          practicePosition={practicePosition}
+          onPracticeNextTask={handlePracticeNextTask}
+          onPracticeGoBack={onExit}
+          onProblemPassed={() => StorageManager.setPracticeProblemStatus(lessonData.id, 'writeRun', 'completed')}
         />
+
+        {bossCelebrationOverlay}
       </div>
     );
   }
@@ -364,9 +511,17 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
           topicTitle={lessonData.topicTitle}
           isDark={isDark}
           onContinue={handleNextStage}
+          onProblemPassed={() => StorageManager.setPracticeProblemStatus(lessonData.id, 'debug', 'completed')}
           onBack={handlePreviousStage}
           nextStageLabel={nextStageLabel}
+          isPracticeMode={isPracticeMode}
+          isRandomPractice={isRandomPractice}
+          practicePosition={practicePosition}
+          onPracticeNextTask={handlePracticeNextTask}
+          onPracticeGoBack={onExit}
         />
+
+        {bossCelebrationOverlay}
       </div>
     );
   }
@@ -696,12 +851,23 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
 
         {/* ================= MASTERED ================= */}
         {currentStageKey === 'mastered' && (
-          <Mastered
-            data={lessonData.mastered}
-            stageName={lessonData.stageName}
-            isDark={isDark}
-            onContinue={handleNextStage}
-          />
+          isBossLesson ? (
+            <BossMasteredModal
+              theme={theme}
+              worldTitle={bossWorldEntry?.title ?? lessonData.worldName}
+              masteredTopics={bossMasteredTopics}
+              completedWorlds={projectedCompletedWorlds}
+              totalWorlds={totalWorldsCount}
+              onContinue={handleNextStage}
+            />
+          ) : (
+            <Mastered
+              data={lessonData.mastered}
+              stageName={lessonData.stageName}
+              isDark={isDark}
+              onContinue={handleNextStage}
+            />
+          )
         )}
 
         {/* Skip to Next Screen Modal (Jump to screens 2, 3, 4, 5...) */}
@@ -716,6 +882,11 @@ export const Detail = forwardRef<DetailHandle, DetailProps>(({
           }}
           isDark={isDark}
         />
+
+        {/* World Boss celebration -- an overlay shown on top of the stage the
+            learner just finished (dimmed behind it via the modal's own
+            backdrop), rather than a full Mastered page. */}
+        {bossCelebrationOverlay}
       </div>
     </div>
   );

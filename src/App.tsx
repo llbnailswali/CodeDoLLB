@@ -24,19 +24,36 @@ import { Home } from './components/Home';
 import { Listing } from './components/Listing';
 import { ActiveLessonView } from './components/ActiveLessonView';
 import { PracticeView, DrillType } from './components/PracticeView';
-import { LeaderboardView } from './components/LeaderboardView';
+import { PracticeTab } from './components/PracticeTab';
 import { ProfileView } from './components/ProfileView';
 import { Detail, DetailHandle, StageKey } from './components/Detail';
 import { World1VisualsShowcase } from './components/World1VisualsShowcase';
 import { FontThemesView } from './components/FontThemesView';
+import { TaskListScreen } from './components/TaskListScreen';
+import { PracticeProblemMode } from './utils/storage';
+import { pickRandomPracticeTask } from './utils/randomPractice';
+import { AVAILABLE_FIVE_STAGE_LESSONS } from './data/lessonStagesData';
 import { applyFontComboToDom, getSavedFontCombo } from './utils/fontThemes';
 
 type AppRoute =
   | { kind: 'tab'; tab: TabType; worldId?: string; scrollTop?: number }
   | { kind: 'drill'; scrollTop?: number }
-  | { kind: 'lesson'; lessonKey: string; initialStage?: StageKey; scrollTop?: number }
+  | {
+      kind: 'lesson';
+      lessonKey: string;
+      initialStage?: StageKey;
+      fromPractice?: boolean;
+      // A "Surprise Me"-launched problem, as opposed to one opened from
+      // TaskListScreen's ordered per-World list -- Detail.tsx uses this to
+      // hide the list-relative task position/badge and swap "Next Task"
+      // for "Next Random Task" (which picks another random problem instead
+      // of advancing sequentially).
+      isRandomPractice?: boolean;
+      scrollTop?: number;
+    }
   | { kind: 'visuals'; scrollTop?: number }
-  | { kind: 'font-themes'; scrollTop?: number };
+  | { kind: 'font-themes'; scrollTop?: number }
+  | { kind: 'worldProblems'; worldId: string; mode: PracticeProblemMode; scrollTop?: number };
 
 export default function App() {
   const [theme, setTheme] = useState<AppTheme>(() => StorageManager.getTheme());
@@ -61,8 +78,11 @@ export default function App() {
   const isLessonActive = currentRoute.kind === 'drill';
   const fiveStageLessonKey = currentRoute.kind === 'lesson' ? currentRoute.lessonKey : null;
   const fiveStageInitialStage = currentRoute.kind === 'lesson' ? currentRoute.initialStage : undefined;
+  const fiveStageIsPracticeMode = currentRoute.kind === 'lesson' ? Boolean(currentRoute.fromPractice) : false;
+  const fiveStageIsRandomPractice = currentRoute.kind === 'lesson' ? Boolean(currentRoute.isRandomPractice) : false;
   const showVisualsGallery = currentRoute.kind === 'visuals';
   const showFontThemes = currentRoute.kind === 'font-themes';
+  const worldProblemsRoute = currentRoute.kind === 'worldProblems' ? currentRoute : null;
 
   const getRootScrollTop = () => {
     const rootEl = document.getElementById('root');
@@ -74,6 +94,10 @@ export default function App() {
     return [...previous.slice(0, -1), { ...current, scrollTop: getRootScrollTop() }, route];
   });
   const popRoute = () => setNavigationStack((previous) => previous.length > 1 ? previous.slice(0, -1) : previous);
+  // Swaps the current route in place (no new back-stack entry), used by
+  // Practice mode's "Next Task" so repeated taps don't pile up history --
+  // "Go Back" from any of them still returns to TaskListScreen in one step.
+  const replaceRoute = (route: AppRoute) => setNavigationStack((previous) => [...previous.slice(0, -1), route]);
 
   // Home is the app's only root. Tabs are destinations from that root, not a
   // history trail: Back from any tab always returns to Home.
@@ -211,6 +235,12 @@ export default function App() {
         setCurrentQuestionIndex(0);
         break;
       }
+      case 'surprise': {
+        const shuffled = [...ALL_CURRICULUM_QUESTIONS].sort(() => Math.random() - 0.5);
+        setActiveQuestionPool(shuffled.slice(0, 5));
+        setCurrentQuestionIndex(0);
+        break;
+      }
       default:
         setActiveQuestionPool(LESSON_QUESTIONS);
         setCurrentQuestionIndex(0);
@@ -239,6 +269,8 @@ export default function App() {
         popRoute();
       } else if (showFontThemes) {
         popRoute();
+      } else if (worldProblemsRoute) {
+        popRoute();
       } else if (fiveStageLessonKey) {
         detailRef.current?.goBack();
       } else if (isLessonActive) {
@@ -260,7 +292,7 @@ export default function App() {
     return () => {
       removeListener?.();
     };
-  }, [showVisualsGallery, showFontThemes, fiveStageLessonKey, isLessonActive, navigationStack.length]);
+  }, [showVisualsGallery, showFontThemes, worldProblemsRoute, fiveStageLessonKey, isLessonActive, navigationStack.length]);
 
   const handleLessonComplete = (earnedXP: number, completedWorldId?: string) => {
     setUserStats((prev) => {
@@ -316,16 +348,13 @@ export default function App() {
       theme === 'dark' ? 'bg-[#0b0f19] text-[#dfe2f1]' : 'bg-[#f8f9fb] text-[#191c1e]'
     }`}>
         {/* Top Header */}
-        {!fiveStageLessonKey && !showVisualsGallery && !showFontThemes && (
+        {!fiveStageLessonKey && !showVisualsGallery && !showFontThemes && !worldProblemsRoute && (
           <Header
             theme={theme}
             activeTab={activeTab}
-            onProfileClick={() => {
-              openTab('profile');
-            }}
             onToggleTheme={toggleTheme}
-            pathGap={pathGap}
-            onPathGapChange={setPathGap}
+            pathGap={activeTab === 'learn' ? pathGap : undefined}
+            onPathGapChange={activeTab === 'learn' ? setPathGap : undefined}
             // Tabs stay visually clean; Android Back returns them to Home.
             // Curriculum is part of the explicit learning path, so it keeps
             // its visible Back affordance.
@@ -345,6 +374,18 @@ export default function App() {
         <main className={`flex-1 w-full flex flex-col font-size-${fontSize}`}>
           {showVisualsGallery ? (
             <World1VisualsShowcase theme={theme} onBack={popRoute} />
+          ) : worldProblemsRoute ? (
+            /* Per-World Write & Run / Fix Code practice problems list */
+            <TaskListScreen
+              theme={theme}
+              worldId={worldProblemsRoute.worldId}
+              mode={worldProblemsRoute.mode}
+              onBack={popRoute}
+              onOpenLesson={(lessonKey, mode) => {
+                pushRoute({ kind: 'lesson', lessonKey, initialStage: mode, fromPractice: true });
+              }}
+              onToggleTheme={toggleTheme}
+            />
           ) : showFontThemes ? (
             <FontThemesView
               theme={theme}
@@ -355,10 +396,28 @@ export default function App() {
           ) : fiveStageLessonKey ? (
             /* 5-Stage Interactive Lesson Flow (Learn -> Explore -> Predict -> Write & Run -> Mastered) */
             <Detail
+              key={fiveStageLessonKey}
               ref={detailRef}
               theme={theme}
               initialLessonKey={fiveStageLessonKey}
               initialStageKey={fiveStageInitialStage}
+              isPracticeMode={fiveStageIsPracticeMode}
+              isRandomPractice={fiveStageIsRandomPractice}
+              onPracticeNextTask={(nextLessonKey) => {
+                replaceRoute({ kind: 'lesson', lessonKey: nextLessonKey, initialStage: fiveStageInitialStage, fromPractice: true });
+              }}
+              onPracticeNextRandomTask={() => {
+                const next = pickRandomPracticeTask(userStats);
+                if (!next) {
+                  popRoute();
+                  return;
+                }
+                const nextFive = AVAILABLE_FIVE_STAGE_LESSONS[next.lessonKey];
+                if (nextFive && StorageManager.getPracticeProblemStatus(nextFive.id, next.mode) === 'not_started') {
+                  StorageManager.setPracticeProblemStatus(nextFive.id, next.mode, 'in_progress');
+                }
+                replaceRoute({ kind: 'lesson', lessonKey: next.lessonKey, initialStage: next.mode, fromPractice: true, isRandomPractice: true });
+              }}
               userStats={userStats}
               onExit={() => {
                 popRoute();
@@ -386,8 +445,8 @@ export default function App() {
               restoreScrollPosition={typeof currentRoute.scrollTop === 'number'}
               userStats={userStats}
               onJumpToToday={() => openTab('learn')}
-              onStartLesson={(topic) => {
-                pushRoute({ kind: 'lesson', lessonKey: topic || 'variables' });
+              onStartLesson={(topic, initialStage) => {
+                pushRoute({ kind: 'lesson', lessonKey: topic || 'variables', initialStage });
               }}
             />
           ) : activeTab === 'learn' ? (
@@ -402,8 +461,8 @@ export default function App() {
               onSelectWorld={handleOpenCurriculum}
               pathGap={pathGap}
             />
-          ) : activeTab === 'practice' ? (
-            /* Practice & Code Sandbox */
+          ) : activeTab === 'quiz' ? (
+            /* Quiz -- drills & the code sandbox (formerly the "Practice" tab) */
             <PracticeView
               theme={theme}
               onStartDrill={handleStartDrill}
@@ -411,11 +470,19 @@ export default function App() {
                 routeFromHome({ kind: 'lesson', lessonKey: lessonKey || 'functions', initialStage: 'writeRun' });
               }}
             />
-          ) : activeTab === 'leaderboard' ? (
-            /* Rankings & Leaderboard */
-            <LeaderboardView
+          ) : activeTab === 'practice' ? (
+            /* Practice -- per-world Write & Run / Fix Code exercise access
+               (this tab replaces the removed League/leaderboard tab). */
+            <PracticeTab
               theme={theme}
               userStats={userStats}
+              onStartDrill={handleStartDrill}
+              onOpenWorldProblems={(worldId, mode) => {
+                pushRoute({ kind: 'worldProblems', worldId, mode });
+              }}
+              onOpenLesson={(lessonKey, mode, isRandomPractice) => {
+                pushRoute({ kind: 'lesson', lessonKey, initialStage: mode, fromPractice: true, isRandomPractice });
+              }}
             />
           ) : (
             /* User Profile & Settings */
@@ -436,11 +503,11 @@ export default function App() {
           )}
         </main>
 
-        {/* Bottom Navigation Bar (Hidden when actively in lesson or drill) */}
-        {!isLessonActive && !fiveStageLessonKey && !showVisualsGallery && !showFontThemes && (
+        {/* Bottom Navigation Bar (Hidden when actively in lesson, drill, or the Listing/curriculum screen) */}
+        {!isLessonActive && !fiveStageLessonKey && !showVisualsGallery && !showFontThemes && !worldProblemsRoute && activeTab !== 'curriculum' && (
           <Navigation
             theme={theme}
-            activeTab={activeTab === 'curriculum' ? 'learn' : activeTab}
+            activeTab={activeTab}
             onSelectTab={(tab) => {
               openTab(tab);
             }}

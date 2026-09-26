@@ -12,6 +12,12 @@ interface DebugIdeProps {
   onContinue: () => void;
   onBack?: () => void;
   nextStageLabel?: string;
+  onProblemPassed?: () => void;
+  isPracticeMode?: boolean;
+  isRandomPractice?: boolean;
+  practicePosition?: { current: number; total: number };
+  onPracticeNextTask?: () => void;
+  onPracticeGoBack?: () => void;
 }
 
 export const DebugIde: React.FC<DebugIdeProps> = ({
@@ -21,6 +27,12 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
   onContinue,
   onBack,
   nextStageLabel = 'Mastered',
+  onProblemPassed,
+  isPracticeMode = false,
+  isRandomPractice = false,
+  practicePosition,
+  onPracticeNextTask,
+  onPracticeGoBack,
 }) => {
   const [userCode, setUserCode] = useState<string>(data.brokenCode);
   const [executionResult, setExecutionResult] = useState<KotlinExecutionResult | null>(null);
@@ -244,6 +256,7 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
       if (success) {
         setIsResolved(true);
         soundFX.playSuccess();
+        onProblemPassed?.();
       } else {
         setIsResolved(false);
         soundFX.playError();
@@ -364,6 +377,17 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
               </svg>
             </button>
           </div>
+
+          {/* Center: Practice-mode task position, e.g. "2 / 12" */}
+          {isPracticeMode && practicePosition && (
+            <div
+              className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-bold tracking-wide ${
+                isDark ? 'bg-rose-950/40 text-rose-300' : 'bg-white text-rose-700 border border-rose-200'
+              }`}
+            >
+              {practicePosition.current} / {practicePosition.total}
+            </div>
+          )}
 
           {/* Right: Run button and Overflow Menu */}
           <div className="flex items-center gap-2 relative">
@@ -641,7 +665,9 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
                       : 'bg-rose-100 text-rose-800 border-rose-300'
                   }`}
                 >
-                  Stage 5 - Debug Exercise
+                  {isRandomPractice
+                    ? 'Debug Code'
+                    : `Debug - Task ${String(isPracticeMode && practicePosition ? practicePosition.current : data.challengeNumber).padStart(2, '0')}`}
                 </span>
               </div>
               <button
@@ -782,18 +808,22 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
         </div>
       )}
 
-      {/* ================= Run Result Bottom Dialog / Drawer ================= */}
+      {/* ================= Run Result Dialog (bottom sheet) ================= */}
       {showOutputPanel && executionResult && (
         <div
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn"
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-end justify-center animate-fadeIn"
           onClick={() => setShowOutputPanel(false)}
         >
           <div
-            className={`w-full max-w-sm rounded-2xl border shadow-2xl max-h-[85vh] flex flex-col overflow-hidden ${
+            className={`w-full sm:max-w-[420px] mx-auto rounded-t-2xl border border-b-0 shadow-2xl animate-sheetUp max-h-[85vh] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)] ${
               isDark ? 'border-rose-900/70 bg-[#160d17] text-slate-100' : 'border-rose-200 bg-white text-slate-900'
             }`}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Bottom sheet drag handle */}
+            <div className="flex justify-center pt-2.5 pb-1 shrink-0">
+              <span className={`h-1 w-9 rounded-full ${isDark ? 'bg-slate-700' : 'bg-slate-300'}`} />
+            </div>
             {/* Header with Result Badge */}
             <div
               className={`flex items-center justify-between px-4 py-3 border-b shrink-0 ${
@@ -949,18 +979,24 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
 
             {/* Actions */}
             <div
-              className={`flex items-center justify-end gap-2 px-4 py-2.5 border-t shrink-0 ${
+              className={`flex items-center ${isPracticeMode ? 'justify-between' : 'justify-end'} gap-2 px-4 py-2.5 border-t shrink-0 ${
                 isDark ? 'border-rose-950/80 bg-[#160d17]' : 'border-rose-100 bg-white'
               }`}
             >
               <button
                 type="button"
-                onClick={() => setShowOutputPanel(false)}
+                onClick={() => {
+                  if (executionResult.success && isPracticeMode) {
+                    onPracticeGoBack?.();
+                  } else {
+                    setShowOutputPanel(false);
+                  }
+                }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium active:scale-95 transition-all cursor-pointer ${
                   isDark ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                 }`}
               >
-                {executionResult.success ? 'Keep Editing' : 'Back to Code'}
+                {executionResult.success ? (isPracticeMode ? 'Go Back' : 'Keep Editing') : 'Back to Code'}
               </button>
 
               {executionResult.success ? (
@@ -970,11 +1006,23 @@ export const DebugIde: React.FC<DebugIdeProps> = ({
                   onClick={() => {
                     soundFX.playSuccess();
                     setShowOutputPanel(false);
-                    onContinue();
+                    if (isPracticeMode) {
+                      onPracticeNextTask?.();
+                    } else {
+                      onContinue();
+                    }
                   }}
                   className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-white text-xs font-semibold flex items-center gap-1.5 shadow-[0_0_16px_rgba(244,63,94,0.5)] cursor-pointer transition-all"
                 >
-                  <span>Continue to {nextStageLabel}</span>
+                  <span>
+                    {isPracticeMode
+                      ? isRandomPractice
+                        ? 'Next Random Task'
+                        : practicePosition?.current && practicePosition.current < practicePosition.total
+                        ? `Next Task ${practicePosition.current + 1}/${practicePosition.total}`
+                        : 'Next Task'
+                      : `Continue to ${nextStageLabel}`}
+                  </span>
                   <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
                 </button>
               ) : (

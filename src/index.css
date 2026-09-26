@@ -500,6 +500,72 @@
   animation: modal-fade-in 0.2s ease-out forwards;
 }
 
+/* Bottom sheet slide-in -- used by the Write & Run / Debug run-result dialog
+   (both share this presentation regardless of how the lesson was opened:
+   the guided 5-stage flow, TaskListScreen, or Surprise Me). */
+@keyframes sheet-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-sheetUp {
+  animation: sheet-slide-up 0.22s ease-out forwards;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+/* Glowing animated border stroke -- for the Surprise Me card's "magical"
+   pick-me treatment (PracticeTab.tsx). A pseudo-element ring sitting just
+   outside the card's own border, cycling color + glow strength so it reads
+   as an animated stroke rather than a static shadow. */
+@keyframes surprise-glow-ring {
+  0%, 100% {
+    box-shadow: 0 0 0 1.5px rgba(232, 121, 249, 0.55), 0 0 18px 2px rgba(168, 85, 247, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 1.5px rgba(129, 140, 248, 0.65), 0 0 26px 5px rgba(99, 102, 241, 0.5);
+  }
+}
+
+.animate-surprise-glow {
+  animation: surprise-glow-ring 2.6s ease-in-out infinite;
+}
+
+/* Slow-flowing gradient background for the same Surprise Me card -- paired
+   with Tailwind's own `bg-gradient-to-br from-... via-... to-...` utilities,
+   which already set `background-image`; this only adds a larger canvas
+   (`background-size`) and animates `background-position` across it, so the
+   color stops appear to drift rather than sit static. */
+@keyframes surprise-gradient-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-surprise-gradient {
+  background-size: 250% 250%;
+  animation: surprise-gradient-flow 6s ease-in-out infinite;
+}
+
 /* Neumorphic tactile styling (Light theme) */
 .neu-raised {
   box-shadow: 6px 6px 14px rgba(0, 0, 0, 0.06), -6px -6px 14px rgba(255, 255, 255, 0.75);
